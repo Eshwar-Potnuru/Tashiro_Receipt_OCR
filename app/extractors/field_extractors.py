@@ -4,6 +4,8 @@ import json
 import re
 from typing import Dict, Any
 from datetime import datetime
+from PIL import Image, ImageEnhance, ImageFilter
+import io
 
 class FieldExtractor:
     """Extract structured fields from receipt images using OCR.space API."""
@@ -15,35 +17,64 @@ class FieldExtractor:
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
         """Extract structured data from receipt image."""
         try:
+            print(f"🔍 Starting OCR extraction for file: {filename}, size: {len(image_data)} bytes")
+
+            # Preprocess image for better OCR results
+            processed_image_data = self._preprocess_image(image_data, filename)
+            print(f"🖼️ Image preprocessing complete, new size: {len(processed_image_data)} bytes")
+
             # Try OCR engine 2 first (more accurate for Japanese)
             try:
-                result = self._call_ocr_api(image_data, filename, engine=2)
+                print("📡 Calling OCR API with engine 2...")
+                result = self._call_ocr_api(processed_image_data, filename, engine=2)
+                print(f"✅ OCR API call successful, response keys: {list(result.keys())}")
             except Exception as e:
-                print(f"Engine 2 failed, trying engine 1: {e}")
+                print(f"❌ Engine 2 failed: {e}, trying engine 1...")
                 # Fallback to engine 1 if engine 2 fails
-                result = self._call_ocr_api(image_data, filename, engine=1)
+                try:
+                    result = self._call_ocr_api(processed_image_data, filename, engine=1)
+                    print("✅ OCR API fallback to engine 1 successful")
+                except Exception as e2:
+                    print(f"❌ Both OCR engines failed: {e2}")
+                    raise Exception(f"OCR API completely failed: {e2}")
 
             if result.get('IsErroredOnProcessing'):
-                raise Exception(f"OCR API Error: {result.get('ErrorMessage', 'Unknown error')}")
+                error_msg = result.get('ErrorMessage', 'Unknown OCR error')
+                print(f"❌ OCR processing error: {error_msg}")
+                raise Exception(f"OCR API Error: {error_msg}")
 
             # Parse OCR text and extract fields
             parsed_text = result['ParsedResults'][0]['ParsedText'] if result['ParsedResults'] else ""
+            print(f"📝 OCR extracted text length: {len(parsed_text)} characters")
+            print(f"📝 OCR text preview: {parsed_text[:200]}...")
 
-            # Debug: Log the OCR text for troubleshooting
-            print(f"OCR Text extracted: {parsed_text[:500]}...")  # Log first 500 chars
+            if not parsed_text.strip():
+                print("⚠️ OCR returned empty text!")
+                raise Exception("OCR returned no text from image")
 
             # Extract fields using primary methods
             extracted_fields = self._parse_receipt_text(parsed_text)
+            print(f"🔍 Primary extraction results: {extracted_fields}")
 
             # If critical fields are missing, try fallback extraction
             if not extracted_fields['total'] or not extracted_fields['vendor']:
-                print("Primary extraction incomplete, trying fallback methods...")
+                print("🔄 Primary extraction incomplete, trying fallback methods...")
                 extracted_fields = self._fallback_extraction(parsed_text, extracted_fields)
+                print(f"🔄 Fallback extraction results: {extracted_fields}")
 
+            # Ensure tax extraction is always attempted (critical requirement)
+            if not extracted_fields['tax']:
+                print("🔄 Tax not found, attempting additional tax extraction...")
+                lines = [line.strip() for line in parsed_text.split('\n') if line.strip()]
+                extracted_fields['tax'] = self._extract_tax(lines)
+                print(f"🔄 Additional tax extraction result: {extracted_fields['tax']}")
+
+            print(f"✅ Final extraction results: {extracted_fields}")
             return extracted_fields
 
         except Exception as e:
-            print(f"Field extraction failed: {e}")
+            print(f"❌ Field extraction failed: {e}")
+            # Return empty fields but with error info for debugging
             return {
                 'date': '',
                 'vendor': '',
@@ -53,7 +84,13 @@ class FieldExtractor:
                 'account_title': '',
                 'subtotal': '',
                 'tax': '',
-                'currency': 'JPY'
+                'currency': 'JPY',
+                'error': str(e),
+                'debug_info': {
+                    'filename': filename,
+                    'file_size': len(image_data) if 'image_data' in locals() else 0,
+                    'error_type': type(e).__name__
+                }
             }
 
     def _parse_receipt_text(self, text: str) -> Dict[str, Any]:
@@ -296,24 +333,86 @@ class FieldExtractor:
         return ''
 
     def _extract_tax(self, lines: list) -> str:
-        """Extract tax amount."""
+        """Extract tax amount - CRITICAL for the business requirement."""
         tax_patterns = [
+            # Primary patterns (most specific)
             r'\(消費税\s+等[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)\)',  # (消費税 等 ¥258)
             r'内税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',          # 内税額 ¥258
             r'消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',          # 消費税 ¥258
+            r'税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税額 ¥258
             r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',              # 税 ¥258
-            r'TAX[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
+            r'TAX[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',             # TAX ¥258
+
+            # Additional patterns for different formats
+            r'税込[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税込 ¥258
+            r'税別[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税別 ¥258
+            r'内消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',        # 内消費税 ¥258
         ]
 
+        # First pass: look for explicit tax indicators
         for line in lines:
             for pattern in tax_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
-                    return match.group(1).replace(',', '')
+                    amount = match.group(1).replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 1 <= value <= 50000:  # Reasonable tax amount range
+                            print(f"🧾 Found tax amount: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
+        # Second pass: calculate tax from subtotal and total if available
+        # This is a fallback for when tax is not explicitly shown
+        subtotal = self._extract_subtotal(lines)
+        total = self._extract_total(lines)
+
+        if subtotal and total:
+            try:
+                subtotal_val = float(subtotal)
+                total_val = float(total)
+
+                # Calculate potential tax amounts
+                # Common tax rates: 8% (reduced), 10% (standard)
+                potential_tax_8 = subtotal_val * 0.08
+                potential_tax_10 = subtotal_val * 0.1
+
+                # Check if total matches subtotal + tax
+                if abs((subtotal_val + potential_tax_8) - total_val) < 1:  # Within 1 yen tolerance
+                    print(f"🧾 Calculated tax (8%): {potential_tax_8} from subtotal {subtotal_val}")
+                    return str(int(potential_tax_8))
+                elif abs((subtotal_val + potential_tax_10) - total_val) < 1:
+                    print(f"🧾 Calculated tax (10%): {potential_tax_10} from subtotal {subtotal_val}")
+                    return str(int(potential_tax_10))
+
+            except (ValueError, TypeError):
+                pass
+
+        # Third pass: look for any amounts in lines containing tax-related keywords
+        tax_keywords = ['税', '消費税', 'tax', 'TAX']
+        for line in lines:
+            if any(keyword in line for keyword in tax_keywords):
+                # Extract any numbers from tax-related lines
+                amounts = re.findall(r'([0-9,]+\.?[0-9]*)', line)
+                for amount in amounts:
+                    amount = amount.replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 1 <= value <= 50000:  # Reasonable tax range
+                            print(f"🧾 Found tax-related amount: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
+        print("⚠️ No tax amount found")
         return ''
 
     def _call_ocr_api(self, image_data: bytes, filename: str, engine: int = 2) -> dict:
         """Call OCR.space API with specified engine."""
+        # Detect if this is a camera image (usually has 'camera' in filename)
+        is_camera_image = 'camera' in filename.lower()
+
         files = {'file': (filename, image_data, 'application/octet-stream')}
         data = {
             'apikey': self.api_key,
@@ -324,48 +423,162 @@ class FieldExtractor:
             'OCREngine': engine,
         }
 
-        response = requests.post(self.api_url, files=files, data=data)
-        response.raise_for_status()
-        return response.json()
+        # Add special parameters for camera images
+        if is_camera_image:
+            print(f"📷 Detected camera image, applying enhanced OCR settings")
+            data.update({
+                'scale': True,  # Better scaling for camera images
+                'isTable': False,  # Receipts are not tables
+                'filetype': 'JPG',  # Camera images are usually JPEG
+            })
+
+        print(f"📡 OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}")
+
+        try:
+            response = requests.post(self.api_url, files=files, data=data, timeout=30)
+            response.raise_for_status()
+
+            result = response.json()
+            print(f"📡 OCR API response status: {response.status_code}")
+
+            return result
+
+        except requests.exceptions.Timeout:
+            print("❌ OCR API timeout")
+            raise Exception("OCR API timeout - image may be too large or network issue")
+        except requests.exceptions.RequestException as e:
+            print(f"❌ OCR API request error: {e}")
+            raise Exception(f"OCR API request failed: {e}")
+
+    def _preprocess_image(self, image_data: bytes, filename: str) -> bytes:
+        """Preprocess image to improve OCR accuracy."""
+        try:
+            # Open image with PIL
+            image = Image.open(io.BytesIO(image_data))
+
+            # Convert to RGB if necessary
+            if image.mode not in ('RGB', 'L'):
+                image = image.convert('RGB')
+
+            original_size = image.size
+            print(f"🖼️ Original image size: {original_size}, mode: {image.mode}")
+
+            # Detect if this is a camera image
+            is_camera_image = 'camera' in filename.lower()
+
+            if is_camera_image:
+                print("📷 Applying camera image enhancements...")
+
+                # Enhance contrast for camera images
+                enhancer = ImageEnhance.Contrast(image)
+                image = enhancer.enhance(1.5)
+
+                # Enhance sharpness
+                enhancer = ImageEnhance.Sharpness(image)
+                image = enhancer.enhance(1.3)
+
+                # Convert to grayscale for better OCR
+                image = image.convert('L')
+
+                # Apply slight blur to reduce noise, then sharpen
+                image = image.filter(ImageFilter.GaussianBlur(0.5))
+                enhancer = ImageEnhance.Sharpness(image)
+                image = enhancer.enhance(2.0)
+
+            # Resize if too large (OCR.space has limits)
+            max_size = (2000, 2000)  # Reasonable max size
+            if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
+                image.thumbnail(max_size, Image.Resampling.LANCZOS)
+                print(f"🖼️ Resized image to: {image.size}")
+
+            # Ensure minimum size for OCR
+            min_size = (400, 400)
+            if image.size[0] < min_size[0] or image.size[1] < min_size[1]:
+                # Upscale small images
+                scale_factor = max(min_size[0] / image.size[0], min_size[1] / image.size[1])
+                new_size = (int(image.size[0] * scale_factor), int(image.size[1] * scale_factor))
+                image = image.resize(new_size, Image.Resampling.LANCZOS)
+                print(f"🖼️ Upscaled image to: {image.size}")
+
+            # Save processed image
+            output_buffer = io.BytesIO()
+            image.save(output_buffer, format='JPEG', quality=95, optimize=True)
+            processed_data = output_buffer.getvalue()
+
+            print(f"🖼️ Image preprocessing complete: {original_size} -> {image.size}, {len(image_data)} -> {len(processed_data)} bytes")
+
+            return processed_data
+
+        except Exception as e:
+            print(f"⚠️ Image preprocessing failed: {e}, using original image")
+            return image_data
 
     def _fallback_extraction(self, text: str, current_fields: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback extraction methods when primary extraction fails."""
+        """Enhanced fallback extraction methods when primary extraction fails."""
         lines = [line.strip() for line in text.split('\n') if line.strip()]
 
-        # Fallback for vendor: look for any substantial line that might be a store name
-        if not current_fields['vendor']:
-            for line in lines[:15]:  # Check more lines
-                line = line.strip()
-                if 3 <= len(line) <= 20 and not any(char.isdigit() for char in line[:5]):
-                    # Look for lines with mixed content (letters + potential store indicators)
-                    if re.search(r'[a-zA-Z]', line) or any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff'):
-                        current_fields['vendor'] = line
-                        break
+        print(f"🔄 Starting fallback extraction for missing fields: total={bool(current_fields['total'])}, vendor={bool(current_fields['vendor'])}, tax={bool(current_fields['tax'])}")
 
-        # Fallback for total: if no total found, look for the largest amount excluding obvious non-totals
+        # Enhanced vendor fallback: look for any substantial line that might be a store name
+        if not current_fields['vendor']:
+            print("🔄 Searching for vendor name...")
+            for line in lines[:20]:  # Check more lines
+                line = line.strip()
+                if 2 <= len(line) <= 25 and not any(char.isdigit() for char in line[:3]):
+                    # Look for lines with Japanese characters or store indicators
+                    has_japanese = any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff')
+                    has_english = bool(re.search(r'[a-zA-Z]', line))
+
+                    if has_japanese or has_english:
+                        # Additional check: avoid obvious non-store lines
+                        skip_keywords = ['レシート', '領収書', 'RECEIPT', 'INVOICE', '日付', '時間', 'TEL', '〒', '¥', '円']
+                        if not any(skip in line for skip in skip_keywords):
+                            current_fields['vendor'] = line
+                            print(f"🔄 Found vendor: {line}")
+                            break
+
+        # Enhanced total fallback: smarter amount detection
         if not current_fields['total']:
+            print("🔄 Searching for total amount...")
             amounts = []
-            exclude_terms = ['お釣', '釣銭', '現計', '預り', 'ポイント', '値引', '割引']
+            exclude_terms = ['お釣', '釣銭', '現計', '預り', 'ポイント', '値引', '割引', '小計', '消費税', '税']
 
             for line in lines:
                 # Skip lines with excluded terms
                 if any(term in line for term in exclude_terms):
                     continue
 
-                # Find all monetary amounts
-                matches = re.findall(r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', line)
-                for match in matches:
-                    amount = match.replace(',', '')
-                    try:
-                        value = float(amount)
-                        if 10 <= value <= 100000:  # Reasonable receipt range
-                            amounts.append(value)
-                    except ValueError:
-                        continue
+                # Find amounts with various patterns
+                patterns = [
+                    r'[¥\\]([0-9,]+\.?[0-9]*)',  # ¥1000
+                    r'([0-9,]+\.?[0-9]*)\s*円',  # 1000円
+                    r'^\s*([0-9,]+\.?[0-9]*)\s*$',  # Just numbers
+                ]
+
+                for pattern in patterns:
+                    matches = re.findall(pattern, line)
+                    for match in matches:
+                        amount = match.replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 10 <= value <= 100000:  # Reasonable receipt range
+                                amounts.append((value, line))
+                        except ValueError:
+                            continue
 
             if amounts:
-                # Sort by value and pick the highest reasonable amount
-                amounts.sort(reverse=True)
-                current_fields['total'] = str(int(amounts[0]))
+                # Sort by value (highest first) and pick the most reasonable total
+                amounts.sort(key=lambda x: x[0], reverse=True)
+
+                # For receipts, the highest amount is often the total (unless it's change)
+                # But let's be smarter: prefer amounts that appear near the bottom
+                bottom_amounts = amounts[:3]  # Top 3 highest amounts
+                current_fields['total'] = str(int(bottom_amounts[0][0]))
+                print(f"🔄 Found total: {current_fields['total']} from line: {bottom_amounts[0][1].strip()}")
+
+        # Enhanced tax fallback: try harder to find tax
+        if not current_fields['tax']:
+            print("🔄 Searching for tax amount...")
+            current_fields['tax'] = self._extract_tax(lines)  # Re-run tax extraction
 
         return current_fields
