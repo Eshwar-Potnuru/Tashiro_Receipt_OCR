@@ -26,8 +26,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of the application
 COPY . .
 
-# Create artifacts directory
-RUN mkdir -p ../artifacts
+# Create artifacts directory inside the app directory
+RUN mkdir -p artifacts
 
 # Expose port
 EXPOSE 8000

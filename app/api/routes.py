@@ -14,10 +14,27 @@ from app.history.submission_history import SubmissionHistory
 
 router = APIRouter()
 
-# Initialize components
-field_extractor = FieldExtractor()
-excel_exporter = ExcelExporter()
-submission_history = SubmissionHistory()
+# Initialize components with error handling
+try:
+    field_extractor = FieldExtractor()
+    print("✅ FieldExtractor initialized")
+except Exception as e:
+    print(f"❌ FieldExtractor initialization failed: {e}")
+    field_extractor = None
+
+try:
+    excel_exporter = ExcelExporter()
+    print("✅ ExcelExporter initialized")
+except Exception as e:
+    print(f"❌ ExcelExporter initialization failed: {e}")
+    excel_exporter = None
+
+try:
+    submission_history = SubmissionHistory()
+    print("✅ SubmissionHistory initialized")
+except Exception as e:
+    print(f"❌ SubmissionHistory initialization failed: {e}")
+    submission_history = None
 
 @router.post("/mobile/analyze")
 async def analyze_receipt(
@@ -26,6 +43,9 @@ async def analyze_receipt(
 ):
     """Analyze a receipt image and extract structured data."""
     try:
+        if field_extractor is None:
+            raise HTTPException(status_code=500, detail="OCR service not available")
+
         # Generate unique queue ID
         queue_id = str(uuid.uuid4())
 
@@ -82,6 +102,9 @@ async def submit_receipt(
 ):
     """Submit verified receipt data and generate Excel export."""
     try:
+        if excel_exporter is None or submission_history is None:
+            raise HTTPException(status_code=500, detail="Export service not available")
+
         data = await request.json()
         queue_id = data.get("queue_id")
         fields_data = data.get("fields", {})
