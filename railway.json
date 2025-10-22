@@ -1,17 +1,8 @@
 {
   "build": {
-    "builder": "NIXPACKS"
+    "builder": "DOCKERFILE"
   },
   "deploy": {
     "startCommand": "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
-  },
-  "phases": {
-    "install": {
-      "cmds": [
-        "apt-get update && apt-get install -y python3.11 python3.11-venv python3.11-pip",
-        "python3.11 -m pip install --upgrade pip",
-        "python3.11 -m pip install -r requirements.txt"
-      ]
-    }
   }
 }
