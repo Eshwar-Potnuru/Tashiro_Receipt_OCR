@@ -1,6 +1,6 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request
 from fastapi.responses import JSONResponse
-from typing import Optional
+from typing import Optional, Dict, Any
 import os
 import uuid
 from pathlib import Path
@@ -50,15 +50,14 @@ async def analyze_receipt(
 
 @router.post("/mobile/submit")
 async def submit_receipt(
-    queue_id: str = Form(...),
-    fields: str = Form(...),
-    user: str = Form(...)
+    request: Request
 ):
     """Submit verified receipt data and generate Excel export."""
     try:
-        import json
-        fields_data = json.loads(fields)
-        user_data = json.loads(user)
+        data = await request.json()
+        queue_id = data.get("queue_id")
+        fields_data = data.get("fields", {})
+        user_data = data.get("user", {})
 
         # Get original analysis
         analysis = submission_history.get_analysis(queue_id)

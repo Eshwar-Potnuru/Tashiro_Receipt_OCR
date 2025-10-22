@@ -39,8 +39,9 @@ class FieldExtractor:
             # Extract fields using pattern matching and heuristics
             extracted_fields = self._parse_receipt_text(parsed_text)
 
-            # Add source image data for display
-            extracted_fields['source_image'] = result['ParsedResults'][0].get('TextOverlay', {}).get('Lines', [])
+            # Add source image data for display (base64 encode the original image)
+            import base64
+            extracted_fields['source_image'] = base64.b64encode(image_data).decode('utf-8')
 
             return extracted_fields
 
@@ -99,13 +100,40 @@ class FieldExtractor:
 
     def _extract_vendor(self, lines: list) -> str:
         """Extract vendor/store name."""
-        # Usually the first non-empty line or lines with store indicators
-        for line in lines[:5]:  # Check first 5 lines
+        import re
+
+        # Skip common header/footer lines
+        skip_patterns = [
+            r'^\s*レシート\s*$', r'^\s*領収書\s*$', r'^\s*RECEIPT\s*$',
+            r'^\s*伝票\s*$', r'^\s*注文\s*$', r'^\s*INVOICE\s*$',
+            r'^\s*TEL', r'^\s*電話', r'^\s*〒', r'^\s*住所',
+            r'^\s*日付', r'^\s*DATE', r'^\s*\d{4}[/-]\d{1,2}[/-]\d{1,2}',
+            r'^\s*時間', r'^\s*TIME'
+        ]
+
+        for line in lines[:8]:  # Check first 8 lines
             line = line.strip()
-            if len(line) > 2 and not any(char.isdigit() for char in line[:10]):
-                # Skip lines that start with numbers or are too short
-                if not line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
-                    return line
+
+            # Skip if matches skip patterns
+            if any(re.search(pattern, line, re.IGNORECASE) for pattern in skip_patterns):
+                continue
+
+            # Skip lines that are mostly numbers
+            if len(line) > 0 and sum(c.isdigit() for c in line) / len(line) > 0.5:
+                continue
+
+            # Skip very short lines
+            if len(line) < 2:
+                continue
+
+            # Look for store names - prefer lines with Japanese characters or store indicators
+            if any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff'):
+                return line
+
+            # Also accept English store names
+            if len(line) > 3 and not line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
+                return line
+
         return ''
 
     def _extract_total(self, lines: list) -> str:
@@ -113,16 +141,26 @@ class FieldExtractor:
         import re
         amount_patterns = [
             r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000
+            r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000
             r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'[¥\\]([0-9,]+\.?[0-9]*)\s*$',  # ¥1000 at end of line
+            r'([0-9,]+\.?[0-9]*)\s*円\s*$',  # 1000円 at end of line
+            r'^\s*([0-9,]+\.?[0-9]*)\s*$',  # Just numbers on a line (often totals)
         ]
 
         for line in reversed(lines):  # Check from bottom up
             for pattern in amount_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
-                    return match.group(1).replace(',', '')
+                    amount = match.group(1).replace(',', '')
+                    # Validate it's a reasonable amount
+                    try:
+                        value = float(amount)
+                        if 1 <= value <= 1000000:  # Reasonable receipt amount
+                            return amount
+                    except ValueError:
+                        continue
 
         return ''
 
