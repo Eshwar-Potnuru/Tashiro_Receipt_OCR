@@ -147,50 +147,66 @@ class FieldExtractor:
 
     def _extract_total(self, lines: list) -> str:
         """Extract total amount."""
-        amount_patterns = [
-            r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000
-            r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000
-            r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
-            r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
-            r'[¥\\]([0-9,]+\.?[0-9]*)\s*$',  # ¥1000 at end of line
-            r'([0-9,]+\.?[0-9]*)\s*円\s*$',  # 1000円 at end of line
-            r'^\s*([0-9,]+\.?[0-9]*)\s*$',  # Just numbers on a line (often totals)
-            r'金額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 金額: 1000
-            r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',  # General number pattern with commas
+        # Priority patterns - most specific to least specific
+        total_patterns = [
+            r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000 (Total - highest priority)
+            r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000 (Total amount)
+            r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # TOTAL: 1000
         ]
 
-        # First pass: look for explicit total indicators
-        for line in reversed(lines):  # Check from bottom up
+        # Search for explicit total indicators from bottom up (totals usually at bottom)
+        for line in reversed(lines):
             line_lower = line.lower()
-            for pattern in amount_patterns[:7]:  # Skip the general pattern first
+            for pattern in total_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     amount = match.group(1).replace(',', '')
-                    # Validate it's a reasonable amount
                     try:
                         value = float(amount)
                         if 1 <= value <= 1000000:  # Reasonable receipt amount
-                            return amount
+                            return str(int(value))
                     except ValueError:
                         continue
 
-        # Second pass: look for any reasonable amounts if no explicit totals found
-        all_amounts = []
-        for line in lines:
-            matches = re.findall(r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', line)
-            for match in matches:
+        # If no explicit total found, look for amounts but exclude obvious non-total amounts
+        exclude_patterns = [
+            r'お釣',  # Change
+            r'釣銭',  # Change
+            r'現計',  # Cash tendered
+            r'預り',  # Deposit
+            r'小計',  # Subtotal
+            r'内税',  # Tax included
+            r'消費税',  # Consumption tax
+            r'税',  # Tax
+            r'ポイント',  # Points
+            r'値引',  # Discount
+            r'割引',  # Discount
+        ]
+
+        total_candidates = []
+        for line in reversed(lines):  # Still search from bottom up
+            # Skip lines with excluded terms
+            if any(excl in line for excl in exclude_patterns):
+                continue
+
+            # Look for amounts with ¥ symbol or at end of line
+            amount_matches = re.findall(r'[¥\\]([0-9,]+\.?[0-9]*)', line)  # ¥1000
+            if not amount_matches:
+                # Look for amounts followed by 円
+                amount_matches = re.findall(r'([0-9,]+\.?[0-9]*)\s*円', line)
+
+            for match in amount_matches:
                 amount = match.replace(',', '')
                 try:
                     value = float(amount)
-                    if 1 <= value <= 1000000:  # Reasonable receipt amount
-                        all_amounts.append((value, line))
+                    if 10 <= value <= 100000:  # Reasonable receipt total range
+                        total_candidates.append((value, line))
                 except ValueError:
                     continue
 
-        # Return the largest reasonable amount found (often the total)
-        if all_amounts:
-            all_amounts.sort(key=lambda x: x[0], reverse=True)
-            return str(int(all_amounts[0][0]))
+        # Return the first (bottom-most) reasonable total candidate
+        if total_candidates:
+            return str(int(total_candidates[0][0]))
 
         return ''
 
@@ -267,8 +283,8 @@ class FieldExtractor:
     def _extract_subtotal(self, lines: list) -> str:
         """Extract subtotal."""
         subtotal_patterns = [
-            r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
-            r'小計額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
+            r'小計額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 小計額: 2848 (Subtotal amount)
+            r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',   # 小計: 1000 (Subtotal)
             r'SUBTOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
         ]
 
@@ -282,11 +298,11 @@ class FieldExtractor:
     def _extract_tax(self, lines: list) -> str:
         """Extract tax amount."""
         tax_patterns = [
-            r'消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
-            r'内税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
-            r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
-            r'TAX[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'\(消費税\s+等[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)\)',  # (消費税 等 ¥258)
+            r'内税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',          # 内税額 ¥258
+            r'消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',          # 消費税 ¥258
+            r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',              # 税 ¥258
+            r'TAX[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
         ]
 
         for line in lines:
@@ -326,10 +342,16 @@ class FieldExtractor:
                         current_fields['vendor'] = line
                         break
 
-        # Fallback for total: if no total found, look for the largest amount
+        # Fallback for total: if no total found, look for the largest amount excluding obvious non-totals
         if not current_fields['total']:
             amounts = []
+            exclude_terms = ['お釣', '釣銭', '現計', '預り', 'ポイント', '値引', '割引']
+
             for line in lines:
+                # Skip lines with excluded terms
+                if any(term in line for term in exclude_terms):
+                    continue
+
                 # Find all monetary amounts
                 matches = re.findall(r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', line)
                 for match in matches:
@@ -342,6 +364,8 @@ class FieldExtractor:
                         continue
 
             if amounts:
-                current_fields['total'] = str(int(max(amounts)))
+                # Sort by value and pick the highest reasonable amount
+                amounts.sort(reverse=True)
+                current_fields['total'] = str(int(amounts[0]))
 
         return current_fields
