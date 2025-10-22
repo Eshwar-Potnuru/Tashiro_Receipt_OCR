@@ -80,11 +80,12 @@ class FieldExtractor:
 
     def _extract_date(self, lines: list) -> str:
         """Extract date from receipt lines."""
-        import re
         date_patterns = [
             r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})',  # YYYY-MM-DD
             r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',  # DD-MM-YYYY
-            r'(\d{4})年(\d{1,2})月(\d{1,2})日',     # Japanese format
+            r'(\d{4})年(\d{1,2})月(\d{1,2})日',     # Japanese format: 2025年7月2日
+            r'(\d{4})年(\d{1,2})月(\d{1,2})',       # Japanese format without 日
+            r'(\d{4})/(\d{1,2})/(\d{1,2})',        # YYYY/MM/DD
         ]
 
         for line in lines:
@@ -107,10 +108,12 @@ class FieldExtractor:
             r'^\s*伝票\s*$', r'^\s*注文\s*$', r'^\s*INVOICE\s*$',
             r'^\s*TEL', r'^\s*電話', r'^\s*〒', r'^\s*住所',
             r'^\s*日付', r'^\s*DATE', r'^\s*\d{4}[/-]\d{1,2}[/-]\d{1,2}',
-            r'^\s*時間', r'^\s*TIME'
+            r'^\s*時間', r'^\s*TIME', r'^\s*現計', r'^\s*お釣',
+            r'^\s*小計', r'^\s*合計', r'^\s*消費税',
+            r'^\s*登録番号', r'^\s*T印', r'^\s*扱責'
         ]
 
-        for line in lines[:8]:  # Check first 8 lines
+        for line in lines[:10]:  # Check first 10 lines
             line = line.strip()
 
             # Skip if matches skip patterns
@@ -125,9 +128,15 @@ class FieldExtractor:
             if len(line) < 2:
                 continue
 
-            # Look for store names - prefer lines with Japanese characters or store indicators
+            # Skip phone numbers
+            if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
+                continue
+
+            # Look for store names - prefer lines with Japanese characters
             if any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff'):
-                return line
+                # Additional check: store names usually contain 食堂, 店, レストラン, etc.
+                if any(keyword in line for keyword in ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ']):
+                    return line
 
             # Also accept English store names
             if len(line) > 3 and not line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
@@ -170,13 +179,31 @@ class FieldExtractor:
             r'注文[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',
             r'INVOICE[:\s]*([A-Za-z0-9\-]+)',
             r'NO\.[:\s]*([A-Za-z0-9\-]+)',
+            r'No\.[:\s]*([A-Za-z0-9\-]+)',
+            r'登録番号[:\s]*([A-Za-z0-9\-]+)',
+            r'([A-Za-z]\d{12,})',  # Registration numbers like T7380001003643
         ]
 
+        # First, try to find registration numbers (most specific)
         for line in lines:
-            for pattern in invoice_patterns:
+            match = re.search(r'([A-Za-z]\d{12,})', line)
+            if match:
+                return match.group(1)
+
+        # Then try other patterns, but avoid phone numbers
+        for line in lines:
+            # Skip lines that look like phone numbers
+            if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
+                continue
+
+            for pattern in invoice_patterns[:6]:  # Skip the registration pattern we already tried
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
-                    return match.group(1)
+                    candidate = match.group(1)
+                    # Avoid short numbers that might be part of phone numbers
+                    if len(candidate) >= 3:
+                        return candidate
+
         return ''
 
     def _extract_tax_category(self, lines: list) -> str:
@@ -218,6 +245,7 @@ class FieldExtractor:
         """Extract subtotal."""
         subtotal_patterns = [
             r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
+            r'小計額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'SUBTOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
         ]
 
@@ -232,8 +260,10 @@ class FieldExtractor:
         """Extract tax amount."""
         tax_patterns = [
             r'消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
+            r'内税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'TAX[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
+            r'\(消費税\s+等[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)\)',  # (消費税 等 ¥258)
         ]
 
         for line in lines:
