@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <title>Receipt OCR System - Tashiro Ironworks Co., Ltd.</title>
+    <meta name="description" content="Professional receipt OCR automation system for Tashiro Ironworks field operations" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/css/mobile_intake.css" />
+    <style>
+        /* Enhanced responsive design overrides */
+        @media (max-width: 1024px) {
+            .app-shell {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100% !important;
+                height: auto !important;
+                position: relative !important;
+                transform: none !important;
+                border-radius: 0 !important;
+                margin-bottom: 20px;
+            }
+
+            .main-panel {
+                margin-left: 0 !important;
+                padding: 16px;
+            }
+
+            .workspace-grid {
+                grid-template-columns: 1fr !important;
+                gap: 16px;
+            }
+
+            .topbar-actions {
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .topbar-actions button,
+            .topbar-actions .upload-button {
+                min-height: 48px;
+                font-size: 16px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                padding: 16px;
+            }
+
+            .main-panel {
+                padding: 12px;
+            }
+
+            .workspace-grid {
+                gap: 12px;
+            }
+
+            .topbar-actions {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .topbar-actions button,
+            .topbar-actions .upload-button {
+                width: 100%;
+                min-height: 52px;
+                font-size: 16px;
+            }
+        }
+
+        /* Camera specific styles */
+        #cameraFeed {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #cameraPlaceholder {
+            width: 100%;
+            max-width: 400px;
+            height: 300px;
+            background: #f5f5f5;
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            font-size: 16px;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .camera-controls button {
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .camera-controls .start-camera {
+            background: #007bff;
+            color: white;
+        }
+
+        .camera-controls .start-camera:hover {
+            background: #0056b3;
+        }
+
+        .camera-controls .stop-camera {
+            background: #dc3545;
+            color: white;
+        }
+
+        .camera-controls .stop-camera:hover {
+            background: #c82333;
+        }
+
+        .camera-controls .capture {
+            background: #28a745;
+            color: white;
+        }
+
+        .camera-controls .capture:hover {
+            background: #218838;
+        }
+
+        .camera-controls .capture:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="sidebar-title">
+                    <span class="sidebar-icon">🏭</span>
+                    Tashiro Ironworks
+                </h1>
+                <p class="sidebar-subtitle">Receipt OCR System</p>
+            </div>
+
+            <div class="sidebar-content">
+                <!-- Camera Section -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">📷 Camera Capture</h3>
+                    <div class="camera-container">
+                        <video id="cameraFeed" autoplay playsinline></video>
+                        <div id="cameraPlaceholder">
+                            <div style="text-align: center;">
+                                📷<br>
+                                Camera not active<br>
+                                <small>Click "Start Camera" to begin</small>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button id="openCameraButton" class="start-camera">Start Camera</button>
+                            <button id="stopCameraButton" class="stop-camera">Stop Camera</button>
+                            <button id="captureButton" class="capture" disabled>Capture Photo</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- File Upload Section -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">📁 File Upload</h3>
+                    <div class="upload-section">
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <button class="upload-button" onclick="document.getElementById('fileInput').click()">
+                            📤 Choose File
+                        </button>
+                        <div id="dropzone" class="dropzone">
+                            <p>Or drag & drop an image here</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="sidebar-section">
+                    <h3 class="section-title">⚡ Quick Actions</h3>
+                    <div class="quick-actions">
+                        <button id="resetButton" class="action-button secondary">
+                            🔄 Start Over
+                        </button>
+                        <button id="refreshHistoryButton" class="action-button secondary">
+                            📋 Refresh History
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Panel -->
+        <div class="main-panel">
+            <!-- Topbar -->
+            <div class="topbar">
+                <div class="topbar-info">
+                    <h2 class="workspace-title">Receipt Analysis Workspace</h2>
+                    <p class="workspace-subtitle">Upload or capture a receipt to extract data automatically</p>
+                </div>
+                <div class="topbar-actions">
+                    <button id="submitButton" class="primary-button" disabled>
+                        📤 Submit to HQ
+                    </button>
+                </div>
+            </div>
+
+            <!-- Workspace Grid -->
+            <div class="workspace-grid">
+                <!-- Analysis Panel -->
+                <div class="workspace-panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">🔍 OCR Analysis</h3>
+                    </div>
+                    <div class="panel-content">
+                        <div id="analysisLoader" class="loader hidden">
+                            <div class="spinner"></div>
+                            <p>Analyzing receipt...</p>
+                        </div>
+                        <div id="analysisPlaceholder">
+                            <p>No receipt analyzed yet.</p>
+                            <p class="muted">Capture or upload a receipt to see real-time overlays.</p>
+                        </div>
+                        <canvas id="analysisCanvas" style="display: none; max-width: 100%; border-radius: 8px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Verification Panel -->
+                <div class="workspace-panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">✅ Data Verification</h3>
+                        <div id="verificationStatus" class="verification-status"></div>
+                    </div>
+                    <div class="panel-content">
+                        <form id="verificationForm" class="verification-form">
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label for="fieldDate">A - Date</label>
+                                    <input type="text" id="fieldDate" name="date" placeholder="YYYY-MM-DD">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldVendor">B - Store Name/Vendor</label>
+                                    <input type="text" id="fieldVendor" name="vendor" placeholder="Vendor name">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldTotal">C - Total Amount</label>
+                                    <input type="text" id="fieldTotal" name="total" placeholder="0.00">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldInvoiceNumber">D - Invoice Number</label>
+                                    <input type="text" id="fieldInvoiceNumber" name="invoice_number" placeholder="Invoice #">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldTaxCategory">E - Tax Category</label>
+                                    <input type="text" id="fieldTaxCategory" name="tax_category" placeholder="Tax category">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldAccountTitle">F - Account Title</label>
+                                    <input type="text" id="fieldAccountTitle" name="account_title" placeholder="Account title">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldSubtotal">Subtotal</label>
+                                    <input type="text" id="fieldSubtotal" name="subtotal" placeholder="0.00">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldTax">Tax Amount</label>
+                                    <input type="text" id="fieldTax" name="tax" placeholder="0.00">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldCurrency">Currency</label>
+                                    <select id="fieldCurrency" name="currency">
+                                        <option value="JPY">JPY (¥)</option>
+                                        <option value="USD">USD ($)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- History Panel -->
+                <div class="workspace-panel">
+                    <div class="panel-header">
+                        <h3 class="panel-title">📋 Recent Submissions</h3>
+                        <div class="panel-controls">
+                            <label for="historyLimit">Show:</label>
+                            <select id="historyLimit">
+                                <option value="10">10</option>
+                                <option value="25">25</option>
+                                <option value="50" value="50">50</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="panel-content">
+                        <div id="historyEmpty" class="empty-state">
+                            <p>No recent submissions found.</p>
+                            <p class="muted">Completed receipts will appear here.</p>
+                        </div>
+                        <div id="historyList" class="history-list" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            console.log("🚀 Tashiro Receipt OCR System - Mobile Interface Loaded");
+
+            // Camera variables
+            const openCameraButton = document.getElementById("openCameraButton");
+            const stopCameraButton = document.getElementById("stopCameraButton");
+            const captureButton = document.getElementById("captureButton");
+            const cameraFeed = document.getElementById("cameraFeed");
+            const cameraPlaceholder = document.getElementById("cameraPlaceholder");
+            let currentStream = null;
+
+            // Simplified camera access - works on both mobile and desktop
+            if (openCameraButton) {
+                openCameraButton.addEventListener("click", async function() {
+                    console.log("Starting camera...");
+
+                    try {
+                        // Simple camera constraints - works everywhere
+                        const constraints = {
+                            video: {
+                                facingMode: 'environment', // Use back camera on mobile
+                                width: { ideal: 1280 },
+                                height: { ideal: 720 }
+                            }
+                        };
+
+                        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+                        if (cameraFeed) {
+                            cameraFeed.srcObject = currentStream;
+                            cameraFeed.style.display = 'block';
+                        }
+
+                        if (cameraPlaceholder) {
+                            cameraPlaceholder.style.display = 'none';
+                        }
+
+                        if (captureButton) {
+                            captureButton.disabled = false;
+                        }
+
+                        console.log("Camera started successfully!");
+                    } catch (error) {
+                        console.error("Camera error:", error);
+                        alert("Camera access failed: " + error.message + ". Please use file upload instead.");
+                    }
+                });
+            }
+
+            if (stopCameraButton) {
+                stopCameraButton.addEventListener("click", function() {
+                    if (currentStream) {
+                        currentStream.getTracks().forEach(track => track.stop());
+                        currentStream = null;
+                    }
+
+                    if (cameraFeed) {
+                        cameraFeed.style.display = 'none';
+                    }
+
+                    if (cameraPlaceholder) {
+                        cameraPlaceholder.style.display = 'block';
+                    }
+
+                    if (captureButton) {
+                        captureButton.disabled = true;
+                    }
+                });
+            }
+
+            if (captureButton) {
+                captureButton.addEventListener("click", function() {
+                    if (currentStream && cameraFeed) {
+                        const canvas = document.createElement('canvas');
+                        const context = canvas.getContext('2d');
+
+                        canvas.width = cameraFeed.videoWidth;
+                        canvas.height = cameraFeed.videoHeight;
+                        context.drawImage(cameraFeed, 0, 0);
+
+                        canvas.toBlob(function(blob) {
+                            if (blob) {
+                                handleFileUpload(blob, 'camera-capture.jpg');
+                            }
+                        }, 'image/jpeg', 0.9);
+                    }
+                });
+            }
+
+            // Single file input handler
+            const fileInput = document.getElementById("fileInput");
+            if (fileInput) {
+                fileInput.addEventListener("change", function(e) {
+                    const file = e.target.files[0];
+                    if (file) {
+                        console.log("File selected:", file.name);
+                        handleFileUpload(file, file.name);
+                    }
+                });
+            }
+
+            // Drag and drop
+            const dropzone = document.getElementById("dropzone");
+            if (dropzone) {
+                ["dragenter", "dragover"].forEach((eventName) => {
+                    dropzone.addEventListener(eventName, (event) => {
+                        event.preventDefault();
+                        dropzone.classList.add("dragover");
+                    });
+                });
+                ["dragleave", "drop"].forEach((eventName) => {
+                    dropzone.addEventListener(eventName, (event) => {
+                        event.preventDefault();
+                        dropzone.classList.remove("dragover");
+                    });
+                });
+                dropzone.addEventListener("drop", async (event) => {
+                    event.preventDefault();
+                    const file = event.dataTransfer?.files?.[0];
+                    if (file) {
+                        handleFileUpload(file, file.name);
+                    }
+                });
+            }
+
+            // OCR Analysis Function
+            async function handleFileUpload(file, filename) {
+                console.log("Processing file:", filename);
+
+                // Show loading
+                const analysisLoader = document.getElementById("analysisLoader");
+                const analysisPlaceholder = document.getElementById("analysisPlaceholder");
+
+                if (analysisLoader) {
+                    analysisLoader.classList.remove("hidden");
+                }
+                if (analysisPlaceholder) {
+                    analysisPlaceholder.style.display = 'none';
+                }
+
+                try {
+                    // Get user data
+                    let userData = { name: 'Guest', email: 'guest@example.com' };
+                    try {
+                        const stored = localStorage.getItem("tashiro_user_v2");
+                        if (stored) {
+                            userData = JSON.parse(stored);
+                        }
+                    } catch (e) {
+                        console.warn("Could not load user data");
+                    }
+
+                    // Prepare form data
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('metadata', JSON.stringify({ user: userData }));
+
+                    // Call OCR API
+                    console.log("📤 Sending file to OCR analysis:", file.name, "Size:", file.size);
+
+                    // Create new AbortController for this request
+                    window.currentAnalysisRequest = new AbortController();
+
+                    const response = await fetch('/api/v1/mobile/analyze', {
+                        method: 'POST',
+                        body: formData,
+                        signal: window.currentAnalysisRequest.signal
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    console.log("📥 OCR Analysis Complete:", result);
+
+                    // Store queue_id for later submission
+                    if (result.queue_id) {
+                        window.currentQueueId = result.queue_id;
+                        console.log("🔗 Stored queue ID:", result.queue_id);
+                    }
+
+                    // Hide loading
+                    if (analysisLoader) {
+                        analysisLoader.classList.add("hidden");
+                    }
+
+                    // Display results
+                    displayOCRResults(result);
+
+                } catch (error) {
+                    console.error("OCR Analysis failed:", error);
+
+                    // Hide loading
+                    if (analysisLoader) {
+                        analysisLoader.classList.add("hidden");
+                    }
+                    if (analysisPlaceholder) {
+                        analysisPlaceholder.style.display = 'block';
+                        analysisPlaceholder.innerHTML = `<p>Analysis failed: ${error.message}</p><p>Please try again or check server connection.</p>`;
+                    }
+
+                    alert("OCR analysis failed: " + error.message);
+                }
+            }
+
+            // Display OCR Results
+            function displayOCRResults(result) {
+                console.log("🔍 Displaying OCR results:", result);
+
+                // Update form fields (A-F specification)
+                if (result.fields) {
+                    const fields = result.fields;
+                    console.log("📋 Fields to populate:", fields);
+
+                    try {
+                        // A - Date
+                        const dateValue = fields.date || '';
+                        document.getElementById("fieldDate").value = dateValue;
+                        console.log("A - Date:", dateValue);
+
+                        // B - Store Name/Vendor
+                        const vendorValue = fields.vendor || '';
+                        document.getElementById("fieldVendor").value = vendorValue;
+                        console.log("B - Store Name:", vendorValue);
+
+                        // C - Total Amount
+                        let totalValue = fields.total || '';
+                        if (typeof totalValue === 'number') {
+                            totalValue = totalValue.toString();
+                        }
+                        document.getElementById("fieldTotal").value = totalValue;
+                        console.log("C - Total Amount:", totalValue);
+
+                        // D - Invoice Number
+                        const invoiceValue = fields.invoice_number || '';
+                        document.getElementById("fieldInvoiceNumber").value = invoiceValue;
+                        console.log("D - Invoice Number:", invoiceValue);
+
+                        // E - Tax Category
+                        const taxCategoryValue = fields.tax_category || '';
+                        document.getElementById("fieldTaxCategory").value = taxCategoryValue;
+                        console.log("E - Tax Category:", taxCategoryValue);
+
+                        // F - Account Title
+                        const accountTitleValue = fields.account_title || fields.accounting_items || '';
+                        document.getElementById("fieldAccountTitle").value = accountTitleValue;
+                        console.log("F - Account Title:", accountTitleValue);
+
+                        // Additional fields
+                        const subtotalValue = fields.subtotal || '';
+                        document.getElementById("fieldSubtotal").value = subtotalValue;
+
+                        const taxValue = fields.tax || '';
+                        document.getElementById("fieldTax").value = taxValue;
+
+                        const currencyValue = fields.currency || 'JPY';
+                        document.getElementById("fieldCurrency").value = currencyValue;
+
+                    } catch (error) {
+                        console.error("❌ Error populating form fields:", error);
+                    }
+                } else {
+                    console.warn("⚠️ No fields object in result:", result);
+                }
+
+                // Show verification status
+                const verificationStatus = document.getElementById("verificationStatus");
+                if (verificationStatus && result.verification) {
+                    if (result.verification.verified) {
+                        verificationStatus.innerHTML = `
+                            <div class="status-success">
+                                <span class="status-icon">✅</span>
+                                <span>All fields verified successfully!</span>
+                                <span class="confidence-badge">High Confidence</span>
+                            </div>
+                        `;
+                        verificationStatus.className = "verification-status success";
+                    } else {
+                        const issues = result.verification.issues || [];
+                        verificationStatus.innerHTML = `
+                            <div class="status-warning">
+                                <span class="status-icon">⚠️</span>
+                                <span>Issues detected: ${issues.join(", ")}</span>
+                                <span class="confidence-badge">Review Required</span>
+                            </div>
+                        `;
+                        verificationStatus.className = "verification-status warning";
+                    }
+                }
+
+                // Enable submit button
+                const submitButton = document.getElementById("submitButton");
+                if (submitButton) {
+                    submitButton.disabled = false;
+                }
+
+                // Enhanced image display
+                if (result.fields && result.fields.source_image) {
+                    const analysisCanvas = document.getElementById("analysisCanvas");
+                    const analysisPlaceholder = document.getElementById("analysisPlaceholder");
+
+                    if (analysisCanvas && analysisPlaceholder) {
+                        const img = new Image();
+                        img.onload = function() {
+                            const ctx = analysisCanvas.getContext('2d');
+                            analysisCanvas.width = img.width;
+                            analysisCanvas.height = img.height;
+
+                            // Draw the image
+                            ctx.drawImage(img, 0, 0);
+
+                            analysisCanvas.style.display = 'block';
+                            analysisPlaceholder.style.display = 'none';
+                        };
+                        img.src = 'data:image/jpeg;base64,' + result.fields.source_image;
+                    }
+                }
+            }
+
+            // Handle other buttons
+            const resetButton = document.getElementById("resetButton");
+            if (resetButton) {
+                resetButton.addEventListener("click", function() {
+                    console.log("Start Over button clicked - resetting workspace...");
+
+                    // Clear all form fields
+                    try {
+                        document.getElementById("fieldDate").value = '';
+                        document.getElementById("fieldVendor").value = '';
+                        document.getElementById("fieldTotal").value = '';
+                        document.getElementById("fieldInvoiceNumber").value = '';
+                        document.getElementById("fieldTaxCategory").value = '';
+                        document.getElementById("fieldAccountTitle").value = '';
+                        document.getElementById("fieldSubtotal").value = '';
+                        document.getElementById("fieldTax").value = '';
+                        document.getElementById("fieldCurrency").value = 'JPY';
+                    } catch (error) {
+                        console.error("Error resetting form fields:", error);
+                    }
+
+                    // Clear queue ID
+                    window.currentQueueId = null;
+
+                    // Reset verification status
+                    const verificationStatus = document.getElementById("verificationStatus");
+                    if (verificationStatus) {
+                        verificationStatus.textContent = '';
+                        verificationStatus.className = 'verification-status';
+                    }
+
+                    // Reset analysis display
+                    const analysisLoader = document.getElementById("analysisLoader");
+                    const analysisCanvas = document.getElementById("analysisCanvas");
+                    const analysisPlaceholder = document.getElementById("analysisPlaceholder");
+
+                    if (analysisLoader) {
+                        analysisLoader.classList.add("hidden");
+                    }
+                    if (analysisCanvas) {
+                        analysisCanvas.style.display = 'none';
+                    }
+                    if (analysisPlaceholder) {
+                        analysisPlaceholder.style.display = 'block';
+                        analysisPlaceholder.innerHTML = '<p>No receipt analyzed yet.</p><p class="muted">Capture or upload a receipt to see real-time overlays.</p>';
+                    }
+
+                    // Disable submit button
+                    const submitButton = document.getElementById("submitButton");
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                    }
+
+                    console.log("✅ Workspace reset complete!");
+                });
+            }
+
+            // Handle verification form submission
+            const verificationForm = document.getElementById("verificationForm");
+            if (verificationForm) {
+                verificationForm.addEventListener("submit", async function(e) {
+                    e.preventDefault();
+                    console.log("Submitting to HQ...");
+
+                    // Get form data
+                    const formData = {
+                        date: document.getElementById("fieldDate").value,
+                        vendor: document.getElementById("fieldVendor").value,
+                        total: parseFloat(document.getElementById("fieldTotal").value) || 0,
+                        invoice_number: document.getElementById("fieldInvoiceNumber").value,
+                        tax_category: document.getElementById("fieldTaxCategory").value,
+                        account_title: document.getElementById("fieldAccountTitle").value,
+                        subtotal: parseFloat(document.getElementById("fieldSubtotal").value) || 0,
+                        tax: parseFloat(document.getElementById("fieldTax").value) || 0,
+                        currency: document.getElementById("fieldCurrency").value
+                    };
+
+                    // Get user data
+                    let userData = { name: 'Guest', email: 'guest@example.com' };
+                    try {
+                        const stored = localStorage.getItem("tashiro_user_v2");
+                        if (stored) {
+                            userData = JSON.parse(stored);
+                        }
+                    } catch (e) {
+                        console.warn("Could not load user data");
+                    }
+
+                    try {
+                        // Get the current queue_id
+                        let queueId = null;
+                        if (window.currentQueueId) {
+                            queueId = window.currentQueueId;
+                        } else {
+                            throw new Error("No queue ID available. Please upload and analyze a receipt first.");
+                        }
+
+                        const response = await fetch('/api/v1/mobile/submit', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                queue_id: queueId,
+                                fields: formData,
+                                user: userData
+                            })
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const result = await response.json();
+                        console.log("Submission result:", result);
+
+                        alert("✅ Receipt submitted successfully to HQ!");
+
+                        // Reset the form
+                        resetButton.click();
+
+                        // Refresh history
+                        refreshHistory();
+
+                    } catch (error) {
+                        console.error("Submission failed:", error);
+                        alert("❌ Submission failed: " + error.message);
+                    }
+                });
+            }
+
+            // History functionality
+            const refreshHistoryButton = document.getElementById("refreshHistoryButton");
+            if (refreshHistoryButton) {
+                refreshHistoryButton.addEventListener("click", function() {
+                    refreshHistory();
+                });
+            }
+
+            // History refresh function
+            async function refreshHistory() {
+                console.log("Refreshing history...");
+
+                const historyList = document.getElementById("historyList");
+                const historyEmpty = document.getElementById("historyEmpty");
+                const historyLimit = document.getElementById("historyLimit");
+
+                try {
+                    const limit = historyLimit ? historyLimit.value : 50;
+                    const response = await fetch(`/api/v1/history?limit=${limit}`);
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+
+                    const history = await response.json();
+                    console.log("History data:", history);
+
+                    if (historyList) {
+                        historyList.innerHTML = '';
+                    }
+
+                    if (!history || history.length === 0) {
+                        if (historyEmpty) {
+                            historyEmpty.style.display = 'block';
+                        }
+                        if (historyList) {
+                            historyList.style.display = 'none';
+                        }
+                    } else {
+                        if (historyEmpty) {
+                            historyEmpty.style.display = 'none';
+                        }
+                        if (historyList) {
+                            historyList.style.display = 'block';
+
+                            history.forEach(entry => {
+                                const item = document.createElement("div");
+                                item.className = "history-item";
+
+                                item.innerHTML = `
+                                    <div class="history-thumbnail">
+                                        ${entry.thumbnail_url ?
+                                            `<img src="${entry.thumbnail_url}" alt="Receipt thumbnail" />` :
+                                            '<div class="thumbnail-placeholder">📄</div>'
+                                        }
+                                    </div>
+                                    <div class="history-meta">
+                                        <div class="history-title">${entry.vendor || 'Unknown Vendor'}</div>
+                                        <div class="history-details">
+                                            <span class="amount">${entry.currency || ''} ${entry.total || '0'}</span>
+                                            <span class="date">${entry.date || 'No date'}</span>
+                                        </div>
+                                        <div class="history-status ${entry.verified ? 'success' : 'neutral'}">
+                                            ${entry.verified ? 'Verified' : 'Pending'}
+                                        </div>
+                                        ${entry.excel_url ?
+                                            `<a href="${entry.excel_url}" target="_blank">Download Excel</a>` :
+                                            ''
+                                        }
+                                    </div>
+                                `;
+
+                                historyList.appendChild(item);
+                            });
+                        }
+                    }
+
+                } catch (error) {
+                    console.error("Failed to refresh history:", error);
+                    if (historyEmpty) {
+                        historyEmpty.style.display = 'block';
+                        historyEmpty.textContent = 'Failed to load history: ' + error.message;
+                    }
+                }
+            }
+
+            // Load history on page load
+            refreshHistory();
+
+            console.log("All event handlers bound!");
+        });
+    </script>
+</body>
+</html>

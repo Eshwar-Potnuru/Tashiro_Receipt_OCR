@@ -1,0 +1,188 @@
+:root {
+    color-scheme: light dark;
+    font-family: "Inter", "Segoe UI", sans-serif;
+    background-color: Canvas;
+    color: CanvasText;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    padding: 2rem 1.5rem;
+    background: linear-gradient(135deg, #1e90ff 0%, #0a74da 100%);
+    color: white;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-align: center;
+}
+
+.app-header h1 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.project-title {
+    margin: 0.25rem 0 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    opacity: 0.95;
+}
+
+.content {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    padding: 1.5rem;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+.success-panel,
+.next-steps-panel {
+    background-color: color-mix(in srgb, Canvas 88%, black 12%);
+    border-radius: 16px;
+    padding: 2rem 1.5rem;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+    text-align: center;
+}
+
+.success-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.success-panel h2 {
+    margin: 0 0 1rem;
+    font-size: 1.75rem;
+    color: dodgerblue;
+}
+
+.success-message {
+    margin: 0 0 2rem;
+    font-size: 1rem;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+.summary-section {
+    margin-bottom: 2rem;
+    text-align: left;
+}
+
+.summary-section h3 {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+}
+
+.summary-data {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background: color-mix(in srgb, Canvas 92%, black 8%);
+    padding: 1.25rem;
+    border-radius: 10px;
+}
+
+.summary-item {
+    display: grid;
+    grid-template-columns: 150px 1fr;
+    gap: 0.75rem;
+}
+
+.summary-label {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.summary-value {
+    font-size: 0.95rem;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    justify-content: center;
+}
+
+.primary {
+    padding: 0.85rem 1.75rem;
+    border-radius: 12px;
+    border: none;
+    font-size: 1rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, dodgerblue, #0a74da);
+    color: white;
+    cursor: pointer;
+    transition: transform 0.15s ease;
+    box-shadow: 0 10px 24px rgba(30, 144, 255, 0.25);
+}
+
+.primary:hover {
+    transform: translateY(-2px);
+}
+
+.secondary {
+    padding: 0.75rem 1.5rem;
+    border-radius: 10px;
+    border: 1px solid color-mix(in srgb, CanvasText 12%, Canvas 88%);
+    background: transparent;
+    color: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.next-steps-panel {
+    text-align: left;
+}
+
+.next-steps-panel h3 {
+    margin: 0 0 1rem;
+    font-size: 1.2rem;
+}
+
+.steps-list {
+    margin: 0;
+    padding-left: 1.5rem;
+    line-height: 1.8;
+}
+
+.steps-list li {
+    margin-bottom: 0.75rem;
+}
+
+.app-footer {
+    padding: 1rem 1.25rem;
+    background-color: color-mix(in srgb, Canvas 88%, black 12%);
+    text-align: center;
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+.app-footer strong {
+    color: dodgerblue;
+}
+
+@media (max-width: 768px) {
+    .content {
+        padding: 1rem;
+        gap: 1rem;
+    }
+
+    .summary-item {
+        grid-template-columns: 1fr;
+    }
+
+    .success-panel,
+    .next-steps-panel {
+        padding: 1.5rem 1.25rem;
+    }
+}

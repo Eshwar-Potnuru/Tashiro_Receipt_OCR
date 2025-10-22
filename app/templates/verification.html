@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Verification - Tashiro Ironworks</title>
+    <link rel="stylesheet" href="/static/css/verification.css" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>Tashiro Ironworks</h1>
+        <p class="project-title">Receipt Verification & Correction</p>
+    </header>
+
+    <main class="content">
+        <section class="user-info-panel">
+            <h2>👤 User Information</h2>
+            <div id="userInfo" class="info-display">
+                <div class="info-item">
+                    <span class="info-label">Name:</span>
+                    <span id="userName" class="info-value">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Email:</span>
+                    <span id="userEmail" class="info-value">—</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Employee ID:</span>
+                    <span id="userId" class="info-value">—</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="verification-panel">
+            <h2>✏️ Verify & Correct Data</h2>
+            <form id="verificationForm">
+                <div class="form-group">
+                    <label for="vendor" class="vendor-label">
+                        <span class="color-indicator vendor"></span>
+                        Vendor/Store Name
+                    </label>
+                    <input type="text" id="vendor" name="vendor" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="date" class="date-label">
+                        <span class="color-indicator date"></span>
+                        Date
+                    </label>
+                    <input type="text" id="date" name="date" placeholder="YYYY-MM-DD" required />
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="subtotal" class="subtotal-label">
+                            <span class="color-indicator subtotal"></span>
+                            Subtotal
+                        </label>
+                        <input type="text" id="subtotal" name="subtotal" />
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tax" class="tax-label">
+                            <span class="color-indicator tax"></span>
+                            Tax Amount
+                        </label>
+                        <input type="text" id="tax" name="tax" />
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="total" class="total-label">
+                        <span class="color-indicator total"></span>
+                        Total Amount
+                    </label>
+                    <input type="text" id="total" name="total" required />
+                </div>
+
+                <div class="form-group">
+                    <label for="currency">
+                        Currency
+                    </label>
+                    <select id="currency" name="currency">
+                        <option value="JPY">JPY (¥)</option>
+                        <option value="USD">USD ($)</option>
+                        <option value="EUR">EUR (€)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="category">
+                        <span class="required">*</span> Expense Category
+                    </label>
+                    <select id="category" name="category" required>
+                        <option value="">— Select Category —</option>
+                        <option value="Meals">Meals</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Supplies">Supplies</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="primary">✅ Confirm & Submit</button>
+                    <button type="button" id="retakeButton" class="secondary">🔁 Retake</button>
+                    <button type="button" id="reuploadButton" class="secondary">📁 Reupload</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="thumbnail-panel">
+            <h2>📷 Receipt Preview</h2>
+            <div class="thumbnail-container">
+                <img id="receiptThumbnail" alt="Receipt preview" />
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>Developed by <strong>Eshwar Potnuru</strong></p>
+    </footer>
+
+    <script src="/static/js/verification.js" type="module"></script>
+</body>
+</html>

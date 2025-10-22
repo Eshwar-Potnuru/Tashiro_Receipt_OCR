@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Submission History - Tashiro Ironworks</title>
+    <link rel="stylesheet" href="/static/css/history.css" />
+</head>
+<body>
+    <header class="history-header">
+        <div class="header-content">
+            <h1>Tashiro Ironworks</h1>
+            <p class="project-title">Receipt Submission History</p>
+            <p class="subtitle">Review processed receipts, download Excel exports, and inspect verification results.</p>
+        </div>
+        <div class="header-actions">
+            <label for="historyLimit">Showing</label>
+            <select id="historyLimit">
+                <option value="25">Latest 25</option>
+                <option value="50" selected>Latest 50</option>
+                <option value="100">Latest 100</option>
+            </select>
+            <button id="refreshButton" type="button">Refresh</button>
+            <button id="backButton" type="button" class="back-btn">← Back to Upload</button>
+        </div>
+    </header>
+
+    <main class="history-content">
+        <section class="history-list" aria-live="polite">
+            <div id="historyEmpty" class="empty">No submissions logged yet.</div>
+            <ul id="historyGrid" class="history-grid"></ul>
+        </section>
+    </main>
+
+    <template id="historyCardTemplate">
+        <li class="history-card">
+            <div class="thumbnail">
+                <img alt="Receipt thumbnail" loading="lazy" />
+            </div>
+            <div class="details">
+                <header>
+                    <h2 class="vendor"></h2>
+                    <span class="date"></span>
+                </header>
+                <dl>
+                    <div>
+                        <dt>Total</dt>
+                        <dd class="total"></dd>
+                    </div>
+                    <div>
+                        <dt>Verified</dt>
+                        <dd class="verified"></dd>
+                    </div>
+                    <div class="category">
+                        <dt>Primary Category</dt>
+                        <dd class="primary-category"></dd>
+                    </div>
+                </dl>
+                <p class="issues"></p>
+            </div>
+            <footer class="card-actions">
+                <a class="excel-link" target="_blank" rel="noopener">📥 Download Excel</a>
+                <button class="view-more-btn" type="button">📄 View Details</button>
+                <span class="timestamp"></span>
+            </footer>
+            <div class="expanded-details hidden">
+                <h3>Detailed Information</h3>
+                <div class="detail-fields"></div>
+                <div class="user-info"></div>
+            </div>
+        </li>
+    </template>
+
+    <footer class="app-footer">
+        <p>Developed by <strong>Eshwar Potnuru</strong></p>
+    </footer>
+
+    <script src="/static/js/history.js" type="module"></script>
+</body>
+</html>

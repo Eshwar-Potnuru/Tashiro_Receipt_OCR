@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Success - Tashiro Ironworks</title>
+    <link rel="stylesheet" href="/static/css/success.css" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>Tashiro Ironworks</h1>
+        <p class="project-title">Receipt OCR System</p>
+    </header>
+
+    <main class="content">
+        <section class="success-panel">
+            <div class="success-icon">✅</div>
+            <h2>Receipt Successfully Submitted!</h2>
+            <p class="success-message">
+                Your receipt has been successfully uploaded and categorized. 
+                The data will now proceed through the approval workflow.
+            </p>
+
+            <div class="summary-section">
+                <h3>Submission Summary</h3>
+                <div id="summaryData" class="summary-data">
+                    <div class="summary-item">
+                        <span class="summary-label">Queue ID:</span>
+                        <span id="queueId" class="summary-value">—</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Vendor:</span>
+                        <span id="vendor" class="summary-value">—</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Date:</span>
+                        <span id="date" class="summary-value">—</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Total Amount:</span>
+                        <span id="total" class="summary-value">—</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Category:</span>
+                        <span id="category" class="summary-value">—</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="summary-label">Submitted By:</span>
+                        <span id="userName" class="summary-value">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="actions">
+                <button id="startAgainButton" type="button" class="primary">📷 Submit Another Receipt</button>
+                <button id="viewHistoryButton" type="button" class="secondary">📋 View History</button>
+            </div>
+        </section>
+
+        <section class="next-steps-panel">
+            <h3>Next Steps</h3>
+            <ol class="steps-list">
+                <li><strong>Branch Admin Review</strong> — Your submission will be reviewed by the branch administrative staff.</li>
+                <li><strong>Branch Director Approval</strong> — The branch director will approve the expense.</li>
+                <li><strong>HQ Accounting Verification</strong> — HQ accounting will perform final verification at month-end.</li>
+                <li><strong>Reimbursement Processing</strong> — Once confirmed, your reimbursement will be processed.</li>
+            </ol>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>Developed by <strong>Eshwar Potnuru</strong></p>
+    </footer>
+
+    <script src="/static/js/success.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OCR Processing - Tashiro Ironworks</title>
+    <link rel="stylesheet" href="/static/css/ocr_visualization.css" />
+</head>
+<body>
+    <header class="app-header">
+        <h1>Tashiro Ironworks</h1>
+        <p class="project-title">Receipt OCR Processing</p>
+    </header>
+
+    <main class="content">
+        <section class="visualization-panel">
+            <h2>📸 Receipt Analysis</h2>
+            <div class="receipt-container">
+                <canvas id="receiptCanvas"></canvas>
+                <div id="loadingOverlay" class="loading-overlay hidden">
+                    <div class="spinner"></div>
+                    <p>Processing receipt...</p>
+                </div>
+            </div>
+            
+            <div class="legend">
+                <h3>Field Legend</h3>
+                <div class="legend-items">
+                    <div class="legend-item"><span class="color-box vendor"></span> Vendor/Store</div>
+                    <div class="legend-item"><span class="color-box date"></span> Date</div>
+                    <div class="legend-item"><span class="color-box total"></span> Total Amount</div>
+                    <div class="legend-item"><span class="color-box tax"></span> Tax Amount</div>
+                    <div class="legend-item"><span class="color-box subtotal"></span> Subtotal</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="extracted-panel">
+            <h2>📋 Extracted Data</h2>
+            <div id="extractedData" class="extracted-fields">
+                <p class="placeholder">Processing...</p>
+            </div>
+            <div class="actions">
+                <button id="continueButton" type="button" class="primary" disabled>Continue to Verification</button>
+                <button id="retakeButton" type="button" class="secondary">🔁 Retake Photo</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>Developed by <strong>Eshwar Potnuru</strong></p>
+    </footer>
+
+    <script src="/static/js/ocr_visualization.js" type="module"></script>
+</body>
+</html>

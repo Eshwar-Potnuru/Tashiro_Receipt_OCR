@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>領収書OCR - 田代製作所</title>
+    <link rel="stylesheet" href="/static/css/mobile_intake.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Mobile Navigation -->
+    <div class="mobile-nav">
+        <h1>田代製作所 - 領収書OCR</h1>
+    </div>
+
+    <!-- Mobile Content -->
+    <div class="mobile-content">
+        <!-- Upload Section -->
+        <section id="upload-section">
+            <h2>領収書をアップロード</h2>
+            
+            <!-- Camera Button -->
+            <button class="camera-btn" onclick="capturePhoto()">
+                📷 写真を撮る
+            </button>
+            
+            <!-- File Input -->
+            <label for="receipt-file" class="mobile-file-input">
+                📁 ファイルを選択
+                <input type="file" id="receipt-file" accept="image/*" capture="environment" style="display: none;">
+            </label>
+            
+            <!-- Upload Area -->
+            <div class="upload-area" id="upload-area">
+                <p>ここに領収書の画像をドロップするか、上のボタンで選択してください</p>
+                <div id="image-preview"></div>
+            </div>
+            
+            <!-- Process Button -->
+            <button class="mobile-btn" id="process-btn" onclick="processReceipt()" disabled>
+                処理開始
+            </button>
+        </section>
+
+        <!-- Loading Section -->
+        <section id="loading-section" style="display: none;">
+            <div class="mobile-loading">
+                <div class="spinner"></div>
+                処理中...
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" style="display: none;">
+            <div class="mobile-results">
+                <h3>抽出結果</h3>
+                <div id="extracted-data"></div>
+                
+                <button class="mobile-btn" onclick="downloadExcel()">
+                    📊 Excelダウンロード
+                </button>
+                
+                <button class="mobile-btn" onclick="startNew()">
+                    🔄 新しい領収書
+                </button>
+            </div>
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" style="display: none;">
+            <div class="mobile-error" id="error-message"></div>
+            <button class="mobile-btn" onclick="startNew()">
+                🔄 やり直し
+            </button>
+        </section>
+    </div>
+
+    <script>
+        let currentFile = null;
+        let currentResults = null;
+
+        // Camera capture function
+        function capturePhoto() {
+            const input = document.getElementById('receipt-file');
+            input.click();
+        }
+
+        // File input handler
+        document.getElementById('receipt-file').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        });
+
+        // Handle file selection/drop
+        function handleFile(file) {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                showError('画像ファイルを選択してください');
+                return;
+            }
+
+            // Check file size (mobile photos can be large)
+            const maxSize = 10 * 1024 * 1024; // 10MB limit
+            if (file.size > maxSize) {
+                showError('ファイルサイズが大きすぎます (最大10MB)');
+                return;
+            }
+
+            currentFile = file;
+            showImagePreview(file);
+            document.getElementById('process-btn').disabled = false;
+        }
+
+        // Show image preview
+        function showImagePreview(file) {
+            const preview = document.getElementById('image-preview');
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                preview.innerHTML = `
+                    <img src="${e.target.result}" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                    <p style="margin-top: 8px; font-size: 14px; color: var(--text-secondary);">
+                        ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                `;
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        // Process receipt
+        async function processReceipt() {
+            if (!currentFile) {
+                showError('ファイルを選択してください');
+                return;
+            }
+
+            showSection('loading-section');
+
+            const formData = new FormData();
+            formData.append('file', currentFile);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    showError(result.error);
+                    return;
+                }
+
+                currentResults = result;
+                showResults(result);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showError('処理中にエラーが発生しました: ' + error.message);
+            }
+        }
+
+        // Show results
+        function showResults(data) {
+            const container = document.getElementById('extracted-data');
+            const fields = [
+                { key: 'store_name', label: '店舗名' },
+                { key: 'total_amount', label: '合計金額' },
+                { key: 'tax_amount', label: '税額' },
+                { key: 'date', label: '日付' },
+                { key: 'receipt_number', label: '領収書番号' }
+            ];
+
+            container.innerHTML = fields.map(field => `
+                <div class="field">
+                    <label>${field.label}</label>
+                    <value>${data[field.key] || '未検出'}</value>
+                </div>
+            `).join('');
+
+            showSection('results-section');
+        }
+
+        // Download Excel
+        async function downloadExcel() {
+            if (!currentResults) return;
+
+            try {
+                const response = await fetch('/api/export-excel', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentResults)
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `receipt_${new Date().getTime()}.xlsx`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    showError('Excelファイルの生成に失敗しました');
+                }
+            } catch (error) {
+                showError('ダウンロード中にエラーが発生しました: ' + error.message);
+            }
+        }
+
+        // Start new process
+        function startNew() {
+            currentFile = null;
+            currentResults = null;
+            document.getElementById('receipt-file').value = '';
+            document.getElementById('image-preview').innerHTML = '';
+            document.getElementById('process-btn').disabled = true;
+            showSection('upload-section');
+        }
+
+        // Show specific section
+        function showSection(sectionId) {
+            const sections = ['upload-section', 'loading-section', 'results-section', 'error-section'];
+            sections.forEach(id => {
+                document.getElementById(id).style.display = id === sectionId ? 'block' : 'none';
+            });
+        }
+
+        // Show error
+        function showError(message) {
+            document.getElementById('error-message').textContent = message;
+            showSection('error-section');
+        }
+
+        // Drag and drop handlers
+        const uploadArea = document.getElementById('upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--ti-primary)';
+            uploadArea.style.background = 'rgba(37, 99, 235, 0.1)';
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.style.borderColor = 'var(--border)';
+            uploadArea.style.background = 'var(--bg-tertiary)';
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = 'var(--border)';
+            uploadArea.style.background = 'var(--bg-tertiary)';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            showSection('upload-section');
+        });
+    </script>
+</body>
+</html>
