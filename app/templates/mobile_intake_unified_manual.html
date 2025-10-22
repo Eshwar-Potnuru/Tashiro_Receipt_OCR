@@ -1548,13 +1548,17 @@
             document.querySelector('.field-mapping-header h3').textContent = `📋 ${t('receiptFieldMapping')}`;
             document.querySelector('.field-mapping-header p').textContent = t('verifyDataMatches');
 
-            // Field Labels
-            document.querySelector('.field-label').textContent = `A ${t('dateLabel')}`;
-            document.querySelectorAll('.field-label')[1].textContent = `B ${t('storeNameLabel')}`;
-            document.querySelectorAll('.field-label')[2].textContent = `C ${t('totalAmountLabel')}`;
-            document.querySelectorAll('.field-label')[3].textContent = `D ${t('invoiceNumberLabel')}`;
-            document.querySelectorAll('.field-label')[4].textContent = `E ${t('taxCategoryLabel')}`;
-            document.querySelectorAll('.field-label')[5].textContent = `F ${t('accountTitleLabel')}`;
+            // Field Labels - Update only the text content, preserve badges
+            const fieldLabels = document.querySelectorAll('.field-label');
+            if (fieldLabels.length >= 6) {
+                // Update each field label by preserving the badge and updating the text
+                fieldLabels[0].innerHTML = `<span class="field-badge">A</span> ${t('dateLabel')}`;
+                fieldLabels[1].innerHTML = `<span class="field-badge">B</span> ${t('storeNameLabel')}`;
+                fieldLabels[2].innerHTML = `<span class="field-badge">C</span> ${t('totalAmountLabel')}`;
+                fieldLabels[3].innerHTML = `<span class="field-badge">D</span> ${t('invoiceNumberLabel')}`;
+                fieldLabels[4].innerHTML = `<span class="field-badge">E</span> ${t('taxCategoryLabel')}`;
+                fieldLabels[5].innerHTML = `<span class="field-badge">F</span> ${t('accountTitleLabel')}`;
+            }
 
             // Select options
             const taxCategorySelect = document.getElementById('fieldTaxCategory');
