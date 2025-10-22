@@ -437,10 +437,9 @@
 
         .preview-image img {
             width: 100%;
-            max-height: 400px;
-            object-fit: contain;
+            height: 300px;
+            object-fit: cover;
             display: block;
-            border-radius: 12px;
         }
 
         .preview-placeholder {
@@ -674,12 +673,10 @@
             color: var(--text-dark);
         }
 
-        .history-status {
-            display: inline-block;
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
+        .history-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
         }
 
         .status-success {
@@ -882,56 +879,6 @@
         </div>
     </div>
 
-    <!-- Settings Modal -->
-    <div id="settingsModal" class="profile-modal">
-        <div class="modal-content">
-            <div class="company-logo">
-                <div class="logo-circle">
-                    <i class="fas fa-cog"></i>
-                </div>
-            </div>
-            <h1>Settings</h1>
-            <p class="modal-subtitle">Customize your OCR experience</p>
-            
-            <div class="registration-form">
-                <div class="form-group">
-                    <label for="themeSelect">Theme</label>
-                    <select id="themeSelect">
-                        <option value="light">Light Mode</option>
-                        <option value="dark">Dark Mode (Coming Soon)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="languageSelect">Language</label>
-                    <select id="languageSelect">
-                        <option value="en">English</option>
-                        <option value="ja">日本語 (Coming Soon)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="autoSaveToggle">Auto-save drafts</label>
-                    <input type="checkbox" id="autoSaveToggle" checked>
-                </div>
-                
-                <div class="form-group">
-                    <label for="notificationToggle">Enable notifications</label>
-                    <input type="checkbox" id="notificationToggle" checked>
-                </div>
-                
-                <div class="form-actions">
-                    <button type="button" class="primary-button" id="saveSettings">
-                        <i class="fas fa-save"></i> Save Settings
-                    </button>
-                    <button type="button" class="secondary-button" id="cancelSettings">
-                        Cancel
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- Main Application -->
     <div id="appContainer" class="app-container">
         <!-- Enhanced Header -->
@@ -990,17 +937,6 @@
                     <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
                     <p>Drag & drop receipt image here</p>
                     <p class="upload-subtext">or use the options above</p>
-                </div>
-                
-                <!-- Quick Tips Section -->
-                <div class="additional-info" style="margin-top: 20px;">
-                    <h4>📸 Quick Tips for Better OCR</h4>
-                    <ul style="padding-left: 20px; margin: 0;">
-                        <li style="margin-bottom: 8px;">Ensure good lighting and avoid shadows</li>
-                        <li style="margin-bottom: 8px;">Hold camera steady and keep receipt flat</li>
-                        <li style="margin-bottom: 8px;">Include all receipt edges in the photo</li>
-                        <li>Supported formats: JPG, PNG (max 5MB)</li>
-                    </ul>
                 </div>
                 
                 <input type="file" id="fileInput" accept="image/*" style="display: none;">
@@ -1194,6 +1130,9 @@
         const historyList = document.getElementById('historyList');
         const toastContainer = document.getElementById('toastContainer');
 
+        // Global variables
+        let currentQueueId = null;
+
         // Check if user is already registered
         function checkUserRegistration() {
             const userData = localStorage.getItem('tashiro_user');
@@ -1343,52 +1282,119 @@
             };
             reader.readAsDataURL(file);
             
-            // Simulate OCR processing
-            setTimeout(() => {
-                // Populate sample data based on your requirements
+            // Prepare form data for API call
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Call OCR API
+            fetch('/api/mobile/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.fields) {
+                    // Populate fields with extracted data
+                    document.getElementById('fieldDate').value = data.fields.date || '';
+                    document.getElementById('fieldVendor').value = data.fields.vendor || '';
+                    document.getElementById('fieldTotal').value = data.fields.total || '';
+                    document.getElementById('fieldInvoiceNumber').value = data.fields.invoice_number || '';
+                    document.getElementById('fieldTaxCategory').value = data.fields.tax_category || '';
+                    document.getElementById('fieldAccountTitle').value = data.fields.account_title || '';
+                    document.getElementById('fieldSubtotal').value = data.fields.subtotal || '';
+                    document.getElementById('fieldTax').value = data.fields.tax || '';
+                    document.getElementById('fieldCurrency').value = data.fields.currency || 'JPY';
+                    
+                    // Store queue ID for submission
+                    currentQueueId = data.queue_id;
+                    
+                    // Show verification status
+                    verificationStatus.style.display = 'flex';
+                    
+                    // Enable submit button
+                    submitButton.disabled = false;
+                    
+                    showToast('Receipt analyzed successfully! All fields extracted.', 'success');
+                } else {
+                    throw new Error('No fields extracted');
+                }
+            })
+            .catch(error => {
+                console.error('OCR Error:', error);
+                showToast('Failed to analyze receipt. Please try again.', 'error');
+                
+                // Fallback to sample data for testing
                 document.getElementById('fieldDate').value = '2025-07-02';
-                document.getElementById('fieldVendor').value = '郡山桑野食堂';
-                document.getElementById('fieldTotal').value = '7200';
-                document.getElementById('fieldInvoiceNumber').value = '1364';
-                document.getElementById('fieldTaxCategory').value = '軽減税率';
-                document.getElementById('fieldAccountTitle').value = '食費';
-                document.getElementById('fieldSubtotal').value = '6667';
-                document.getElementById('fieldTax').value = '533';
+                document.getElementById('fieldVendor').value = 'Sample Store';
+                document.getElementById('fieldTotal').value = '1000';
+                document.getElementById('fieldInvoiceNumber').value = '12345';
+                document.getElementById('fieldTaxCategory').value = '標準税率';
+                document.getElementById('fieldAccountTitle').value = '交通費';
+                document.getElementById('fieldSubtotal').value = '909';
+                document.getElementById('fieldTax').value = '91';
                 document.getElementById('fieldCurrency').value = 'JPY';
                 
-                // Show verification status
                 verificationStatus.style.display = 'flex';
-                
-                // Enable submit button
                 submitButton.disabled = false;
-                
-                showToast('Receipt analyzed successfully! All fields extracted.', 'success');
-            }, 2000);
+            });
         }
 
         // Handle form submission
         submitButton.addEventListener('click', function() {
+            if (!currentQueueId) {
+                showToast('No receipt data to submit. Please upload a receipt first.', 'error');
+                return;
+            }
+            
             // Get form data
             const receiptData = {
-                date: document.getElementById('fieldDate').value,
-                vendor: document.getElementById('fieldVendor').value,
-                total: document.getElementById('fieldTotal').value,
-                invoiceNumber: document.getElementById('fieldInvoiceNumber').value,
-                taxCategory: document.getElementById('fieldTaxCategory').value,
-                accountTitle: document.getElementById('fieldAccountTitle').value,
-                subtotal: document.getElementById('fieldSubtotal').value,
-                tax: document.getElementById('fieldTax').value,
-                currency: document.getElementById('fieldCurrency').value,
-                timestamp: new Date().toISOString()
+                queue_id: currentQueueId,
+                fields: {
+                    date: document.getElementById('fieldDate').value,
+                    vendor: document.getElementById('fieldVendor').value,
+                    total: document.getElementById('fieldTotal').value,
+                    invoice_number: document.getElementById('fieldInvoiceNumber').value,
+                    tax_category: document.getElementById('fieldTaxCategory').value,
+                    account_title: document.getElementById('fieldAccountTitle').value,
+                    subtotal: document.getElementById('fieldSubtotal').value,
+                    tax: document.getElementById('fieldTax').value,
+                    currency: document.getElementById('fieldCurrency').value
+                },
+                user: JSON.parse(localStorage.getItem('tashiro_user') || '{}')
             };
             
-            // Save to history
-            saveToHistory(receiptData);
-            
-            // Reset form
-            resetForm();
-            
-            showToast('Receipt submitted to HQ successfully!', 'success');
+            // Submit to API
+            fetch('/api/mobile/submit', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(receiptData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Save to local history
+                    saveToHistory({
+                        ...receiptData.fields,
+                        id: currentQueueId,
+                        excel_url: data.excel_url,
+                        timestamp: new Date().toISOString()
+                    });
+                    
+                    // Reset form
+                    resetForm();
+                    currentQueueId = null;
+                    
+                    showToast('Receipt submitted to HQ successfully!', 'success');
+                } else {
+                    throw new Error(data.detail || 'Submission failed');
+                }
+            })
+            .catch(error => {
+                console.error('Submit Error:', error);
+                showToast('Failed to submit receipt. Please try again.', 'error');
+            });
         });
 
         // Handle reset button
@@ -1423,12 +1429,9 @@
             
             // Add new receipt with ID and status
             const receipt = {
-                id: Date.now(),
+                id: receiptData.id || Date.now(),
                 ...receiptData,
-                status: 'submitted',
-                fileName: 'receipt_' + Date.now() + '.jpg', // Simulated filename
-                thumbnail: receiptImage.src || '', // Store the image data
-                ocrStatus: 'High Confidence'
+                status: 'submitted'
             };
             
             // Add to beginning of array
@@ -1472,11 +1475,16 @@
                         <div class="history-details">
                             <div class="history-vendor">${item.vendor}</div>
                             <div class="history-meta">
-                                <span class="history-date">${formatDate(item.date)}</span>
-                                <span class="history-amount">${item.currency} ${item.total}</span>
+                                <span class="history-date">${formatDate(item.date || item.timestamp)}</span>
+                                <span class="history-amount">${item.currency || 'JPY'} ${item.total}</span>
                             </div>
                         </div>
-                        <div class="history-status status-success">Submitted</div>
+                        <div class="history-actions">
+                            <button class="icon-button history-download" onclick="downloadExcel('${item.id}')" title="Download Excel">
+                                <i class="fas fa-download"></i>
+                            </button>
+                            <div class="history-status status-success">Submitted</div>
+                        </div>
                     </div>
                 `;
             });
@@ -1516,6 +1524,17 @@
                     toast.remove();
                 }
             }, 5000);
+        }
+
+        // Download Excel function
+        function downloadExcel(queueId) {
+            showToast('Preparing Excel download...', 'info');
+            
+            // For now, simulate download since we don't have the actual Excel URL stored
+            // In a real implementation, you'd store the excel_url from the submit response
+            setTimeout(() => {
+                showToast('Excel download feature coming soon!', 'warning');
+            }, 1000);
         }
 
         // Initialize the application
