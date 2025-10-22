@@ -69,6 +69,25 @@ def create_app() -> FastAPI:
 
         print("✅ App initialization successful")
 
+        @app.get("/health", tags=["health"])
+        def health_check():
+            """Health check endpoint."""
+            return {"status": "healthy", "timestamp": "2025-01-22T12:00:00Z"}
+
+        @app.get("/", response_class=HTMLResponse, tags=["ui"])
+        def homepage(request: Request) -> HTMLResponse:
+            return templates.TemplateResponse("mobile_intake_unified.html", {"request": request})
+
+        @app.get("/mobile", response_class=HTMLResponse, tags=["ui"])
+        def mobile_intake(request: Request) -> HTMLResponse:
+            return templates.TemplateResponse("mobile_intake_unified.html", {"request": request})
+
+        @app.get("/debug", response_class=HTMLResponse, tags=["ui"])
+        def debug_test(request: Request) -> HTMLResponse:
+            return templates.TemplateResponse("debug.html", {"request": request})
+
+        app.include_router(api_router, prefix="/api")
+
         return app
 
     except Exception as e:
@@ -76,27 +95,6 @@ def create_app() -> FastAPI:
         import traceback
         traceback.print_exc()
         raise
-
-    @app.get("/health", tags=["health"])
-    def health_check():
-        """Health check endpoint."""
-        return {"status": "healthy", "timestamp": "2025-01-22T12:00:00Z"}
-
-    @app.get("/", response_class=HTMLResponse, tags=["ui"])
-    def homepage(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse("mobile_intake_unified.html", {"request": request})
-
-    @app.get("/mobile", response_class=HTMLResponse, tags=["ui"])
-    def mobile_intake(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse("mobile_intake_unified.html", {"request": request})
-
-    @app.get("/debug", response_class=HTMLResponse, tags=["ui"])
-    def debug_test(request: Request) -> HTMLResponse:
-        return templates.TemplateResponse("debug.html", {"request": request})
-
-    app.include_router(api_router, prefix="/api")
-
-    return app
 
 
 app = create_app()
