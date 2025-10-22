@@ -1654,11 +1654,13 @@
             }
 
             // Form action buttons
-            if (submitButton) {
-                submitButton.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
+            const submitBtn = document.getElementById('submitButton');
+            const resetBtn = document.getElementById('resetButton');
+            if (submitBtn) {
+                submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
             }
-            if (resetButton) {
-                resetButton.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
+            if (resetBtn) {
+                resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
             }
 
             // Verification status
@@ -1667,7 +1669,15 @@
                 statusElements[0].textContent = t('allFieldsVerified');
                 statusElements[1].textContent = t('highConfidence');
             }
-        }
+
+            // Developer credit
+            const developerCredit = document.querySelector('.developer-credit');
+            if (developerCredit) {
+                developerCredit.textContent = t('developerCredit');
+            }
+
+            // Update history display if it exists
+            updateHistoryDisplay();
 
         // DOM Elements
         const welcomeModal = document.getElementById('welcomeModal');
