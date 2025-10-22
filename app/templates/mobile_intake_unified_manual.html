@@ -841,39 +841,81 @@
         </div>
     </div>
 
-    <!-- Profile Update Modal -->
-    <div id="profileModal" class="profile-modal">
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="profile-modal">
         <div class="modal-content">
             <div class="company-logo">
                 <div class="logo-circle">
-                    <i class="fas fa-user-edit"></i>
+                    <i class="fas fa-cog"></i>
                 </div>
             </div>
-            <h1>Update Profile</h1>
-            <p class="modal-subtitle">Keep your information up to date</p>
+            <h1>Settings</h1>
+            <p class="modal-subtitle">Customize your experience</p>
             
-            <form id="profileForm" class="registration-form">
+            <form id="settingsForm" class="registration-form">
                 <div class="form-group">
-                    <label for="updateUserName">Full Name <span class="required">*</span></label>
-                    <input type="text" id="updateUserName" placeholder="Enter your full name" required>
+                    <label>Theme</label>
+                    <select id="themeSelect">
+                        <option value="light">☀️ Light Mode</option>
+                        <option value="dark">🌙 Dark Mode</option>
+                        <option value="auto">🔄 Auto (System)</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="updateUserEmail">Email Address <span class="required">*</span></label>
-                    <input type="email" id="updateUserEmail" placeholder="your.email@company.com" required>
+                    <label>Language / 言語</label>
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <option value="ja">日本語 (Japanese)</option>
+                    </select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="updateEmployeeId">Employee ID</label>
-                    <input type="text" id="updateEmployeeId" placeholder="TY-2045">
+                    <label>Notifications</label>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="toastNotifications" checked>
+                            Toast Messages
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="soundNotifications">
+                            Sound Effects
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>OCR Settings</label>
+                    <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="autoExtract" checked>
+                            Auto-extract on upload
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px;">
+                            <input type="checkbox" id="confidenceThreshold">
+                            Show confidence scores
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Data Management</label>
+                    <div style="display: flex; gap: 12px; flex-direction: column;">
+                        <button type="button" class="secondary-button" id="exportData" style="width: 100%;">
+                            <i class="fas fa-download"></i> Export All Data
+                        </button>
+                        <button type="button" class="secondary-button" id="clearHistory" style="width: 100%; color: #dc3545; border-color: #dc3545;">
+                            <i class="fas fa-trash"></i> Clear History
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="form-actions">
                     <button type="submit" class="primary-button">
-                        <i class="fas fa-save"></i> Update Profile
+                        <i class="fas fa-save"></i> Save Settings
                     </button>
-                    <button type="button" class="secondary-button" id="cancelProfileUpdate">
-                        Cancel
+                    <button type="button" class="secondary-button" id="closeSettings">
+                        Close
                     </button>
                 </div>
             </form>
@@ -1031,6 +1073,15 @@
                                     <option value="通信費">📱 通信費 (Communication)</option>
                                     <option value="宿泊費">🏨 宿泊費 (Accommodation)</option>
                                     <option value="接待交際費">🎉 接待交際費 (Entertainment)</option>
+                                    <option value="消耗品費">📎 消耗品費 (Office Supplies)</option>
+                                    <option value="会議費">👥 会議費 (Meeting Expenses)</option>
+                                    <option value="研修費">📚 研修費 (Training)</option>
+                                    <option value="福利厚生費">🎁 福利厚生費 (Welfare)</option>
+                                    <option value="雑費">🛒 雑費 (Miscellaneous)</option>
+                                    <option value="旅費交通費">✈️ 旅費交通費 (Travel)</option>
+                                    <option value="広告宣伝費">📢 広告宣伝費 (Advertising)</option>
+                                    <option value="交際費">🍷 交際費 (Business Entertainment)</option>
+                                    <option value="備品購入費">💼 備品購入費 (Equipment)</option>
                                 </select>
                             </div>
                         </div>
@@ -1103,33 +1154,12 @@
 
     <script>
         // DOM Elements
-        const welcomeModal = document.getElementById('welcomeModal');
-        const profileModal = document.getElementById('profileModal');
-        const appContainer = document.getElementById('appContainer');
-        const registrationForm = document.getElementById('registrationForm');
-        const profileForm = document.getElementById('profileForm');
-        const userNameInput = document.getElementById('userName');
-        const userEmailInput = document.getElementById('userEmail');
-        const employeeIdInput = document.getElementById('employeeId');
-        const updateUserNameInput = document.getElementById('updateUserName');
-        const updateUserEmailInput = document.getElementById('updateUserEmail');
-        const updateEmployeeIdInput = document.getElementById('updateEmployeeId');
-        const displayUserName = document.getElementById('displayUserName');
-        const displayUserEmail = document.getElementById('displayUserEmail');
-        const userAvatar = document.getElementById('userAvatar');
-        const profileButton = document.getElementById('profileButton');
-        const cancelProfileUpdate = document.getElementById('cancelProfileUpdate');
-        const cameraButton = document.getElementById('cameraButton');
-        const uploadButton = document.getElementById('uploadButton');
-        const fileInput = document.getElementById('fileInput');
-        const dropzone = document.getElementById('dropzone');
-        const imagePlaceholder = document.getElementById('imagePlaceholder');
-        const receiptImage = document.getElementById('receiptImage');
-        const verificationStatus = document.getElementById('verificationStatus');
-        const submitButton = document.getElementById('submitButton');
-        const resetButton = document.getElementById('resetButton');
-        const historyList = document.getElementById('historyList');
-        const toastContainer = document.getElementById('toastContainer');
+        const settingsModal = document.getElementById('settingsModal');
+        const settingsForm = document.getElementById('settingsForm');
+        const closeSettings = document.getElementById('closeSettings');
+        const settingsButton = document.querySelector('button[title="Settings"]');
+        const exportData = document.getElementById('exportData');
+        const clearHistory = document.getElementById('clearHistory');
 
         // Global variables
         let currentQueueId = null;
@@ -1212,6 +1242,91 @@
             
             // Show success toast
             showToast('Profile updated successfully!', 'success');
+        });
+
+        // Handle settings button
+        settingsButton.addEventListener('click', function() {
+            loadSettings();
+            settingsModal.style.display = 'flex';
+        });
+
+        closeSettings.addEventListener('click', function() {
+            settingsModal.style.display = 'none';
+        });
+
+        settingsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            saveSettings();
+            settingsModal.style.display = 'none';
+            showToast('Settings saved successfully!', 'success');
+        });
+
+        // Settings functions
+        function loadSettings() {
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            
+            document.getElementById('themeSelect').value = settings.theme || 'light';
+            document.getElementById('languageSelect').value = settings.language || 'en';
+            document.getElementById('toastNotifications').checked = settings.toastNotifications !== false;
+            document.getElementById('soundNotifications').checked = settings.soundNotifications || false;
+            document.getElementById('autoExtract').checked = settings.autoExtract !== false;
+            document.getElementById('confidenceThreshold').checked = settings.confidenceThreshold || false;
+        }
+
+        function saveSettings() {
+            const settings = {
+                theme: document.getElementById('themeSelect').value,
+                language: document.getElementById('languageSelect').value,
+                toastNotifications: document.getElementById('toastNotifications').checked,
+                soundNotifications: document.getElementById('soundNotifications').checked,
+                autoExtract: document.getElementById('autoExtract').checked,
+                confidenceThreshold: document.getElementById('confidenceThreshold').checked
+            };
+            
+            localStorage.setItem('tashiro_settings', JSON.stringify(settings));
+            applySettings(settings);
+        }
+
+        function applySettings(settings) {
+            // Apply theme
+            document.documentElement.setAttribute('data-theme', settings.theme || 'light');
+            
+            // Apply language (basic implementation)
+            if (settings.language === 'ja') {
+                // Could implement Japanese translations here
+                console.log('Japanese language selected');
+            }
+        }
+
+        // Export data functionality
+        exportData.addEventListener('click', function() {
+            const data = {
+                user: JSON.parse(localStorage.getItem('tashiro_user') || '{}'),
+                history: JSON.parse(localStorage.getItem('tashiro_history') || '[]'),
+                settings: JSON.parse(localStorage.getItem('tashiro_settings') || '{}'),
+                exportDate: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `tashiro_data_export_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            showToast('Data exported successfully!', 'success');
+        });
+
+        // Clear history functionality
+        clearHistory.addEventListener('click', function() {
+            if (confirm('Are you sure you want to clear all history? This cannot be undone.')) {
+                localStorage.removeItem('tashiro_history');
+                updateHistoryDisplay();
+                showToast('History cleared successfully!', 'success');
+            }
         });
 
         // Handle camera button click
@@ -1531,11 +1646,53 @@
         function downloadExcel(queueId) {
             showToast('Preparing Excel download...', 'info');
             
-            // For now, simulate download since we don't have the actual Excel URL stored
-            // In a real implementation, you'd store the excel_url from the submit response
-            setTimeout(() => {
-                showToast('Excel download feature coming soon!', 'warning');
-            }, 1000);
+            // Find the history item with this queue ID
+            const history = JSON.parse(localStorage.getItem('tashiro_history') || '[]');
+            const item = history.find(h => h.id === queueId);
+            
+            if (item && item.excel_url) {
+                // Create a temporary link to download the file
+                const link = document.createElement('a');
+                link.href = item.excel_url;
+                link.download = `receipt_${queueId}.xlsx`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                showToast('Excel downloaded successfully!', 'success');
+            } else {
+                // Fallback: try to generate Excel via API
+                fetch('/api/mobile/submit', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        queue_id: queueId,
+                        fields: item || {},
+                        user: JSON.parse(localStorage.getItem('tashiro_user') || '{}')
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.excel_url) {
+                        const link = document.createElement('a');
+                        link.href = data.excel_url;
+                        link.download = `receipt_${queueId}.xlsx`;
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        
+                        showToast('Excel downloaded successfully!', 'success');
+                    } else {
+                        throw new Error('No Excel URL received');
+                    }
+                })
+                .catch(error => {
+                    console.error('Download Error:', error);
+                    showToast('Failed to download Excel. Please try again.', 'error');
+                });
+            }
         }
 
         // Initialize the application
@@ -1545,6 +1702,10 @@
             } else {
                 appContainer.style.display = 'block';
             }
+            
+            // Load and apply settings
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            applySettings(settings);
             
             updateHistoryDisplay();
         }
