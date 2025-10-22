@@ -517,6 +517,23 @@
             text-align: center;
         }
 
+        .ai-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 11px;
+            color: var(--primary-blue);
+            background: rgba(0, 123, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 500;
+        }
+
+        .ai-indicator i {
+            font-size: 10px;
+        }
+
         .form-field input, .form-field select {
             width: 100%;
             padding: 14px 16px;
@@ -1081,6 +1098,9 @@
                                 <div class="field-label">
                                     <span class="field-badge">F</span>
                                     Account Title (勘定科目)
+                                    <span id="aiConfidenceIndicator" class="ai-indicator" style="display: none;">
+                                        <i class="fas fa-robot"></i> AI Detected
+                                    </span>
                                 </div>
                                 <select id="fieldAccountTitle">
                                     <option value="">Select account title</option>
@@ -2008,6 +2028,12 @@
                     document.getElementById('fieldInvoiceNumber').value = data.fields.invoice_number || '';
                     document.getElementById('fieldTaxCategory').value = data.fields.tax_category || '';
                     document.getElementById('fieldAccountTitle').value = data.fields.account_title || '';
+                    
+                    // Show AI confidence indicator if account title was AI-detected
+                    const aiIndicator = document.getElementById('aiConfidenceIndicator');
+                    if (aiIndicator && data.fields.account_title) {
+                        aiIndicator.style.display = 'inline-flex';
+                    }
                     document.getElementById('fieldSubtotal').value = data.fields.subtotal || '';
                     document.getElementById('fieldTax').value = data.fields.tax || '';
                     document.getElementById('fieldCurrency').value = data.fields.currency || 'JPY';
@@ -2125,6 +2151,12 @@
             imagePlaceholder.style.display = 'flex';
             receiptImage.style.display = 'none';
             verificationStatus.style.display = 'none';
+            
+            // Hide AI confidence indicator
+            const aiIndicator = document.getElementById('aiConfidenceIndicator');
+            if (aiIndicator) {
+                aiIndicator.style.display = 'none';
+            }
             
             submitButton.disabled = true;
         }
