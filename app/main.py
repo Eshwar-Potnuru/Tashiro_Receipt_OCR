@@ -9,9 +9,16 @@ from pathlib import Path
 try:
     from dotenv import load_dotenv
     load_dotenv()
-    print(f"🔑 OCR.space API Key loaded: {'✅' if os.getenv('OCR_SPACE_API_KEY') else '❌'}")
+    api_key_status = "✅" if os.getenv('OCR_SPACE_API_KEY') else "❌"
+    print(f"🔑 OCR.space API Key loaded: {api_key_status}")
+    if not os.getenv('OCR_SPACE_API_KEY'):
+        print("⚠️ WARNING: OCR_SPACE_API_KEY not found in environment!")
 except ImportError:
     print("⚠️ python-dotenv not installed, .env file not loaded")
+    api_key_status = "❌"
+except Exception as e:
+    print(f"⚠️ Error loading .env file: {e}")
+    api_key_status = "❌"
 
 from app.api.routes import router as api_router
 
@@ -26,8 +33,17 @@ def create_app() -> FastAPI:
     # Get the base directory (receipt-ocr)
     base_dir = Path(__file__).parent.parent
 
-    # Use parent directory artifacts folder (where exports are stored)
-    artifacts_dir = base_dir.parent / "artifacts"
+    # Use artifacts folder within the project directory
+    artifacts_dir = base_dir / "artifacts"
+
+    # Debug directory paths
+    print(f"📁 Base directory: {base_dir}")
+    print(f"📁 Templates directory: {base_dir / 'app' / 'templates'}")
+    print(f"📁 Static directory: {base_dir / 'app' / 'static'}")
+    print(f"📁 Artifacts directory: {artifacts_dir}")
+    print(f"📁 Templates exists: {(base_dir / 'app' / 'templates').exists()}")
+    print(f"📁 Static exists: {(base_dir / 'app' / 'static').exists()}")
+    print(f"📁 Artifacts exists: {artifacts_dir.exists()}")
 
     templates = Jinja2Templates(directory=str(base_dir / "app" / "templates"))
     app.mount("/static", StaticFiles(directory=str(base_dir / "app" / "static")), name="static")

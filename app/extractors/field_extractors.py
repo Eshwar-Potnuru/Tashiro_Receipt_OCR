@@ -460,7 +460,7 @@ class FieldExtractor:
         print(f"📡 OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}")
 
         try:
-            response = requests.post(self.api_url, files=files, data=data, timeout=30)
+            response = requests.post(self.api_url, files=files, data=data, timeout=15)  # Reduced timeout
             response.raise_for_status()
 
             result = response.json()
@@ -469,7 +469,7 @@ class FieldExtractor:
             return result
 
         except requests.exceptions.Timeout:
-            print("❌ OCR API timeout")
+            print("❌ OCR API timeout (15s)")
             raise Exception("OCR API timeout - image may be too large or network issue")
         except requests.exceptions.RequestException as e:
             print(f"❌ OCR API request error: {e}")
