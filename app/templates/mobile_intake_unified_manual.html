@@ -437,9 +437,10 @@
 
         .preview-image img {
             width: 100%;
-            height: 300px;
-            object-fit: cover;
+            max-height: 400px;
+            object-fit: contain;
             display: block;
+            border-radius: 12px;
         }
 
         .preview-placeholder {
@@ -881,6 +882,56 @@
         </div>
     </div>
 
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="profile-modal">
+        <div class="modal-content">
+            <div class="company-logo">
+                <div class="logo-circle">
+                    <i class="fas fa-cog"></i>
+                </div>
+            </div>
+            <h1>Settings</h1>
+            <p class="modal-subtitle">Customize your OCR experience</p>
+            
+            <div class="registration-form">
+                <div class="form-group">
+                    <label for="themeSelect">Theme</label>
+                    <select id="themeSelect">
+                        <option value="light">Light Mode</option>
+                        <option value="dark">Dark Mode (Coming Soon)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="languageSelect">Language</label>
+                    <select id="languageSelect">
+                        <option value="en">English</option>
+                        <option value="ja">日本語 (Coming Soon)</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="autoSaveToggle">Auto-save drafts</label>
+                    <input type="checkbox" id="autoSaveToggle" checked>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notificationToggle">Enable notifications</label>
+                    <input type="checkbox" id="notificationToggle" checked>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="primary-button" id="saveSettings">
+                        <i class="fas fa-save"></i> Save Settings
+                    </button>
+                    <button type="button" class="secondary-button" id="cancelSettings">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Main Application -->
     <div id="appContainer" class="app-container">
         <!-- Enhanced Header -->
@@ -939,6 +990,17 @@
                     <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
                     <p>Drag & drop receipt image here</p>
                     <p class="upload-subtext">or use the options above</p>
+                </div>
+                
+                <!-- Quick Tips Section -->
+                <div class="additional-info" style="margin-top: 20px;">
+                    <h4>📸 Quick Tips for Better OCR</h4>
+                    <ul style="padding-left: 20px; margin: 0;">
+                        <li style="margin-bottom: 8px;">Ensure good lighting and avoid shadows</li>
+                        <li style="margin-bottom: 8px;">Hold camera steady and keep receipt flat</li>
+                        <li style="margin-bottom: 8px;">Include all receipt edges in the photo</li>
+                        <li>Supported formats: JPG, PNG (max 5MB)</li>
+                    </ul>
                 </div>
                 
                 <input type="file" id="fileInput" accept="image/*" style="display: none;">
@@ -1363,7 +1425,10 @@
             const receipt = {
                 id: Date.now(),
                 ...receiptData,
-                status: 'submitted'
+                status: 'submitted',
+                fileName: 'receipt_' + Date.now() + '.jpg', // Simulated filename
+                thumbnail: receiptImage.src || '', // Store the image data
+                ocrStatus: 'High Confidence'
             };
             
             // Add to beginning of array
