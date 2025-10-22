@@ -83,11 +83,11 @@ def create_app() -> FastAPI:
 
         @app.get("/", response_class=HTMLResponse, tags=["ui"])
         def homepage(request: Request) -> HTMLResponse:
-            return templates.TemplateResponse("mobile_intake_unified.html", {"request": request})
+            return templates.TemplateResponse("mobile_intake_unified_manual.html", {"request": request})
 
         @app.get("/mobile", response_class=HTMLResponse, tags=["ui"])
         def mobile_intake(request: Request) -> HTMLResponse:
-            return templates.TemplateResponse("mobile_intake_unified.html", {"request": request})
+            return templates.TemplateResponse("mobile_intake_unified_manual.html", {"request": request})
 
         @app.get("/debug", response_class=HTMLResponse, tags=["ui"])
         def debug_test(request: Request) -> HTMLResponse:
