@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import re
 from typing import Dict, Any
 from datetime import datetime
 
@@ -100,8 +101,6 @@ class FieldExtractor:
 
     def _extract_vendor(self, lines: list) -> str:
         """Extract vendor/store name."""
-        import re
-
         # Skip common header/footer lines
         skip_patterns = [
             r'^\s*レシート\s*$', r'^\s*領収書\s*$', r'^\s*RECEIPT\s*$',
@@ -138,7 +137,6 @@ class FieldExtractor:
 
     def _extract_total(self, lines: list) -> str:
         """Extract total amount."""
-        import re
         amount_patterns = [
             r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000
             r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000
@@ -166,7 +164,6 @@ class FieldExtractor:
 
     def _extract_invoice(self, lines: list) -> str:
         """Extract invoice/receipt number."""
-        import re
         invoice_patterns = [
             r'伝票[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',
             r'レシート[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',
@@ -219,7 +216,6 @@ class FieldExtractor:
 
     def _extract_subtotal(self, lines: list) -> str:
         """Extract subtotal."""
-        import re
         subtotal_patterns = [
             r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'SUBTOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
@@ -234,7 +230,6 @@ class FieldExtractor:
 
     def _extract_tax(self, lines: list) -> str:
         """Extract tax amount."""
-        import re
         tax_patterns = [
             r'消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
             r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
