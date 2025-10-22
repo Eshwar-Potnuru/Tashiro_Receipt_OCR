@@ -1169,6 +1169,413 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <script>
+        // Language translations
+        const translations = {
+            en: {
+                // Welcome Modal
+                welcomeTitle: "Tashiro Ironworks Co., Ltd.",
+                welcomeSubtitle: "Professional Receipt OCR Automation System",
+                fullName: "Full Name",
+                emailAddress: "Email Address",
+                employeeId: "Employee ID (Optional)",
+                launchSystem: "Launch OCR System",
+                enterFullName: "Enter your full name",
+                enterEmail: "your.email@company.com",
+                enterEmployeeId: "TY-2045",
+
+                // Profile Modal
+                updateProfile: "Update Profile",
+                keepInfoUpdated: "Keep your information up to date",
+                updateProfileBtn: "Update Profile",
+                cancel: "Cancel",
+
+                // Settings Modal
+                appSettings: "App Settings",
+                customizeExperience: "Customize your experience",
+                theme: "Theme",
+                language: "Language",
+                notifications: "Notifications",
+                autoSave: "Auto-save Forms",
+                lightMode: "Light Mode",
+                darkMode: "Dark Mode",
+                autoSystem: "Auto (System)",
+                english: "English",
+                japanese: "日本語 (Japanese)",
+                allNotifications: "All Notifications",
+                importantOnly: "Important Only",
+                disabled: "Disabled",
+                enabled: "Enabled",
+                saveSettings: "Save Settings",
+
+                // Main App
+                ocrSystem: "Receipt OCR Automation System",
+                tashiroIronworks: "Tashiro Ironworks Co., Ltd.",
+                guestUser: "Guest User",
+                guestEmail: "guest@example.com",
+
+                // Cards
+                captureReceipt: "Capture Receipt",
+                takePhotoOrUpload: "Take a photo or upload an existing receipt image",
+                takePhoto: "Take Photo",
+                useDeviceCamera: "Use device camera",
+                uploadFile: "Upload File",
+                jpgPngOrPdf: "JPG, PNG, or PDF",
+                dragDropHere: "Drag & drop receipt image here",
+                orUseOptionsAbove: "or use the options above",
+
+                ocrReview: "OCR Review & Verification",
+                verifyExtractedData: "Verify extracted data and submit to HQ",
+                receiptFieldMapping: "Receipt Field Mapping (A-F)",
+                verifyDataMatches: "Verify extracted data matches receipt content",
+
+                // Field Labels
+                dateLabel: "Date (日付)",
+                storeNameLabel: "Store Name (店名)",
+                totalAmountLabel: "Total Amount (金額)",
+                invoiceNumberLabel: "Invoice Number (インボイス番号)",
+                taxCategoryLabel: "Tax Category (税区分)",
+                accountTitleLabel: "Account Title (勘定科目)",
+                selectTaxCategory: "Select tax category",
+                selectAccountTitle: "Select account title",
+
+                // Account Titles
+                meals: "食費 (Meals)",
+                transportation: "交通費 (Transportation)",
+                communication: "通信費 (Communication)",
+                accommodation: "宿泊費 (Accommodation)",
+                entertainment: "接待交際費 (Entertainment)",
+                officeSupplies: "消耗品費 (Office Supplies)",
+                meetingExpenses: "会議費 (Meeting Expenses)",
+                training: "研修費 (Training)",
+                welfare: "福利厚生費 (Welfare)",
+                advertising: "広告宣伝費 (Advertising)",
+                vehicle: "車両費 (Vehicle)",
+                insurance: "保険料 (Insurance)",
+                taxesDues: "租税公課 (Taxes & Dues)",
+                other: "その他 (Other)",
+
+                // Additional Info
+                additionalInformation: "Additional Information",
+                subtotalRef: "Subtotal (参考)",
+                taxAmountRef: "Tax Amount (参考)",
+                currency: "Currency",
+
+                // Buttons
+                submitToHq: "Submit to HQ",
+                startOver: "Start Over",
+
+                // Verification
+                allFieldsVerified: "All fields verified successfully!",
+                highConfidence: "High Confidence",
+
+                // History
+                submissionHistory: "Submission History",
+                recentReceipts: "Recent receipts and their status",
+                noSubmissionsYet: "No submissions yet",
+                startScanning: "Start scanning receipts to see them here",
+                submitted: "Submitted",
+
+                // Placeholders
+                yyyyMmDd: "YYYY-MM-DD",
+                storeName: "Store name",
+                zeroZero: "0.00",
+                invoiceReceiptNo: "Invoice/Receipt No.",
+                jpy: "JPY",
+
+                // Toast Messages
+                welcomeMessage: "Welcome, {name}! Ready to process receipts.",
+                processingReceipt: "Processing receipt image...",
+                receiptAnalyzed: "Receipt analyzed successfully! All fields extracted.",
+                failedToAnalyze: "Failed to analyze receipt. Please try again.",
+                formReset: "Form reset. Ready for new receipt.",
+                noReceiptData: "No receipt data to submit. Please upload a receipt first.",
+                receiptSubmitted: "Receipt submitted to HQ successfully!",
+                failedToSubmit: "Failed to submit receipt. Please try again.",
+                preparingDownload: "Preparing Excel download...",
+                excelDownloaded: "Excel downloaded successfully!",
+                failedDownload: "Failed to download Excel. Please try again.",
+                settingsSaved: "Settings saved successfully!",
+                profileUpdated: "Profile updated successfully!"
+            },
+            ja: {
+                // Welcome Modal
+                welcomeTitle: "株式会社タシロ鉄工所",
+                welcomeSubtitle: "プロフェッショナル領収書OCR自動化システム",
+                fullName: "氏名",
+                emailAddress: "メールアドレス",
+                employeeId: "社員ID（任意）",
+                launchSystem: "OCRシステムを起動",
+                enterFullName: "氏名を入力してください",
+                enterEmail: "your.email@company.com",
+                enterEmployeeId: "TY-2045",
+
+                // Profile Modal
+                updateProfile: "プロフィールを更新",
+                keepInfoUpdated: "情報を最新に保つ",
+                updateProfileBtn: "プロフィールを更新",
+                cancel: "キャンセル",
+
+                // Settings Modal
+                appSettings: "アプリ設定",
+                customizeExperience: "体験をカスタマイズ",
+                theme: "テーマ",
+                language: "言語",
+                notifications: "通知",
+                autoSave: "フォームの自動保存",
+                lightMode: "ライトモード",
+                darkMode: "ダークモード",
+                autoSystem: "自動（システム）",
+                english: "English",
+                japanese: "日本語",
+                allNotifications: "すべての通知",
+                importantOnly: "重要なもののみ",
+                disabled: "無効",
+                enabled: "有効",
+                saveSettings: "設定を保存",
+
+                // Main App
+                ocrSystem: "領収書OCR自動化システム",
+                tashiroIronworks: "株式会社タシロ鉄工所",
+                guestUser: "ゲストユーザー",
+                guestEmail: "guest@example.com",
+
+                // Cards
+                captureReceipt: "領収書をキャプチャ",
+                takePhotoOrUpload: "写真を撮るか既存の領収書画像をアップロード",
+                takePhoto: "写真を撮る",
+                useDeviceCamera: "デバイスのカメラを使用",
+                uploadFile: "ファイルをアップロード",
+                jpgPngOrPdf: "JPG、PNG、またはPDF",
+                dragDropHere: "領収書画像をここにドラッグ＆ドロップ",
+                orUseOptionsAbove: "または上記のオプションを使用",
+
+                ocrReview: "OCR確認と検証",
+                verifyExtractedData: "抽出されたデータを確認し本社に提出",
+                receiptFieldMapping: "領収書フィールドマッピング（A-F）",
+                verifyDataMatches: "抽出されたデータが領収書の内容と一致することを確認",
+
+                // Field Labels
+                dateLabel: "日付",
+                storeNameLabel: "店名",
+                totalAmountLabel: "金額",
+                invoiceNumberLabel: "インボイス番号",
+                taxCategoryLabel: "税区分",
+                accountTitleLabel: "勘定科目",
+                selectTaxCategory: "税区分を選択",
+                selectAccountTitle: "勘定科目を選択",
+
+                // Account Titles
+                meals: "食費",
+                transportation: "交通費",
+                communication: "通信費",
+                accommodation: "宿泊費",
+                entertainment: "接待交際費",
+                officeSupplies: "消耗品費",
+                meetingExpenses: "会議費",
+                training: "研修費",
+                welfare: "福利厚生費",
+                advertising: "広告宣伝費",
+                vehicle: "車両費",
+                insurance: "保険料",
+                taxesDues: "租税公課",
+                other: "その他",
+
+                // Additional Info
+                additionalInformation: "追加情報",
+                subtotalRef: "小計（参考）",
+                taxAmountRef: "税額（参考）",
+                currency: "通貨",
+
+                // Buttons
+                submitToHq: "本社に提出",
+                startOver: "最初からやり直す",
+
+                // Verification
+                allFieldsVerified: "すべてのフィールドが正常に検証されました！",
+                highConfidence: "高信頼性",
+
+                // History
+                submissionHistory: "提出履歴",
+                recentReceipts: "最近の領収書とそのステータス",
+                noSubmissionsYet: "まだ提出がありません",
+                startScanning: "領収書をスキャンしてここに表示",
+                submitted: "提出済み",
+
+                // Placeholders
+                yyyyMmDd: "YYYY-MM-DD",
+                storeName: "店名",
+                zeroZero: "0.00",
+                invoiceReceiptNo: "インボイス/領収書番号",
+                jpy: "JPY",
+
+                // Toast Messages
+                welcomeMessage: "{name}さん、ようこそ！領収書の処理を開始できます。",
+                processingReceipt: "領収書画像を処理中...",
+                receiptAnalyzed: "領収書の分析が完了しました！すべてのフィールドが抽出されました。",
+                failedToAnalyze: "領収書の分析に失敗しました。もう一度お試しください。",
+                formReset: "フォームがリセットされました。新規領収書の準備ができました。",
+                noReceiptData: "提出する領収書データがありません。まず領収書をアップロードしてください。",
+                receiptSubmitted: "領収書が本社に正常に提出されました！",
+                failedToSubmit: "領収書の提出に失敗しました。もう一度お試しください。",
+                preparingDownload: "Excelダウンロードを準備中...",
+                excelDownloaded: "Excelが正常にダウンロードされました！",
+                failedDownload: "Excelのダウンロードに失敗しました。もう一度お試しください。",
+                settingsSaved: "設定が正常に保存されました！",
+                profileUpdated: "プロフィールが正常に更新されました！"
+            }
+        };
+
+        // Current language
+        let currentLanguage = 'en';
+
+        // Translation function
+        function t(key, params = {}) {
+            let text = translations[currentLanguage][key] || translations['en'][key] || key;
+
+            // Replace parameters
+            Object.keys(params).forEach(param => {
+                text = text.replace(`{${param}}`, params[param]);
+            });
+
+            return text;
+        }
+
+        // Apply translations to the page
+        function applyLanguage(language) {
+            currentLanguage = language;
+
+            // Welcome Modal
+            document.querySelector('#welcomeModal h1').textContent = t('welcomeTitle');
+            document.querySelector('#welcomeModal .modal-subtitle').textContent = t('welcomeSubtitle');
+            document.querySelector('label[for="userName"]').innerHTML = `${t('fullName')} <span class="required">*</span>`;
+            document.querySelector('label[for="userEmail"]').innerHTML = `${t('emailAddress')} <span class="required">*</span>`;
+            document.querySelector('label[for="employeeId"]').textContent = t('employeeId');
+            document.querySelector('#registrationForm button[type="submit"]').innerHTML = `<i class="fas fa-rocket"></i> ${t('launchSystem')}`;
+            document.getElementById('userName').placeholder = t('enterFullName');
+            document.getElementById('userEmail').placeholder = t('enterEmail');
+            document.getElementById('employeeId').placeholder = t('enterEmployeeId');
+
+            // Profile Modal
+            document.querySelector('#profileModal h1').textContent = t('updateProfile');
+            document.querySelector('#profileModal .modal-subtitle').textContent = t('keepInfoUpdated');
+            document.querySelector('label[for="updateUserName"]').innerHTML = `${t('fullName')} <span class="required">*</span>`;
+            document.querySelector('label[for="updateUserEmail"]').innerHTML = `${t('emailAddress')} <span class="required">*</span>`;
+            document.querySelector('label[for="updateEmployeeId"]').textContent = t('employeeId');
+            document.querySelector('#profileForm button[type="submit"]').innerHTML = `<i class="fas fa-save"></i> ${t('updateProfileBtn')}`;
+            document.getElementById('cancelProfileUpdate').textContent = t('cancel');
+            document.getElementById('updateUserName').placeholder = t('enterFullName');
+            document.getElementById('updateUserEmail').placeholder = t('enterEmail');
+            document.getElementById('updateEmployeeId').placeholder = t('enterEmployeeId');
+
+            // Settings Modal
+            document.querySelector('#settingsModal h1').textContent = t('appSettings');
+            document.querySelector('#settingsModal .modal-subtitle').textContent = t('customizeExperience');
+            document.querySelector('label[for="themeToggle"]').textContent = t('theme');
+            document.querySelector('label[for="languageSelect"]').textContent = t('language');
+            document.querySelector('label[for="notificationToggle"]').textContent = t('notifications');
+            document.querySelector('label[for="autoSaveToggle"]').textContent = t('autoSave');
+            document.getElementById('saveSettings').innerHTML = `<i class="fas fa-save"></i> ${t('saveSettings')}`;
+            document.getElementById('cancelSettings').textContent = t('cancel');
+
+            // Update select options
+            const themeSelect = document.getElementById('themeToggle');
+            themeSelect.querySelector('option[value="light"]').textContent = t('lightMode');
+            themeSelect.querySelector('option[value="dark"]').textContent = t('darkMode');
+            themeSelect.querySelector('option[value="auto"]').textContent = t('autoSystem');
+
+            const languageSelect = document.getElementById('languageSelect');
+            languageSelect.querySelector('option[value="en"]').textContent = t('english');
+            languageSelect.querySelector('option[value="ja"]').textContent = t('japanese');
+
+            const notificationSelect = document.getElementById('notificationToggle');
+            notificationSelect.querySelector('option[value="all"]').textContent = t('allNotifications');
+            notificationSelect.querySelector('option[value="important"]').textContent = t('importantOnly');
+            notificationSelect.querySelector('option[value="none"]').textContent = t('disabled');
+
+            const autoSaveSelect = document.getElementById('autoSaveToggle');
+            autoSaveSelect.querySelector('option[value="enabled"]').textContent = t('enabled');
+            autoSaveSelect.querySelector('option[value="disabled"]').textContent = t('disabled');
+
+            // Main App Header
+            document.querySelector('.header-left h1').textContent = t('ocrSystem');
+            document.querySelector('.header-left p').textContent = t('tashiroIronworks');
+
+            // Cards
+            document.querySelector('.card-title').textContent = t('captureReceipt');
+            document.querySelector('.card-description').textContent = t('takePhotoOrUpload');
+            document.querySelector('.upload-text').textContent = t('takePhoto');
+            document.querySelector('.upload-subtext').textContent = t('useDeviceCamera');
+            document.querySelector('.upload-text').nextElementSibling.nextElementSibling.textContent = t('uploadFile');
+            document.querySelector('.upload-text').nextElementSibling.nextElementSibling.nextElementSibling.textContent = t('jpgPngOrPdf');
+            document.querySelector('#dropzone p').textContent = t('dragDropHere');
+            document.querySelector('#dropzone p:last-child').textContent = t('orUseOptionsAbove');
+
+            // OCR Review Card
+            const ocrCard = document.querySelectorAll('.card')[1];
+            ocrCard.querySelector('.card-title').textContent = t('ocrReview');
+            ocrCard.querySelector('.card-description').textContent = t('verifyExtractedData');
+            document.querySelector('.field-mapping-header h3').textContent = `📋 ${t('receiptFieldMapping')}`;
+            document.querySelector('.field-mapping-header p').textContent = t('verifyDataMatches');
+
+            // Field Labels
+            document.querySelector('.field-label').textContent = `A ${t('dateLabel')}`;
+            document.querySelectorAll('.field-label')[1].textContent = `B ${t('storeNameLabel')}`;
+            document.querySelectorAll('.field-label')[2].textContent = `C ${t('totalAmountLabel')}`;
+            document.querySelectorAll('.field-label')[3].textContent = `D ${t('invoiceNumberLabel')}`;
+            document.querySelectorAll('.field-label')[4].textContent = `E ${t('taxCategoryLabel')}`;
+            document.querySelectorAll('.field-label')[5].textContent = `F ${t('accountTitleLabel')}`;
+
+            // Select options
+            const taxCategorySelect = document.getElementById('fieldTaxCategory');
+            taxCategorySelect.querySelector('option').textContent = t('selectTaxCategory');
+
+            const accountTitleSelect = document.getElementById('fieldAccountTitle');
+            accountTitleSelect.querySelector('option').textContent = t('selectAccountTitle');
+            accountTitleSelect.querySelector('option[value="食費"]').textContent = t('meals');
+            accountTitleSelect.querySelector('option[value="交通費"]').textContent = t('transportation');
+            accountTitleSelect.querySelector('option[value="通信費"]').textContent = t('communication');
+            accountTitleSelect.querySelector('option[value="宿泊費"]').textContent = t('accommodation');
+            accountTitleSelect.querySelector('option[value="接待交際費"]').textContent = t('entertainment');
+            accountTitleSelect.querySelector('option[value="消耗品費"]').textContent = t('officeSupplies');
+            accountTitleSelect.querySelector('option[value="会議費"]').textContent = t('meetingExpenses');
+            accountTitleSelect.querySelector('option[value="研修費"]').textContent = t('training');
+            accountTitleSelect.querySelector('option[value="福利厚生費"]').textContent = t('welfare');
+            accountTitleSelect.querySelector('option[value="広告宣伝費"]').textContent = t('advertising');
+            accountTitleSelect.querySelector('option[value="車両費"]').textContent = t('vehicle');
+            accountTitleSelect.querySelector('option[value="保険料"]').textContent = t('insurance');
+            accountTitleSelect.querySelector('option[value="租税公課"]').textContent = t('taxesDues');
+            accountTitleSelect.querySelector('option[value="その他"]').textContent = t('other');
+
+            // Additional Information
+            document.querySelector('.additional-info h4').textContent = t('additionalInformation');
+            document.querySelector('.additional-info label').textContent = t('subtotalRef');
+            document.querySelectorAll('.additional-info label')[1].textContent = t('taxAmountRef');
+            document.querySelectorAll('.additional-info label')[2].textContent = t('currency');
+
+            // Buttons
+            document.getElementById('submitButton').innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
+            document.getElementById('resetButton').innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
+
+            // Verification Status
+            document.querySelector('.status-title').textContent = t('allFieldsVerified');
+            document.querySelector('.confidence-badge').textContent = t('highConfidence');
+
+            // History Card
+            const historyCard = document.querySelectorAll('.card')[2];
+            historyCard.querySelector('.card-title').textContent = t('submissionHistory');
+            historyCard.querySelector('.card-description').textContent = t('recentReceipts');
+
+            // Placeholders
+            document.getElementById('fieldDate').placeholder = t('yyyyMmDd');
+            document.getElementById('fieldVendor').placeholder = t('storeName');
+            document.getElementById('fieldTotal').placeholder = t('zeroZero');
+            document.getElementById('fieldInvoiceNumber').placeholder = t('invoiceReceiptNo');
+            document.getElementById('fieldCurrency').value = t('jpy');
+
+            // Update history display if it exists
+            updateHistoryDisplay();
+        }
+
         // DOM Elements
         const welcomeModal = document.getElementById('welcomeModal');
         const profileModal = document.getElementById('profileModal');
@@ -1251,7 +1658,7 @@
             appContainer.style.display = 'block';
             
             // Show welcome toast
-            showToast(`Welcome, ${userData.name}! Ready to process receipts.`, 'success');
+            showToast(t('welcomeMessage', {name: userData.name}), 'success');
         });
 
         // Handle profile update
@@ -1276,7 +1683,7 @@
         saveSettings.addEventListener('click', function() {
             saveSettingsToStorage();
             settingsModal.style.display = 'none';
-            showToast('Settings saved successfully!', 'success');
+            showToast(t('settingsSaved'), 'success');
         });
 
         profileForm.addEventListener('submit', function(e) {
@@ -1298,7 +1705,7 @@
             profileModal.style.display = 'none';
             
             // Show success toast
-            showToast('Profile updated successfully!', 'success');
+            showToast(t('profileUpdated'), 'success');
         });
 
         // Handle camera button click
@@ -1359,7 +1766,7 @@
 
         // Handle file upload
         function handleFileUpload(file) {
-            showToast('Processing receipt image...', 'info');
+            showToast(t('processingReceipt'), 'info');
             
             // Create a preview of the image
             const reader = new FileReader();
@@ -1402,14 +1809,14 @@
                     // Enable submit button
                     submitButton.disabled = false;
                     
-                    showToast('Receipt analyzed successfully! All fields extracted.', 'success');
+                    showToast(t('receiptAnalyzed'), 'success');
                 } else {
                     throw new Error('No fields extracted');
                 }
             })
             .catch(error => {
                 console.error('OCR Error:', error);
-                showToast('Failed to analyze receipt. Please try again.', 'error');
+                showToast(t('failedToAnalyze'), 'error');
                 
                 // Fallback to sample data for testing
                 document.getElementById('fieldDate').value = '2025-07-02';
@@ -1430,7 +1837,7 @@
         // Handle form submission
         submitButton.addEventListener('click', function() {
             if (!currentQueueId) {
-                showToast('No receipt data to submit. Please upload a receipt first.', 'error');
+                showToast(t('noReceiptData'), 'error');
                 return;
             }
             
@@ -1474,21 +1881,21 @@
                     resetForm();
                     currentQueueId = null;
                     
-                    showToast('Receipt submitted to HQ successfully!', 'success');
+                    showToast(t('receiptSubmitted'), 'success');
                 } else {
                     throw new Error(data.detail || 'Submission failed');
                 }
             })
             .catch(error => {
                 console.error('Submit Error:', error);
-                showToast('Failed to submit receipt. Please try again.', 'error');
+                showToast(t('failedToSubmit'), 'error');
             });
         });
 
         // Handle reset button
         resetButton.addEventListener('click', function() {
             resetForm();
-            showToast('Form reset. Ready for new receipt.', 'info');
+            showToast(t('formReset'), 'info');
         });
 
         // Reset the form
@@ -1545,8 +1952,8 @@
                 historyList.innerHTML = `
                     <div class="empty-state">
                         <i class="fas fa-inbox"></i>
-                        <p>No submissions yet</p>
-                        <p>Start scanning receipts to see them here</p>
+                        <p>${t('noSubmissionsYet')}</p>
+                        <p>${t('startScanning')}</p>
                     </div>
                 `;
                 return;
@@ -1571,7 +1978,7 @@
                             <button class="icon-button history-download" onclick="downloadExcel('${item.id}')" title="Download Excel">
                                 <i class="fas fa-download"></i>
                             </button>
-                            <div class="history-status status-success">Submitted</div>
+                            <div class="history-status status-success">${t('submitted')}</div>
                         </div>
                     </div>
                 `;
@@ -1616,7 +2023,7 @@
 
         // Download Excel function
         function downloadExcel(queueId) {
-            showToast('Preparing Excel download...', 'info');
+            showToast(t('preparingDownload'), 'info');
             
             // Find the history item with this queue ID
             const history = JSON.parse(localStorage.getItem('tashiro_history') || '[]');
@@ -1631,7 +2038,7 @@
                 link.click();
                 document.body.removeChild(link);
                 
-                showToast('Excel downloaded successfully!', 'success');
+                showToast(t('excelDownloaded'), 'success');
             } else {
                 // Fallback: try to regenerate Excel
                 fetch('/api/mobile/submit', {
@@ -1654,14 +2061,14 @@
                         document.body.appendChild(link);
                         link.click();
                         document.body.removeChild(link);
-                        showToast('Excel downloaded successfully!', 'success');
+                        showToast(t('excelDownloaded'), 'success');
                     } else {
                         throw new Error('No Excel URL received');
                     }
                 })
                 .catch(error => {
                     console.error('Download Error:', error);
-                    showToast('Failed to download Excel. Please try again.', 'error');
+                    showToast(t('failedDownload'), 'error');
                 });
             }
         }
@@ -1686,8 +2093,9 @@
             
             localStorage.setItem('tashiro_settings', JSON.stringify(settings));
             
-            // Apply theme immediately
+            // Apply theme and language immediately
             applyTheme(settings.theme);
+            applyLanguage(settings.language);
         }
 
         // Apply theme
@@ -1723,6 +2131,7 @@
             loadSettings();
             const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
             applyTheme(settings.theme || 'light');
+            applyLanguage(settings.language || 'en');
             
             updateHistoryDisplay();
         }
