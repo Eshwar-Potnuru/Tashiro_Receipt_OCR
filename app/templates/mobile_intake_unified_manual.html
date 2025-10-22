@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tashiro Ironworks - Receipt OCR System</title>
+    <title>Tashiro Ironworks - Professional OCR System</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -13,15 +13,18 @@
             --success-green: #28A745;
             --warning-orange: #FFC107;
             --danger-red: #DC3545;
+            --purple: #6F42C1;
+            --teal: #20C997;
             --light-gray: #F8F9FA;
             --medium-gray: #E9ECEF;
             --dark-gray: #6C757D;
             --text-dark: #343A40;
             --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-            --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.12);
             --border-radius: 12px;
-            --safe-area-top: env(safe-area-inset-top);
-            --safe-area-bottom: env(safe-area-inset-bottom);
+            --gradient-primary: linear-gradient(135deg, #007BFF 0%, #0056b3 100%);
+            --gradient-success: linear-gradient(135deg, #28A745 0%, #1e7e34 100%);
+            --gradient-warning: linear-gradient(135deg, #FFC107 0%, #e0a800 100%);
         }
 
         * {
@@ -33,28 +36,27 @@
         }
 
         body {
-            background-color: var(--light-gray);
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%);
             color: var(--text-dark);
             line-height: 1.6;
             overflow-x: hidden;
-            padding-top: var(--safe-area-top);
-            padding-bottom: var(--safe-area-bottom);
+            min-height: 100vh;
         }
 
-        /* Mobile-First Welcome Modal */
+        /* Welcome Modal */
         .welcome-modal {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(5px);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
             display: flex;
             justify-content: center;
             align-items: center;
             z-index: 1000;
-            padding: 16px;
+            padding: 20px;
         }
 
         .modal-content {
@@ -62,46 +64,59 @@
             border-radius: var(--border-radius);
             box-shadow: var(--shadow-lg);
             width: 100%;
-            max-width: 400px;
-            padding: 32px 24px;
+            max-width: 480px;
+            padding: 40px 32px;
             text-align: center;
-            animation: modalSlideIn 0.4s ease-out;
+            animation: modalSlideIn 0.5s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .modal-content::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
         }
 
         @keyframes modalSlideIn {
-            from { transform: translateY(-20px); opacity: 0; }
+            from { transform: translateY(-30px); opacity: 0; }
             to { transform: translateY(0); opacity: 1; }
         }
 
         .company-logo {
             display: flex;
             justify-content: center;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
 
         .logo-circle {
-            width: 70px;
-            height: 70px;
-            background: var(--primary-blue);
+            width: 80px;
+            height: 80px;
+            background: var(--gradient-primary);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            font-size: 28px;
+            font-size: 32px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
 
         .modal-content h1 {
-            font-size: 22px;
+            font-size: 24px;
             font-weight: 700;
             margin-bottom: 8px;
             color: var(--text-dark);
         }
 
         .modal-subtitle {
-            font-size: 15px;
+            font-size: 16px;
             color: var(--dark-gray);
-            margin-bottom: 24px;
+            margin-bottom: 32px;
         }
 
         .registration-form {
@@ -109,7 +124,7 @@
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
@@ -117,17 +132,15 @@
             margin-bottom: 8px;
             font-weight: 500;
             color: var(--text-dark);
-            font-size: 15px;
         }
 
         .form-group input {
             width: 100%;
-            padding: 16px;
+            padding: 14px 16px;
             border: 1px solid var(--medium-gray);
             border-radius: 8px;
-            font-size: 16px; /* Prevents zoom on iOS */
-            transition: border 0.2s, box-shadow 0.2s;
-            -webkit-appearance: none;
+            font-size: 16px;
+            transition: all 0.2s;
         }
 
         .form-group input:focus {
@@ -141,7 +154,7 @@
         }
 
         .primary-button {
-            background: var(--primary-blue);
+            background: var(--gradient-primary);
             color: white;
             border: none;
             border-radius: 8px;
@@ -149,44 +162,55 @@
             font-size: 16px;
             font-weight: 600;
             cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
+            transition: all 0.2s;
             width: 100%;
-            margin-top: 8px;
-            min-height: 52px; /* Minimum touch target size */
-            touch-action: manipulation;
+            margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
         }
 
         .primary-button:hover {
-            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 123, 255, 0.4);
         }
 
         .primary-button:active {
-            transform: scale(0.98);
+            transform: translateY(0);
         }
 
-        /* Mobile-Optimized App Layout */
+        /* Main App Layout */
         .app-container {
             display: none;
-            max-width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
-            padding: 0;
+            padding: 20px;
         }
 
-        /* Mobile Header */
+        /* Enhanced Header */
         .app-header {
-            position: sticky;
-            top: 0;
-            z-index: 100;
             background: white;
-            padding: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px 24px;
+            margin-bottom: 24px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .app-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
         }
 
         .header-left h1 {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: 700;
             color: var(--text-dark);
             margin-bottom: 4px;
@@ -194,91 +218,106 @@
 
         .header-left p {
             color: var(--dark-gray);
-            font-size: 13px;
+            font-size: 14px;
         }
 
         .user-profile {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
         }
 
         .user-avatar {
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             border-radius: 50%;
-            background: var(--primary-blue);
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 18px;
+            box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .user-avatar:hover {
+            transform: scale(1.05);
         }
 
         .user-info {
             text-align: right;
-            display: none; /* Hidden on mobile to save space */
         }
 
-        /* Mobile Navigation */
-        .mobile-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            border-top: 1px solid var(--medium-gray);
-            display: flex;
-            justify-content: space-around;
-            padding: 12px 16px;
-            z-index: 100;
-            padding-bottom: calc(12px + var(--safe-area-bottom));
+        .user-name {
+            font-weight: 600;
+            font-size: 16px;
         }
 
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 4px;
-            padding: 8px 12px;
-            border-radius: 8px;
-            transition: background 0.2s;
-            min-width: 60px;
-            text-decoration: none;
+        .user-email {
+            font-size: 14px;
             color: var(--dark-gray);
         }
 
-        .nav-item.active {
-            color: var(--primary-blue);
-            background: rgba(0, 123, 255, 0.05);
+        .profile-actions {
+            display: flex;
+            gap: 12px;
         }
 
-        .nav-icon {
-            font-size: 20px;
+        .icon-button {
+            background: var(--light-gray);
+            border: none;
+            border-radius: 8px;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: var(--dark-gray);
         }
 
-        .nav-label {
-            font-size: 12px;
-            font-weight: 500;
+        .icon-button:hover {
+            background: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
         }
 
-        /* Main Content Area */
-        .main-content {
-            padding: 16px;
-            padding-bottom: 80px; /* Space for bottom nav */
-            max-width: 600px;
-            margin: 0 auto;
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 24px;
         }
 
-        /* Mobile Cards */
+        /* Enhanced Cards */
         .card {
             background: white;
             border-radius: var(--border-radius);
             box-shadow: var(--shadow);
-            padding: 20px;
-            margin-bottom: 20px;
-            transition: transform 0.2s, box-shadow 0.2s;
+            padding: 24px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--gradient-primary);
         }
 
         .card-header {
@@ -292,7 +331,7 @@
             font-size: 18px;
             font-weight: 600;
             color: var(--text-dark);
-            margin-bottom: 6px;
+            margin-bottom: 8px;
         }
 
         .card-description {
@@ -300,41 +339,54 @@
             color: var(--dark-gray);
         }
 
-        /* Mobile Upload Options */
+        .card-icon {
+            font-size: 24px;
+            color: var(--primary-blue);
+            background: rgba(0, 123, 255, 0.1);
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Upload Section */
         .upload-options {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             margin-bottom: 20px;
-            flex-direction: column;
         }
 
         .upload-button {
+            flex: 1;
             display: flex;
+            flex-direction: column;
             align-items: center;
-            gap: 16px;
-            padding: 20px 16px;
+            justify-content: center;
+            padding: 24px 16px;
             border: 2px dashed var(--medium-gray);
-            border-radius: 8px;
+            border-radius: 12px;
             background: var(--light-gray);
             cursor: pointer;
-            transition: all 0.2s;
-            min-height: 80px;
+            transition: all 0.3s;
+            text-align: center;
         }
 
         .upload-button:hover {
             border-color: var(--primary-blue);
             background: rgba(0, 123, 255, 0.05);
+            transform: translateY(-2px);
         }
 
         .upload-icon {
-            font-size: 28px;
+            font-size: 32px;
+            margin-bottom: 12px;
             color: var(--primary-blue);
-            width: 40px;
-            text-align: center;
         }
 
         .upload-text {
-            font-weight: 500;
+            font-weight: 600;
             font-size: 16px;
             color: var(--text-dark);
         }
@@ -342,17 +394,17 @@
         .upload-subtext {
             font-size: 14px;
             color: var(--dark-gray);
-            margin-top: 2px;
+            margin-top: 4px;
         }
 
         .dropzone {
             border: 2px dashed var(--medium-gray);
-            border-radius: 8px;
-            padding: 30px 16px;
+            border-radius: 12px;
+            padding: 40px 20px;
             text-align: center;
             background: var(--light-gray);
-            transition: all 0.2s;
-            margin-top: 12px;
+            transition: all 0.3s;
+            margin-top: 16px;
         }
 
         .dropzone.active {
@@ -361,107 +413,222 @@
         }
 
         .dropzone-icon {
-            font-size: 40px;
-            margin-bottom: 12px;
+            font-size: 48px;
+            margin-bottom: 16px;
             color: var(--dark-gray);
         }
 
-        /* Mobile OCR Preview */
-        .ocr-preview {
+        /* OCR Preview Section */
+        .ocr-preview-container {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .preview-image {
+            flex: 1;
+            min-width: 300px;
             background: var(--light-gray);
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-            min-height: 180px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .preview-image img {
+            width: 100%;
+            height: 300px;
+            object-fit: cover;
+            display: block;
+        }
+
+        .preview-placeholder {
+            width: 100%;
+            height: 300px;
             display: flex;
             flex-direction: column;
-            justify-content: center;
             align-items: center;
-        }
-
-        .ocr-placeholder {
-            text-align: center;
+            justify-content: center;
             color: var(--dark-gray);
+            background: var(--light-gray);
+            border-radius: 12px;
         }
 
-        .ocr-placeholder i {
-            font-size: 40px;
-            margin-bottom: 12px;
+        .preview-placeholder i {
+            font-size: 64px;
+            margin-bottom: 16px;
             color: var(--medium-gray);
         }
 
+        .ocr-results {
+            flex: 2;
+            min-width: 300px;
+        }
+
+        /* Field Mapping Section */
+        .field-mapping-header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 16px 20px;
+            border-radius: 12px 12px 0 0;
+            margin-bottom: 20px;
+        }
+
+        .field-mapping-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .field-mapping-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
         .form-grid {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
         }
 
         .form-field {
             margin-bottom: 0;
         }
 
-        .form-field label {
-            display: block;
+        .field-label {
+            display: flex;
+            align-items: center;
             margin-bottom: 8px;
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-dark);
-            font-size: 15px;
+        }
+
+        .field-badge {
+            display: inline-block;
+            background: var(--primary-blue);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 4px;
+            margin-right: 8px;
+            min-width: 24px;
+            text-align: center;
         }
 
         .form-field input, .form-field select {
             width: 100%;
-            padding: 16px;
+            padding: 14px 16px;
             border: 1px solid var(--medium-gray);
             border-radius: 8px;
             font-size: 16px;
-            transition: border 0.2s;
-            -webkit-appearance: none;
-            min-height: 52px;
+            transition: all 0.2s;
+            background: white;
         }
 
         .form-field input:focus, .form-field select:focus {
             outline: none;
             border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
         }
 
+        /* Verification Status */
+        .verification-status {
+            background: var(--gradient-success);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin: 24px 0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+        }
+
+        .verification-status.warning {
+            background: var(--gradient-warning);
+        }
+
+        .status-icon {
+            font-size: 24px;
+        }
+
+        .status-content {
+            flex: 1;
+        }
+
+        .status-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .confidence-badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        /* Additional Information */
+        .additional-info {
+            background: var(--light-gray);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+        }
+
+        .additional-info h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-dark);
+        }
+
+        /* Form Actions */
         .form-actions {
             display: flex;
-            gap: 12px;
+            gap: 16px;
             margin-top: 24px;
-            flex-direction: column;
         }
 
         .secondary-button {
             background: white;
             color: var(--primary-blue);
-            border: 1px solid var(--primary-blue);
+            border: 2px solid var(--primary-blue);
             border-radius: 8px;
-            padding: 16px 20px;
+            padding: 14px 24px;
             font-size: 16px;
-            font-weight: 500;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
-            min-height: 52px;
-            touch-action: manipulation;
+            flex: 1;
         }
 
         .secondary-button:hover {
             background: rgba(0, 123, 255, 0.05);
+            transform: translateY(-2px);
         }
 
-        /* Mobile History */
+        /* History Section */
         .history-list {
-            max-height: 300px;
+            max-height: 400px;
             overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
         }
 
         .history-item {
             display: flex;
             align-items: center;
-            padding: 16px;
+            padding: 20px;
             border-bottom: 1px solid var(--medium-gray);
             transition: background 0.2s;
+            gap: 16px;
+        }
+
+        .history-item:hover {
+            background: var(--light-gray);
         }
 
         .history-item:last-child {
@@ -469,27 +636,26 @@
         }
 
         .history-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 8px;
-            background: var(--primary-blue);
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: var(--gradient-primary);
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
-            margin-right: 16px;
             flex-shrink: 0;
         }
 
         .history-details {
             flex: 1;
-            min-width: 0; /* Prevents flex item overflow */
+            min-width: 0;
         }
 
         .history-vendor {
             font-weight: 600;
-            margin-bottom: 4px;
-            font-size: 15px;
+            margin-bottom: 6px;
+            font-size: 16px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
@@ -498,21 +664,21 @@
         .history-meta {
             display: flex;
             justify-content: space-between;
-            font-size: 13px;
+            font-size: 14px;
             color: var(--dark-gray);
         }
 
         .history-amount {
-            font-weight: 500;
+            font-weight: 600;
             color: var(--text-dark);
         }
 
         .history-status {
             display: inline-block;
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 11px;
-            font-weight: 500;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
         }
 
         .status-success {
@@ -527,30 +693,28 @@
 
         .empty-state {
             text-align: center;
-            padding: 40px 20px;
+            padding: 60px 20px;
             color: var(--dark-gray);
         }
 
         .empty-state i {
-            font-size: 40px;
-            margin-bottom: 12px;
+            font-size: 64px;
+            margin-bottom: 16px;
             color: var(--medium-gray);
         }
 
-        /* Mobile Toast Notifications */
+        /* Toast Notifications */
         .toast-container {
             position: fixed;
-            top: 80px;
-            left: 16px;
-            right: 16px;
+            top: 20px;
+            right: 20px;
             z-index: 1000;
             max-width: 400px;
-            margin: 0 auto;
         }
 
         .toast {
             background: white;
-            border-radius: 8px;
+            border-radius: 12px;
             box-shadow: var(--shadow-lg);
             padding: 16px;
             margin-bottom: 12px;
@@ -567,7 +731,7 @@
 
         .toast-icon {
             margin-right: 12px;
-            font-size: 18px;
+            font-size: 20px;
         }
 
         .toast-message {
@@ -584,93 +748,62 @@
             padding: 0;
             margin-left: 12px;
             color: var(--dark-gray);
-            min-width: 24px;
-            min-height: 24px;
         }
 
         @keyframes toastSlideIn {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
         }
 
-        /* Tablet and Desktop Styles */
-        @media (min-width: 768px) {
-            .app-container {
-                max-width: 800px;
-                padding: 20px;
-            }
-
-            .main-content {
-                padding-bottom: 20px;
-            }
-
-            .mobile-nav {
-                display: none;
-            }
-
-            .user-info {
-                display: block;
-            }
-
-            .upload-options {
-                flex-direction: row;
-            }
-
-            .upload-button {
-                flex-direction: column;
-                text-align: center;
-                gap: 12px;
-            }
-
-            .form-actions {
-                flex-direction: row;
-            }
-
-            .form-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 16px;
-            }
-
-            .toast-container {
-                top: 20px;
-                right: 20px;
-                left: auto;
-            }
+        /* Profile Modal */
+        .profile-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            padding: 20px;
         }
 
-        @media (min-width: 1024px) {
-            .app-container {
-                max-width: 1000px;
-            }
-
+        /* Responsive Design */
+        @media (max-width: 768px) {
             .dashboard-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 24px;
-            }
-
-            .history-card {
-                grid-column: 1 / -1;
-            }
-        }
-
-        /* iPhone Notch Support */
-        @supports (padding: max(0px)) {
-            .main-content {
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
+                grid-template-columns: 1fr;
             }
             
-            .mobile-nav {
-                padding-left: max(16px, env(safe-area-inset-left));
-                padding-right: max(16px, env(safe-area-inset-right));
+            .upload-options {
+                flex-direction: column;
             }
-        }
-
-        /* Prevent text size adjustment on orientation change */
-        html {
-            -webkit-text-size-adjust: 100%;
+            
+            .ocr-preview-container {
+                flex-direction: column;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+            }
+            
+            .app-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 16px;
+            }
+            
+            .user-profile {
+                align-self: flex-end;
+            }
+            
+            .toast-container {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+            }
         }
     </style>
 </head>
@@ -684,7 +817,7 @@
                 </div>
             </div>
             <h1>Tashiro Ironworks Co., Ltd.</h1>
-            <p class="modal-subtitle">Receipt OCR Automation System</p>
+            <p class="modal-subtitle">Professional Receipt OCR Automation System</p>
             
             <form id="registrationForm" class="registration-form">
                 <div class="form-group">
@@ -709,13 +842,52 @@
         </div>
     </div>
 
+    <!-- Profile Update Modal -->
+    <div id="profileModal" class="profile-modal">
+        <div class="modal-content">
+            <div class="company-logo">
+                <div class="logo-circle">
+                    <i class="fas fa-user-edit"></i>
+                </div>
+            </div>
+            <h1>Update Profile</h1>
+            <p class="modal-subtitle">Keep your information up to date</p>
+            
+            <form id="profileForm" class="registration-form">
+                <div class="form-group">
+                    <label for="updateUserName">Full Name <span class="required">*</span></label>
+                    <input type="text" id="updateUserName" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="updateUserEmail">Email Address <span class="required">*</span></label>
+                    <input type="email" id="updateUserEmail" placeholder="your.email@company.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="updateEmployeeId">Employee ID</label>
+                    <input type="text" id="updateEmployeeId" placeholder="TY-2045">
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="primary-button">
+                        <i class="fas fa-save"></i> Update Profile
+                    </button>
+                    <button type="button" class="secondary-button" id="cancelProfileUpdate">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- Main Application -->
     <div id="appContainer" class="app-container">
-        <!-- Mobile Header -->
+        <!-- Enhanced Header -->
         <header class="app-header">
             <div class="header-left">
-                <h1>Receipt OCR System</h1>
-                <p>Tashiro Ironworks</p>
+                <h1>Receipt OCR Automation System</h1>
+                <p>Tashiro Ironworks Co., Ltd.</p>
             </div>
             
             <div class="user-profile">
@@ -723,12 +895,20 @@
                     <div class="user-name" id="displayUserName">Guest User</div>
                     <div class="user-email" id="displayUserEmail">guest@example.com</div>
                 </div>
+                <div class="profile-actions">
+                    <button class="icon-button" id="profileButton" title="Update Profile">
+                        <i class="fas fa-user-edit"></i>
+                    </button>
+                    <button class="icon-button" title="Settings">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
                 <div class="user-avatar" id="userAvatar">GU</div>
             </div>
         </header>
 
-        <!-- Main Content -->
-        <main class="main-content">
+        <!-- Dashboard Grid -->
+        <div class="dashboard-grid">
             <!-- Capture Card -->
             <div class="card">
                 <div class="card-header">
@@ -736,24 +916,22 @@
                         <h2 class="card-title">Capture Receipt</h2>
                         <p class="card-description">Take a photo or upload an existing receipt image</p>
                     </div>
-                    <i class="fas fa-camera" style="color: var(--primary-blue); font-size: 24px;"></i>
+                    <div class="card-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
                 </div>
                 
                 <div class="upload-options">
                     <div class="upload-button" id="cameraButton">
                         <i class="fas fa-camera upload-icon"></i>
-                        <div>
-                            <div class="upload-text">Take Photo</div>
-                            <div class="upload-subtext">Use device camera</div>
-                        </div>
+                        <div class="upload-text">Take Photo</div>
+                        <div class="upload-subtext">Use device camera</div>
                     </div>
                     
                     <div class="upload-button" id="uploadButton">
                         <i class="fas fa-file-upload upload-icon"></i>
-                        <div>
-                            <div class="upload-text">Upload File</div>
-                            <div class="upload-subtext">JPG, PNG, or PDF</div>
-                        </div>
+                        <div class="upload-text">Upload File</div>
+                        <div class="upload-subtext">JPG, PNG, or PDF</div>
                     </div>
                 </div>
                 
@@ -763,102 +941,162 @@
                     <p class="upload-subtext">or use the options above</p>
                 </div>
                 
-                <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
+                <input type="file" id="fileInput" accept="image/*" style="display: none;">
             </div>
 
             <!-- OCR Review Card -->
             <div class="card">
                 <div class="card-header">
                     <div>
-                        <h2 class="card-title">OCR Review</h2>
-                        <p class="card-description">Verify and edit extracted receipt data</p>
+                        <h2 class="card-title">OCR Review & Verification</h2>
+                        <p class="card-description">Verify extracted data and submit to HQ</p>
                     </div>
-                    <i class="fas fa-search" style="color: var(--primary-blue); font-size: 24px;"></i>
-                </div>
-                
-                <div class="ocr-preview">
-                    <div class="ocr-placeholder" id="ocrPlaceholder">
-                        <i class="fas fa-receipt"></i>
-                        <p>No receipt analyzed yet</p>
-                        <p>Upload a receipt to see extracted data</p>
-                    </div>
-                    
-                    <div id="ocrResults" style="display: none; width: 100%;">
-                        <!-- OCR results will be displayed here -->
+                    <div class="card-icon">
+                        <i class="fas fa-search"></i>
                     </div>
                 </div>
                 
-                <div class="form-grid">
-                    <div class="form-field">
-                        <label for="fieldDate">Date</label>
-                        <input type="text" id="fieldDate" placeholder="YYYY-MM-DD">
+                <!-- OCR Preview Section -->
+                <div class="ocr-preview-container">
+                    <div class="preview-image">
+                        <div class="preview-placeholder" id="imagePlaceholder">
+                            <i class="fas fa-receipt"></i>
+                            <p>No receipt image</p>
+                            <p>Upload a receipt to see preview</p>
+                        </div>
+                        <img id="receiptImage" src="" style="display: none;">
                     </div>
                     
-                    <div class="form-field">
-                        <label for="fieldVendor">Store Name</label>
-                        <input type="text" id="fieldVendor" placeholder="Store name">
+                    <div class="ocr-results">
+                        <!-- Field Mapping Header -->
+                        <div class="field-mapping-header">
+                            <h3>📋 Receipt Field Mapping (A-F)</h3>
+                            <p>Verify extracted data matches receipt content</p>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-field">
+                                <div class="field-label">
+                                    <span class="field-badge">A</span>
+                                    Date (日付)
+                                </div>
+                                <input type="text" id="fieldDate" placeholder="YYYY-MM-DD">
+                            </div>
+                            
+                            <div class="form-field">
+                                <div class="field-label">
+                                    <span class="field-badge">B</span>
+                                    Store Name (店名)
+                                </div>
+                                <input type="text" id="fieldVendor" placeholder="Store name">
+                            </div>
+                            
+                            <div class="form-field">
+                                <div class="field-label">
+                                    <span class="field-badge">C</span>
+                                    Total Amount (金額)
+                                </div>
+                                <input type="text" id="fieldTotal" placeholder="0.00">
+                            </div>
+                            
+                            <div class="form-field">
+                                <div class="field-label">
+                                    <span class="field-badge">D</span>
+                                    Invoice Number (インボイス番号)
+                                </div>
+                                <input type="text" id="fieldInvoiceNumber" placeholder="Invoice/Receipt No.">
+                            </div>
+                            
+                            <div class="form-field">
+                                <div class="field-label">
+                                    <span class="field-badge">E</span>
+                                    Tax Category (税区分)
+                                </div>
+                                <select id="fieldTaxCategory">
+                                    <option value="">Select tax category</option>
+                                    <option value="軽減税率">軽減税率 (Reduced Tax Rate 8%)</option>
+                                    <option value="標準税率">標準税率 (Standard Tax Rate 10%)</option>
+                                    <option value="非課税">非課税 (Non-taxable)</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-field">
+                                <div class="field-label">
+                                    <span class="field-badge">F</span>
+                                    Account Title (勘定科目)
+                                </div>
+                                <select id="fieldAccountTitle">
+                                    <option value="">Select account title</option>
+                                    <option value="食費">🍽️ 食費 (Meals)</option>
+                                    <option value="交通費">🚗 交通費 (Transportation)</option>
+                                    <option value="通信費">📱 通信費 (Communication)</option>
+                                    <option value="宿泊費">🏨 宿泊費 (Accommodation)</option>
+                                    <option value="接待交際費">🎉 接待交際費 (Entertainment)</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Verification Status -->
+                        <div class="verification-status" id="verificationStatus" style="display: none;">
+                            <div class="status-icon">✅</div>
+                            <div class="status-content">
+                                <div class="status-title">All fields verified successfully!</div>
+                                <div class="confidence-badge">High Confidence</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Additional Information -->
+                        <div class="additional-info">
+                            <h4>Additional Information</h4>
+                            <div class="form-grid">
+                                <div class="form-field">
+                                    <label>Subtotal (参考)</label>
+                                    <input type="text" id="fieldSubtotal" placeholder="0.00">
+                                </div>
+                                <div class="form-field">
+                                    <label>Tax Amount (参考)</label>
+                                    <input type="text" id="fieldTax" placeholder="0.00">
+                                </div>
+                                <div class="form-field">
+                                    <label>Currency</label>
+                                    <input type="text" id="fieldCurrency" placeholder="JPY" value="JPY">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button class="primary-button" id="submitButton" disabled>
+                                <i class="fas fa-paper-plane"></i> Submit to HQ
+                            </button>
+                            <button class="secondary-button" id="resetButton">
+                                <i class="fas fa-redo"></i> Start Over
+                            </button>
+                        </div>
                     </div>
-                    
-                    <div class="form-field">
-                        <label for="fieldTotal">Total Amount</label>
-                        <input type="text" id="fieldTotal" placeholder="0.00">
-                    </div>
-                    
-                    <div class="form-field">
-                        <label for="fieldTax">Tax Amount</label>
-                        <input type="text" id="fieldTax" placeholder="0.00">
-                    </div>
-                </div>
-                
-                <div class="form-actions">
-                    <button class="primary-button" id="submitButton" disabled>
-                        <i class="fas fa-paper-plane"></i> Submit to HQ
-                    </button>
-                    <button class="secondary-button" id="resetButton">
-                        <i class="fas fa-redo"></i> Start Over
-                    </button>
                 </div>
             </div>
+        </div>
 
-            <!-- History Card -->
-            <div class="card history-card">
-                <div class="card-header">
-                    <div>
-                        <h2 class="card-title">Submission History</h2>
-                        <p class="card-description">Recent receipts and their status</p>
-                    </div>
-                    <i class="fas fa-history" style="color: var(--primary-blue); font-size: 24px;"></i>
+        <!-- History Card -->
+        <div class="card">
+            <div class="card-header">
+                <div>
+                    <h2 class="card-title">Submission History</h2>
+                    <p class="card-description">Recent receipts and their status</p>
                 </div>
-                
-                <div class="history-list" id="historyList">
-                    <div class="empty-state">
-                        <i class="fas fa-inbox"></i>
-                        <p>No submissions yet</p>
-                        <p>Start scanning receipts to see them here</p>
-                    </div>
+                <div class="card-icon">
+                    <i class="fas fa-history"></i>
                 </div>
             </div>
-        </main>
-
-        <!-- Mobile Navigation -->
-        <nav class="mobile-nav">
-            <a href="#" class="nav-item active">
-                <i class="fas fa-home nav-icon"></i>
-                <span class="nav-label">Home</span>
-            </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-camera nav-icon"></i>
-                <span class="nav-label">Capture</span>
-            </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-history nav-icon"></i>
-                <span class="nav-label">History</span>
-            </a>
-            <a href="#" class="nav-item">
-                <i class="fas fa-cog nav-icon"></i>
-                <span class="nav-label">Settings</span>
-            </a>
-        </nav>
+            
+            <div class="history-list" id="historyList">
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <p>No submissions yet</p>
+                    <p>Start scanning receipts to see them here</p>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Toast Container -->
@@ -867,20 +1105,28 @@
     <script>
         // DOM Elements
         const welcomeModal = document.getElementById('welcomeModal');
+        const profileModal = document.getElementById('profileModal');
         const appContainer = document.getElementById('appContainer');
         const registrationForm = document.getElementById('registrationForm');
+        const profileForm = document.getElementById('profileForm');
         const userNameInput = document.getElementById('userName');
         const userEmailInput = document.getElementById('userEmail');
         const employeeIdInput = document.getElementById('employeeId');
+        const updateUserNameInput = document.getElementById('updateUserName');
+        const updateUserEmailInput = document.getElementById('updateUserEmail');
+        const updateEmployeeIdInput = document.getElementById('updateEmployeeId');
         const displayUserName = document.getElementById('displayUserName');
         const displayUserEmail = document.getElementById('displayUserEmail');
         const userAvatar = document.getElementById('userAvatar');
+        const profileButton = document.getElementById('profileButton');
+        const cancelProfileUpdate = document.getElementById('cancelProfileUpdate');
         const cameraButton = document.getElementById('cameraButton');
         const uploadButton = document.getElementById('uploadButton');
         const fileInput = document.getElementById('fileInput');
         const dropzone = document.getElementById('dropzone');
-        const ocrPlaceholder = document.getElementById('ocrPlaceholder');
-        const ocrResults = document.getElementById('ocrResults');
+        const imagePlaceholder = document.getElementById('imagePlaceholder');
+        const receiptImage = document.getElementById('receiptImage');
+        const verificationStatus = document.getElementById('verificationStatus');
         const submitButton = document.getElementById('submitButton');
         const resetButton = document.getElementById('resetButton');
         const historyList = document.getElementById('historyList');
@@ -904,6 +1150,11 @@
             displayUserName.textContent = user.name;
             displayUserEmail.textContent = user.email;
             userAvatar.textContent = user.name.substring(0, 2).toUpperCase();
+            
+            // Set values in profile update form
+            updateUserNameInput.value = user.name;
+            updateUserEmailInput.value = user.email;
+            updateEmployeeIdInput.value = user.employeeId || '';
         }
 
         // Handle registration form submission
@@ -930,29 +1181,49 @@
             showToast(`Welcome, ${userData.name}! Ready to process receipts.`, 'success');
         });
 
+        // Handle profile update
+        profileButton.addEventListener('click', function() {
+            profileModal.style.display = 'flex';
+        });
+
+        cancelProfileUpdate.addEventListener('click', function() {
+            profileModal.style.display = 'none';
+        });
+
+        profileForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userData = {
+                name: updateUserNameInput.value,
+                email: updateUserEmailInput.value,
+                employeeId: updateEmployeeIdInput.value || null
+            };
+            
+            // Save updated user data
+            localStorage.setItem('tashiro_user', JSON.stringify(userData));
+            
+            // Update UI with new user info
+            displayUserInfo(userData);
+            
+            // Hide modal
+            profileModal.style.display = 'none';
+            
+            // Show success toast
+            showToast('Profile updated successfully!', 'success');
+        });
+
         // Handle camera button click
         cameraButton.addEventListener('click', function() {
             // Trigger the file input with camera capture
+            fileInput.setAttribute('capture', 'environment');
             fileInput.click();
         });
 
         // Handle upload button click
         uploadButton.addEventListener('click', function() {
-            // Create a new file input without camera capture
-            const newFileInput = document.createElement('input');
-            newFileInput.type = 'file';
-            newFileInput.accept = 'image/*';
-            newFileInput.style.display = 'none';
-            document.body.appendChild(newFileInput);
-            
-            newFileInput.addEventListener('change', function(e) {
-                if (e.target.files.length > 0) {
-                    handleFileUpload(e.target.files[0]);
-                }
-                document.body.removeChild(newFileInput);
-            });
-            
-            newFileInput.click();
+            // Remove camera capture attribute for file upload
+            fileInput.removeAttribute('capture');
+            fileInput.click();
         });
 
         // Handle file selection
@@ -1001,22 +1272,35 @@
         function handleFileUpload(file) {
             showToast('Processing receipt image...', 'info');
             
+            // Create a preview of the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePlaceholder.style.display = 'none';
+                receiptImage.src = e.target.result;
+                receiptImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
             // Simulate OCR processing
             setTimeout(() => {
-                // Hide placeholder and show results
-                ocrPlaceholder.style.display = 'none';
-                ocrResults.style.display = 'block';
+                // Populate sample data based on your requirements
+                document.getElementById('fieldDate').value = '2025-07-02';
+                document.getElementById('fieldVendor').value = '郡山桑野食堂';
+                document.getElementById('fieldTotal').value = '7200';
+                document.getElementById('fieldInvoiceNumber').value = '1364';
+                document.getElementById('fieldTaxCategory').value = '軽減税率';
+                document.getElementById('fieldAccountTitle').value = '食費';
+                document.getElementById('fieldSubtotal').value = '6667';
+                document.getElementById('fieldTax').value = '533';
+                document.getElementById('fieldCurrency').value = 'JPY';
                 
-                // Populate sample data
-                document.getElementById('fieldDate').value = '2023-10-15';
-                document.getElementById('fieldVendor').value = 'セブン-イレブン 日本橋店';
-                document.getElementById('fieldTotal').value = '3850';
-                document.getElementById('fieldTax').value = '350';
+                // Show verification status
+                verificationStatus.style.display = 'flex';
                 
                 // Enable submit button
                 submitButton.disabled = false;
                 
-                showToast('Receipt analyzed successfully!', 'success');
+                showToast('Receipt analyzed successfully! All fields extracted.', 'success');
             }, 2000);
         }
 
@@ -1027,7 +1311,12 @@
                 date: document.getElementById('fieldDate').value,
                 vendor: document.getElementById('fieldVendor').value,
                 total: document.getElementById('fieldTotal').value,
+                invoiceNumber: document.getElementById('fieldInvoiceNumber').value,
+                taxCategory: document.getElementById('fieldTaxCategory').value,
+                accountTitle: document.getElementById('fieldAccountTitle').value,
+                subtotal: document.getElementById('fieldSubtotal').value,
                 tax: document.getElementById('fieldTax').value,
+                currency: document.getElementById('fieldCurrency').value,
                 timestamp: new Date().toISOString()
             };
             
@@ -1051,10 +1340,16 @@
             document.getElementById('fieldDate').value = '';
             document.getElementById('fieldVendor').value = '';
             document.getElementById('fieldTotal').value = '';
+            document.getElementById('fieldInvoiceNumber').value = '';
+            document.getElementById('fieldTaxCategory').value = '';
+            document.getElementById('fieldAccountTitle').value = '';
+            document.getElementById('fieldSubtotal').value = '';
             document.getElementById('fieldTax').value = '';
+            document.getElementById('fieldCurrency').value = 'JPY';
             
-            ocrPlaceholder.style.display = 'block';
-            ocrResults.style.display = 'none';
+            imagePlaceholder.style.display = 'flex';
+            receiptImage.style.display = 'none';
+            verificationStatus.style.display = 'none';
             
             submitButton.disabled = true;
         }
@@ -1113,7 +1408,7 @@
                             <div class="history-vendor">${item.vendor}</div>
                             <div class="history-meta">
                                 <span class="history-date">${formatDate(item.date)}</span>
-                                <span class="history-amount">¥${item.total}</span>
+                                <span class="history-amount">${item.currency} ${item.total}</span>
                             </div>
                         </div>
                         <div class="history-status status-success">Submitted</div>
