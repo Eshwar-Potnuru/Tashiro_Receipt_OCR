@@ -122,76 +122,6 @@
                 margin-bottom: 12px;
             }
         }
-
-        /* Toast Notifications */
-        .toast-container {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 1000;
-            max-width: 400px;
-        }
-
-        .toast {
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            padding: 12px 16px;
-            margin-bottom: 8px;
-            display: flex;
-            align-items: center;
-            animation: toastSlideIn 0.3s ease-out;
-            border-left: 4px solid;
-        }
-
-        .toast-success { border-left-color: #10b981; }
-        .toast-error { border-left-color: #ef4444; }
-        .toast-warning { border-left-color: #f59e0b; }
-        .toast-info { border-left-color: #3b82f6; }
-
-        .toast-icon {
-            margin-right: 8px;
-            font-size: 16px;
-        }
-
-        .toast-message {
-            flex: 1;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-
-        .toast-close {
-            background: none;
-            border: none;
-            font-size: 18px;
-            cursor: pointer;
-            padding: 0;
-            margin-left: 8px;
-            color: #6b7280;
-        }
-
-        .toast-close:hover {
-            color: #374151;
-        }
-
-        @keyframes toastSlideIn {
-            from {
-                transform: translateX(100%);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .toast-container {
-                left: 10px;
-                right: 10px;
-                max-width: none;
-            }
-        }
     </style>
 </head>
 <body>
@@ -699,31 +629,18 @@
             // OCR Analysis Function
             async function handleFileUpload(file, filename) {
                 console.log("Processing file:", filename);
-
-                // Detect camera images
-                const isCameraImage = filename.toLowerCase().includes('camera');
-                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-
-                // Show loading with camera-specific message
+                
+                // Show loading
                 const analysisLoader = document.getElementById("analysisLoader");
                 const analysisPlaceholder = document.getElementById("analysisPlaceholder");
-
+                
                 if (analysisLoader) {
                     analysisLoader.classList.remove("hidden");
-                    // Update loader text for camera images
-                    const loaderText = analysisLoader.querySelector('p');
-                    if (loaderText) {
-                        if (isCameraImage) {
-                            loaderText.textContent = 'Enhancing camera image and analyzing receipt…';
-                        } else {
-                            loaderText.textContent = 'Analyzing receipt…';
-                        }
-                    }
                 }
                 if (analysisPlaceholder) {
                     analysisPlaceholder.style.display = 'none';
                 }
-
+                
                 try {
                     // Get user data
                     let userData = { name: 'Guest', email: 'guest@example.com' };
@@ -735,100 +652,58 @@
                     } catch (e) {
                         console.warn("Could not load user data");
                     }
-
+                    
                     // Prepare form data
                     const formData = new FormData();
                     formData.append('file', file);
                     formData.append('metadata', JSON.stringify({ user: userData }));
-
-                    // Call OCR API with timeout
-                    console.log(`📤 Sending ${isCameraImage ? 'camera' : 'uploaded'} file to OCR analysis:`, filename, "Size:", fileSizeMB, "MB");
-
+                    
+                    // Call OCR API
+                    console.log("📤 Sending file to OCR analysis:", file.name, "Size:", file.size);
+                    
                     // Create new AbortController for this request
                     window.currentAnalysisRequest = new AbortController();
-
+                    
                     const response = await fetch('/api/mobile/analyze', {
                         method: 'POST',
                         body: formData,
                         signal: window.currentAnalysisRequest.signal
                     });
-
+                    
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Server error (${response.status}): ${errorText}`);
+                        throw new Error(`HTTP error! status: ${response.status}`);
                     }
-
+                    
                     const result = await response.json();
                     console.log("📥 OCR Analysis Complete:", result);
-
-                    // Check for backend errors
-                    if (result.fields && result.fields.error) {
-                        console.warn("Backend reported error:", result.fields.error);
-                        // Show warning but continue with any extracted data
-                        showToast(`⚠️ OCR partially failed: ${result.fields.error}`, 'warning');
-                    }
-
+                    
                     // Store queue_id for later submission
                     if (result.queue_id) {
                         window.currentQueueId = result.queue_id;
                         console.log("🔗 Stored queue ID:", result.queue_id);
                     }
-
+                    
                     // Hide loading
                     if (analysisLoader) {
                         analysisLoader.classList.add("hidden");
                     }
-
+                    
                     // Display results
                     displayOCRResults(result);
-
+                    
                 } catch (error) {
                     console.error("OCR Analysis failed:", error);
-
+                    
                     // Hide loading
                     if (analysisLoader) {
                         analysisLoader.classList.add("hidden");
                     }
-
-                    // Show detailed error message
-                    let errorMessage = "Analysis failed: " + error.message;
-                    let suggestions = [];
-
-                    if (isCameraImage) {
-                        suggestions.push("• Try taking the photo in better lighting");
-                        suggestions.push("• Hold the camera steadier");
-                        suggestions.push("• Ensure the receipt fills the frame");
-                        suggestions.push("• Try the file upload option instead");
-                    } else {
-                        suggestions.push("• Check that the image is clear and well-lit");
-                        suggestions.push("• Ensure the receipt text is readable");
-                        suggestions.push("• Try a different image format");
-                    }
-
-                    if (error.message.includes('timeout')) {
-                        suggestions.push("• Image may be too large - try a smaller file");
-                    }
-
                     if (analysisPlaceholder) {
                         analysisPlaceholder.style.display = 'block';
-                        analysisPlaceholder.innerHTML = `
-                            <div style="text-align: center; color: #dc2626;">
-                                <p><strong>❌ ${errorMessage}</strong></p>
-                                <p style="font-size: 14px; margin-top: 10px;">Suggestions:</p>
-                                <ul style="text-align: left; display: inline-block; font-size: 14px;">
-                                    ${suggestions.map(s => `<li>${s}</li>`).join('')}
-                                </ul>
-                            </div>
-                        `;
+                        analysisPlaceholder.innerHTML = `<p>Analysis failed: ${error.message}</p><p>Please try again or check server connection.</p>`;
                     }
-
-                    // Show toast notification
-                    showToast(`❌ ${errorMessage}`, 'error');
-
-                    // Don't show alert for camera images (too intrusive)
-                    if (!isCameraImage) {
-                        alert(errorMessage);
-                    }
+                    
+                    alert("OCR analysis failed: " + error.message);
                 }
             }
             
@@ -1168,32 +1043,6 @@
             
             console.log("All event handlers bound!");
         });
-
-        // Toast notification function
-        function showToast(message, type = 'info') {
-            const toastContainer = document.getElementById('toastContainer');
-            if (!toastContainer) return;
-
-            const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-
-            const icon = type === 'error' ? '❌' : type === 'warning' ? '⚠️' : type === 'success' ? '✅' : 'ℹ️';
-
-            toast.innerHTML = `
-                <span class="toast-icon">${icon}</span>
-                <span class="toast-message">${message}</span>
-                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
-            `;
-
-            toastContainer.appendChild(toast);
-
-            // Auto-remove after 5 seconds
-            setTimeout(() => {
-                if (toast.parentElement) {
-                    toast.remove();
-                }
-            }, 5000);
-        }
     </script>
 </body>
 </html>
