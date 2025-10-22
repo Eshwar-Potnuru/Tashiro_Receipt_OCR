@@ -1468,12 +1468,49 @@
         // Apply translations to the page
         function applyLanguage(language) {
             currentLanguage = language;
+            console.log('Applying language:', language);
 
             // Update HTML lang attribute
             document.documentElement.lang = language;
 
             // Update page title
             document.title = t('pageTitle');
+
+            // Force update buttons immediately
+            setTimeout(() => {
+                const submitBtn = document.getElementById('submitButton');
+                const resetBtn = document.getElementById('resetButton');
+                console.log('Force updating buttons:', submitBtn, resetBtn);
+                if (submitBtn) {
+                    submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
+                    console.log('Submit button forced to:', submitBtn.innerHTML);
+                }
+                if (resetBtn) {
+                    resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
+                    console.log('Reset button forced to:', resetBtn.innerHTML);
+                }
+
+                // Force update additional labels
+                const additionalLabels = document.querySelectorAll('.additional-info label');
+                console.log('Force updating additional labels:', additionalLabels.length);
+                if (additionalLabels.length >= 3) {
+                    additionalLabels[0].textContent = t('subtotalRef');
+                    additionalLabels[1].textContent = t('taxAmountRef');
+                    additionalLabels[2].textContent = t('currency');
+                    console.log('Additional labels forced to:', additionalLabels[2].textContent);
+                }
+
+                // Force update developer credit
+                const developerCredit = document.querySelector('.developer-credit');
+                console.log('Force updating developer credit:', developerCredit);
+                if (developerCredit) {
+                    developerCredit.textContent = t('developerCredit');
+                    console.log('Developer credit forced to:', developerCredit.textContent);
+                }
+
+                // Force update history
+                updateHistoryDisplay();
+            }, 100);
 
             // Welcome Modal
             document.querySelector('#welcomeModal h1').textContent = t('welcomeTitle');
@@ -2254,6 +2291,12 @@
             applyLanguage(settings.language || 'en');
             
             updateHistoryDisplay();
+
+            // Force reapply language after DOM is fully loaded
+            setTimeout(() => {
+                const currentSettings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+                applyLanguage(currentSettings.language || 'en');
+            }, 500);
         }
 
         // Start the application
