@@ -17,23 +17,23 @@ router = APIRouter()
 # Initialize components with error handling
 try:
     field_extractor = FieldExtractor()
-    print("✅ FieldExtractor initialized")
+    print("FieldExtractor initialized")
 except Exception as e:
-    print(f"❌ FieldExtractor initialization failed: {e}")
+    print(f"FieldExtractor initialization failed: {e}")
     field_extractor = None
 
 try:
     excel_exporter = ExcelExporter()
-    print("✅ ExcelExporter initialized")
+    print("ExcelExporter initialized")
 except Exception as e:
-    print(f"❌ ExcelExporter initialization failed: {e}")
+    print(f"ExcelExporter initialization failed: {e}")
     excel_exporter = None
 
 try:
     submission_history = SubmissionHistory()
-    print("✅ SubmissionHistory initialized")
+    print("SubmissionHistory initialized")
 except Exception as e:
-    print(f"❌ SubmissionHistory initialization failed: {e}")
+    print(f"SubmissionHistory initialization failed: {e}")
     submission_history = None
 
 @router.post("/mobile/analyze")

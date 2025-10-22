@@ -1165,7 +1165,7 @@
         </div>
 
         <!-- Developer Credit -->
-        <div style="text-align: center; margin: 20px 0; padding: 10px; color: var(--dark-gray); font-size: 12px; border-top: 1px solid var(--light-gray);">
+        <div class="developer-credit" style="text-align: center; margin: 20px 0; padding: 10px; color: var(--dark-gray); font-size: 12px; border-top: 1px solid var(--light-gray);">
             by: Eshwar Potnuru – Machine Learning Engineer, AIM Co. Pvt.
         </div>
     </div>
@@ -1217,6 +1217,9 @@
                 tashiroIronworks: "Tashiro Ironworks Co., Ltd.",
                 guestUser: "Guest User",
                 guestEmail: "guest@example.com",
+
+                // Page title
+                pageTitle: "Tashiro Ironworks - Professional OCR System",
 
                 // Cards
                 captureReceipt: "Capture Receipt",
@@ -1287,6 +1290,13 @@
                 invoiceReceiptNo: "Invoice/Receipt No.",
                 jpy: "JPY",
 
+                // Image placeholder
+                noReceiptImage: "No receipt image",
+                uploadReceiptToSeePreview: "Upload a receipt to see preview",
+
+                // Developer credit
+                developerCredit: "by: Eshwar Potnuru – Machine Learning Engineer, AIM Co. Pvt.",
+
                 // Toast Messages
                 welcomeMessage: "Welcome, {name}! Ready to process receipts.",
                 processingReceipt: "Processing receipt image...",
@@ -1343,6 +1353,9 @@
                 tashiroIronworks: "株式会社タシロ鉄工所",
                 guestUser: "ゲストユーザー",
                 guestEmail: "guest@example.com",
+
+                // Page title
+                pageTitle: "株式会社タシロ鉄工所 - プロフェッショナルOCRシステム",
 
                 // Cards
                 captureReceipt: "領収書をキャプチャ",
@@ -1413,6 +1426,13 @@
                 invoiceReceiptNo: "インボイス/領収書番号",
                 jpy: "JPY",
 
+                // Image placeholder
+                noReceiptImage: "領収書画像がありません",
+                uploadReceiptToSeePreview: "領収書をアップロードしてプレビューを表示",
+
+                // Developer credit
+                developerCredit: "by: Eshwar Potnuru – 機械学習エンジニア、AIM Co. Pvt.",
+
                 // Toast Messages
                 welcomeMessage: "{name}さん、ようこそ！領収書の処理を開始できます。",
                 processingReceipt: "領収書画像を処理中...",
@@ -1451,6 +1471,9 @@
 
             // Update HTML lang attribute
             document.documentElement.lang = language;
+
+            // Update page title
+            document.title = t('pageTitle');
 
             // Welcome Modal
             document.querySelector('#welcomeModal h1').textContent = t('welcomeTitle');
@@ -1576,6 +1599,22 @@
             // Additional Information placeholders
             document.getElementById('fieldSubtotal').placeholder = t('zeroZero');
             document.getElementById('fieldTax').placeholder = t('zeroZero');
+
+            // Image placeholder text
+            const imagePlaceholder = document.getElementById('imagePlaceholder');
+            if (imagePlaceholder) {
+                const placeholderTexts = imagePlaceholder.querySelectorAll('p');
+                if (placeholderTexts.length >= 2) {
+                    placeholderTexts[0].textContent = t('noReceiptImage');
+                    placeholderTexts[1].textContent = t('uploadReceiptToSeePreview');
+                }
+            }
+
+            // Developer credit
+            const developerCredit = document.querySelector('.developer-credit');
+            if (developerCredit) {
+                developerCredit.textContent = t('developerCredit');
+            }
 
             // Update history display if it exists
             updateHistoryDisplay();
