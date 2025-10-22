@@ -1531,78 +1531,50 @@
             document.querySelector('.header-left h1').textContent = t('ocrSystem');
             document.querySelector('.header-left p').textContent = t('tashiroIronworks');
 
-            // Cards
-            document.querySelector('.card-title').textContent = t('captureReceipt');
-            document.querySelector('.card-description').textContent = t('takePhotoOrUpload');
-            document.querySelector('.upload-text').textContent = t('takePhoto');
-            document.querySelector('.upload-subtext').textContent = t('useDeviceCamera');
-            document.querySelector('.upload-text').nextElementSibling.nextElementSibling.textContent = t('uploadFile');
-            document.querySelector('.upload-text').nextElementSibling.nextElementSibling.nextElementSibling.textContent = t('jpgPngOrPdf');
-            document.querySelector('#dropzone p').textContent = t('dragDropHere');
-            document.querySelector('#dropzone p:last-child').textContent = t('orUseOptionsAbove');
+            // Cards - Update each card specifically
+            const cards = document.querySelectorAll('.card');
+            if (cards.length >= 3) {
+                // First card: Capture Receipt
+                const captureCard = cards[0];
+                captureCard.querySelector('.card-title').textContent = t('captureReceipt');
+                captureCard.querySelector('.card-description').textContent = t('takePhotoOrUpload');
 
-            // OCR Review Card
-            const ocrCard = document.querySelectorAll('.card')[1];
-            ocrCard.querySelector('.card-title').textContent = t('ocrReview');
-            ocrCard.querySelector('.card-description').textContent = t('verifyExtractedData');
-            document.querySelector('.field-mapping-header h3').textContent = `📋 ${t('receiptFieldMapping')}`;
-            document.querySelector('.field-mapping-header p').textContent = t('verifyDataMatches');
+                // Second card: OCR Review & Verification
+                const ocrCard = cards[1];
+                ocrCard.querySelector('.card-title').textContent = t('ocrReview');
+                ocrCard.querySelector('.card-description').textContent = t('verifyExtractedData');
 
-            // Field Labels - Update only the text content, preserve badges
-            const fieldLabels = document.querySelectorAll('.field-label');
-            if (fieldLabels.length >= 6) {
-                // Update each field label by preserving the badge and updating the text
-                fieldLabels[0].innerHTML = `<span class="field-badge">A</span> ${t('dateLabel')}`;
-                fieldLabels[1].innerHTML = `<span class="field-badge">B</span> ${t('storeNameLabel')}`;
-                fieldLabels[2].innerHTML = `<span class="field-badge">C</span> ${t('totalAmountLabel')}`;
-                fieldLabels[3].innerHTML = `<span class="field-badge">D</span> ${t('invoiceNumberLabel')}`;
-                fieldLabels[4].innerHTML = `<span class="field-badge">E</span> ${t('taxCategoryLabel')}`;
-                fieldLabels[5].innerHTML = `<span class="field-badge">F</span> ${t('accountTitleLabel')}`;
+                // Third card: Submission History
+                const historyCard = cards[2];
+                historyCard.querySelector('.card-title').textContent = t('submissionHistory');
+                historyCard.querySelector('.card-description').textContent = t('recentReceipts');
             }
 
-            // Select options
-            const taxCategorySelect = document.getElementById('fieldTaxCategory');
-            taxCategorySelect.querySelector('option').textContent = t('selectTaxCategory');
+            // Upload buttons and text
+            const uploadButtons = document.querySelectorAll('.upload-button');
+            if (uploadButtons.length >= 2) {
+                uploadButtons[0].querySelector('.upload-text').textContent = t('takePhoto');
+                uploadButtons[0].querySelector('.upload-subtext').textContent = t('useDeviceCamera');
+                uploadButtons[1].querySelector('.upload-text').textContent = t('uploadFile');
+                uploadButtons[1].querySelector('.upload-subtext').textContent = t('jpgPngOrPdf');
+            }
 
-            const accountTitleSelect = document.getElementById('fieldAccountTitle');
-            accountTitleSelect.querySelector('option').textContent = t('selectAccountTitle');
-            accountTitleSelect.querySelector('option[value="食費"]').textContent = t('meals');
-            accountTitleSelect.querySelector('option[value="交通費"]').textContent = t('transportation');
-            accountTitleSelect.querySelector('option[value="通信費"]').textContent = t('communication');
-            accountTitleSelect.querySelector('option[value="宿泊費"]').textContent = t('accommodation');
-            accountTitleSelect.querySelector('option[value="接待交際費"]').textContent = t('entertainment');
-            accountTitleSelect.querySelector('option[value="消耗品費"]').textContent = t('officeSupplies');
-            accountTitleSelect.querySelector('option[value="会議費"]').textContent = t('meetingExpenses');
-            accountTitleSelect.querySelector('option[value="研修費"]').textContent = t('training');
-            accountTitleSelect.querySelector('option[value="福利厚生費"]').textContent = t('welfare');
-            accountTitleSelect.querySelector('option[value="広告宣伝費"]').textContent = t('advertising');
-            accountTitleSelect.querySelector('option[value="車両費"]').textContent = t('vehicle');
-            accountTitleSelect.querySelector('option[value="保険料"]').textContent = t('insurance');
-            accountTitleSelect.querySelector('option[value="租税公課"]').textContent = t('taxesDues');
-            accountTitleSelect.querySelector('option[value="その他"]').textContent = t('other');
+            // Dropzone text
+            const dropzone = document.getElementById('dropzone');
+            if (dropzone) {
+                const dropzoneParagraphs = dropzone.querySelectorAll('p');
+                if (dropzoneParagraphs.length >= 2) {
+                    dropzoneParagraphs[0].textContent = t('dragDropHere');
+                    dropzoneParagraphs[1].textContent = t('orUseOptionsAbove');
+                }
+            }
 
-            // Additional Information
-            document.querySelector('.additional-info h4').textContent = t('additionalInformation');
-            document.querySelector('.additional-info label').textContent = t('subtotalRef');
-            document.querySelectorAll('.additional-info label')[1].textContent = t('taxAmountRef');
-            document.querySelectorAll('.additional-info label')[2].textContent = t('currency');
-
-            // Buttons
-            document.getElementById('submitButton').innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
-            document.getElementById('resetButton').innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
-
-            // Verification Status
-            document.querySelector('.status-title').textContent = t('allFieldsVerified');
-            document.querySelector('.confidence-badge').textContent = t('highConfidence');
-
-            // History Card
-            const historyCard = document.querySelectorAll('.card')[2];
-            historyCard.querySelector('.card-title').textContent = t('submissionHistory');
-            historyCard.querySelector('.card-description').textContent = t('recentReceipts');
-
-            // Additional Information placeholders
-            document.getElementById('fieldSubtotal').placeholder = t('zeroZero');
-            document.getElementById('fieldTax').placeholder = t('zeroZero');
+            // Field placeholders
+            document.getElementById('fieldDate').placeholder = t('yyyyMmDd');
+            document.getElementById('fieldVendor').placeholder = t('storeName');
+            document.getElementById('fieldTotal').placeholder = t('zeroZero');
+            document.getElementById('fieldInvoiceNumber').placeholder = t('invoiceReceiptNo');
+            document.getElementById('fieldCurrency').placeholder = t('jpy');
 
             // Image placeholder text
             const imagePlaceholder = document.getElementById('imagePlaceholder');
@@ -1614,14 +1586,87 @@
                 }
             }
 
-            // Developer credit
-            const developerCredit = document.querySelector('.developer-credit');
-            if (developerCredit) {
-                developerCredit.textContent = t('developerCredit');
+            // Field mapping header and labels
+            const fieldMappingHeader = document.querySelector('.field-mapping-header');
+            if (fieldMappingHeader) {
+                const headerElements = fieldMappingHeader.querySelectorAll('h3, p');
+                if (headerElements.length >= 2) {
+                    headerElements[0].textContent = t('receiptFieldMapping');
+                    headerElements[1].textContent = t('verifyDataMatches');
+                }
             }
 
-            // Update history display if it exists
-            updateHistoryDisplay();
+            // Field labels
+            const fieldLabels = document.querySelectorAll('.field-label');
+            if (fieldLabels.length >= 6) {
+                fieldLabels[0].querySelector('span:not(.field-badge)').textContent = t('dateLabel');
+                fieldLabels[1].querySelector('span:not(.field-badge)').textContent = t('storeNameLabel');
+                fieldLabels[2].querySelector('span:not(.field-badge)').textContent = t('totalAmountLabel');
+                fieldLabels[3].querySelector('span:not(.field-badge)').textContent = t('invoiceNumberLabel');
+                fieldLabels[4].querySelector('span:not(.field-badge)').textContent = t('taxCategoryLabel');
+                fieldLabels[5].querySelector('span:not(.field-badge)').textContent = t('accountTitleLabel');
+            }
+
+            // Select options
+            const taxCategorySelect = document.getElementById('fieldTaxCategory');
+            if (taxCategorySelect) {
+                const taxOptions = taxCategorySelect.querySelectorAll('option');
+                if (taxOptions.length >= 4) {
+                    taxOptions[0].textContent = t('selectTaxCategory');
+                    // Keep the actual tax category values as they are in Japanese
+                }
+            }
+
+            const accountTitleSelect = document.getElementById('fieldAccountTitle');
+            if (accountTitleSelect) {
+                const accountOptions = accountTitleSelect.querySelectorAll('option');
+                if (accountOptions.length >= 15) {
+                    accountOptions[0].textContent = t('selectAccountTitle');
+                    accountOptions[1].textContent = t('meals');
+                    accountOptions[2].textContent = t('transportation');
+                    accountOptions[3].textContent = t('communication');
+                    accountOptions[4].textContent = t('accommodation');
+                    accountOptions[5].textContent = t('entertainment');
+                    accountOptions[6].textContent = t('officeSupplies');
+                    accountOptions[7].textContent = t('meetingExpenses');
+                    accountOptions[8].textContent = t('training');
+                    accountOptions[9].textContent = t('welfare');
+                    accountOptions[10].textContent = t('advertising');
+                    accountOptions[11].textContent = t('vehicle');
+                    accountOptions[12].textContent = t('insurance');
+                    accountOptions[13].textContent = t('taxesDues');
+                    accountOptions[14].textContent = t('other');
+                }
+            }
+
+            // Additional information header
+            const additionalInfo = document.querySelector('.additional-info h4');
+            if (additionalInfo) {
+                additionalInfo.textContent = t('additionalInformation');
+            }
+
+            // Additional info field labels
+            const additionalLabels = document.querySelectorAll('.additional-info label');
+            if (additionalLabels.length >= 3) {
+                additionalLabels[0].textContent = t('subtotalRef');
+                additionalLabels[1].textContent = t('taxAmountRef');
+                additionalLabels[2].textContent = t('currency');
+            }
+
+            // Form action buttons
+            if (submitButton) {
+                submitButton.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
+            }
+            if (resetButton) {
+                resetButton.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
+            }
+
+            // Verification status
+            const statusElements = verificationStatus.querySelectorAll('.status-title, .confidence-badge');
+            if (statusElements.length >= 2) {
+                statusElements[0].textContent = t('allFieldsVerified');
+                statusElements[1].textContent = t('highConfidence');
+            }
         }
 
         // DOM Elements
