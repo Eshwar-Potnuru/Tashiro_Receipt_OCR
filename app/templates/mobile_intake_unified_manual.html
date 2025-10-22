@@ -1163,6 +1163,11 @@
                 </div>
             </div>
         </div>
+
+        <!-- Developer Credit -->
+        <div style="text-align: center; margin: 20px 0; padding: 10px; color: var(--dark-gray); font-size: 12px; border-top: 1px solid var(--light-gray);">
+            by: Eshwar Potnuru – Machine Learning Engineer, AIM Co. Pvt.
+        </div>
     </div>
 
     <!-- Toast Container -->
@@ -1444,6 +1449,9 @@
         function applyLanguage(language) {
             currentLanguage = language;
 
+            // Update HTML lang attribute
+            document.documentElement.lang = language;
+
             // Welcome Modal
             document.querySelector('#welcomeModal h1').textContent = t('welcomeTitle');
             document.querySelector('#welcomeModal .modal-subtitle').textContent = t('welcomeSubtitle');
@@ -1565,12 +1573,9 @@
             historyCard.querySelector('.card-title').textContent = t('submissionHistory');
             historyCard.querySelector('.card-description').textContent = t('recentReceipts');
 
-            // Placeholders
-            document.getElementById('fieldDate').placeholder = t('yyyyMmDd');
-            document.getElementById('fieldVendor').placeholder = t('storeName');
-            document.getElementById('fieldTotal').placeholder = t('zeroZero');
-            document.getElementById('fieldInvoiceNumber').placeholder = t('invoiceReceiptNo');
-            document.getElementById('fieldCurrency').value = t('jpy');
+            // Additional Information placeholders
+            document.getElementById('fieldSubtotal').placeholder = t('zeroZero');
+            document.getElementById('fieldTax').placeholder = t('zeroZero');
 
             // Update history display if it exists
             updateHistoryDisplay();
