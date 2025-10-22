@@ -607,7 +607,7 @@
                     const response = await fetch('/api/mobile/analyze', {
                         method: 'POST',
                         body: formData,
-                        signal: window.currentAnalysisRequest.signal
+                        signal: AbortSignal.timeout(60000) // 60 second timeout
                     });
 
                     if (!response.ok) {
@@ -623,6 +623,14 @@
                         console.warn("Backend reported error:", result.fields.error);
                         // Show warning but continue with any extracted data
                         showToast(`⚠️ OCR partially failed: ${result.fields.error}`, 'warning');
+                    }
+
+                    // Check for debug info
+                    if (result.fields && result.fields.debug_info) {
+                        console.log("🔍 Debug info:", result.fields.debug_info);
+                        if (result.fields.debug_info.error_type) {
+                            showToast(`🔍 Debug: ${result.fields.debug_info.error_type}`, 'info');
+                        }
                     }
 
                     // Store queue_id for later submission

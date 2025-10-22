@@ -33,9 +33,10 @@ def create_app() -> FastAPI:
     app.mount("/static", StaticFiles(directory=str(base_dir / "app" / "static")), name="static")
     app.mount("/artifacts", StaticFiles(directory=str(artifacts_dir)), name="artifacts")
 
-    @app.get("/favicon.ico", include_in_schema=False)
-    def favicon():
-        return Response(status_code=204)  # No content
+    @app.get("/health", tags=["health"])
+    def health_check():
+        """Health check endpoint."""
+        return {"status": "healthy", "timestamp": "2025-01-22T12:00:00Z"}
 
     @app.get("/", response_class=HTMLResponse, tags=["ui"])
     def homepage(request: Request) -> HTMLResponse:
