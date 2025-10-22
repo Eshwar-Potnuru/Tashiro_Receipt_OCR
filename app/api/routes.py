@@ -4,6 +4,9 @@ from typing import Optional, Dict, Any
 import os
 import uuid
 from pathlib import Path
+import base64
+from PIL import Image
+import io
 
 from app.extractors.field_extractors import FieldExtractor
 from app.exporters.excel_exporter import ExcelExporter
@@ -29,8 +32,33 @@ async def analyze_receipt(
         # Read file content
         file_content = await file.read()
 
+        # Encode image as base64 for frontend display
+        source_image_b64 = base64.b64encode(file_content).decode('utf-8')
+
+        # Generate thumbnail for history
+        thumbnail_b64 = None
+        try:
+            # Open image with PIL
+            image = Image.open(io.BytesIO(file_content))
+
+            # Create thumbnail (max 200px width/height, maintain aspect ratio)
+            image.thumbnail((200, 200), Image.Resampling.LANCZOS)
+
+            # Convert to base64
+            thumb_buffer = io.BytesIO()
+            image.save(thumb_buffer, format='JPEG', quality=70)
+            thumbnail_b64 = base64.b64encode(thumb_buffer.getvalue()).decode('utf-8')
+
+        except Exception as e:
+            print(f"Thumbnail generation failed: {e}")
+            # Continue without thumbnail
+
         # Extract fields using OCR
         extracted_data = field_extractor.extract_fields(file_content, file.filename)
+
+        # Add source image to extracted data
+        extracted_data['source_image'] = source_image_b64
+        extracted_data['thumbnail'] = thumbnail_b64
 
         # Store in history for later submission
         submission_history.store_analysis(queue_id, extracted_data, metadata)

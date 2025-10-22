@@ -32,6 +32,7 @@ class SubmissionHistory:
             'user_data': user_data,
             'excel_path': excel_path,
             'excel_url': f"/artifacts/{Path(excel_path).name}",
+            'thumbnail_url': f"data:image/jpeg;base64,{verified_data.get('thumbnail', '')}" if verified_data.get('thumbnail') else None,
             'timestamp': datetime.now().isoformat(),
             'status': 'submitted'
         }
@@ -66,7 +67,7 @@ class SubmissionHistory:
                 'timestamp': sub['timestamp'],
                 'verified': True,  # All submitted items are verified
                 'excel_url': sub.get('excel_url'),
-                'thumbnail_url': None,  # Could add thumbnail generation later
+                'thumbnail_url': sub.get('thumbnail_url'),
                 'user_name': user.get('name', ''),
                 'user_email': user.get('email', '')
             }
