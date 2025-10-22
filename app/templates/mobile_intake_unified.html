@@ -664,7 +664,7 @@
                     // Create new AbortController for this request
                     window.currentAnalysisRequest = new AbortController();
                     
-                    const response = await fetch('/api/v1/mobile/analyze', {
+                    const response = await fetch('/api/mobile/analyze', {
                         method: 'POST',
                         body: formData,
                         signal: window.currentAnalysisRequest.signal
@@ -918,7 +918,7 @@
                             throw new Error("No queue ID available. Please upload and analyze a receipt first.");
                         }
                         
-                        const response = await fetch('/api/v1/mobile/submit', {
+                        const response = await fetch('/api/mobile/submit', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
@@ -970,7 +970,7 @@
                 
                 try {
                     const limit = historyLimit ? historyLimit.value : 50;
-                    const response = await fetch(`/api/v1/history?limit=${limit}`);
+                    const response = await fetch(`/api/history?limit=${limit}`);
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
