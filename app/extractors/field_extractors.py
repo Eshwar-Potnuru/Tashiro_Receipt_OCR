@@ -27,6 +27,11 @@ class FieldExtractor:
             processed_image_data = self._preprocess_image(image_data, filename)
             print(f"🖼️ Image preprocessing complete, new size: {len(processed_image_data)} bytes")
 
+            # Check final file size against OCR.space limits (1MB)
+            max_api_size = 1024 * 1024  # 1MB
+            if len(processed_image_data) > max_api_size:
+                raise Exception(f"Image too large for OCR API ({len(processed_image_data)/1024:.1f}KB > {max_api_size/1024:.1f}KB). Please use a smaller image.")
+
             # Try OCR engine 2 first (more accurate for Japanese)
             try:
                 print("📡 Calling OCR API with engine 2...")
@@ -469,7 +474,7 @@ class FieldExtractor:
         return ''
 
     def _call_ocr_api(self, image_data: bytes, filename: str, engine: int = 2) -> dict:
-        """Call OCR.space API with specified engine."""
+        """Call OCR.space API with specified engine and retry logic."""
         # Detect if this is a camera image (usually has 'camera' in filename)
         is_camera_image = 'camera' in filename.lower()
 
@@ -502,29 +507,39 @@ class FieldExtractor:
 
         print(f"📡 OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}, filename={api_filename}")
 
-        try:
-            response = requests.post(self.api_url, files=files, data=data, timeout=15)  # Reduced timeout
-            response.raise_for_status()
+        # Retry logic for timeouts
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                print(f"📡 Attempt {attempt + 1}/{max_retries + 1}...")
+                response = requests.post(self.api_url, files=files, data=data, timeout=20)  # Increased timeout
+                response.raise_for_status()
 
-            result = response.json()
-            print(f"📡 OCR API response status: {response.status_code}")
+                result = response.json()
+                print(f"📡 OCR API response status: {response.status_code}")
 
-            return result
+                return result
 
-        except requests.exceptions.Timeout:
-            print("❌ OCR API timeout (15s)")
-            raise Exception("OCR API timeout - image may be too large or network issue")
-        except requests.exceptions.RequestException as e:
-            print(f"❌ OCR API request error: {e}")
-            raise Exception(f"OCR API request failed: {e}")
+            except requests.exceptions.Timeout:
+                if attempt < max_retries:
+                    print(f"❌ OCR API timeout (20s), retrying in 2 seconds...")
+                    import time
+                    time.sleep(2)
+                    continue
+                else:
+                    print("❌ OCR API timeout (20s) - final attempt")
+                    raise Exception("OCR API timeout - image may be too large or network issue")
+            except requests.exceptions.RequestException as e:
+                print(f"❌ OCR API request error: {e}")
+                raise Exception(f"OCR API request failed: {e}")
 
     def _preprocess_image(self, image_data: bytes, filename: str) -> bytes:
-        """Preprocess image to improve OCR accuracy."""
+        """Preprocess image to improve OCR accuracy and ensure file size limits."""
         try:
             # Open image with PIL
             image = Image.open(io.BytesIO(image_data))
 
-            # Convert to RGB if necessary
+            # Convert to RGB if necessary (handles RGBA, P, etc.)
             if image.mode not in ('RGB', 'L'):
                 image = image.convert('RGB')
 
@@ -568,12 +583,38 @@ class FieldExtractor:
                 image = image.resize(new_size, Image.Resampling.LANCZOS)
                 print(f"🖼️ Upscaled image to: {image.size}")
 
-            # Save processed image
+            # AGGRESSIVE COMPRESSION to meet OCR.space 1MB limit
+            max_file_size = 900 * 1024  # 900KB to be safe (under 1MB limit)
+            quality = 95
             output_buffer = io.BytesIO()
-            image.save(output_buffer, format='JPEG', quality=95, optimize=True)
+
+            # Try progressively lower quality until file size is acceptable
+            while quality >= 10:
+                output_buffer = io.BytesIO()
+                image.save(output_buffer, format='JPEG', quality=quality, optimize=True)
+
+                if len(output_buffer.getvalue()) <= max_file_size:
+                    break
+
+                quality -= 10
+                print(f"🖼️ File too large ({len(output_buffer.getvalue())/1024:.1f}KB), reducing quality to {quality}")
+
             processed_data = output_buffer.getvalue()
 
-            print(f"🖼️ Image preprocessing complete: {original_size} -> {image.size}, {len(image_data)} -> {len(processed_data)} bytes")
+            # If still too large after minimum quality, resize further
+            if len(processed_data) > max_file_size:
+                print(f"🖼️ Still too large ({len(processed_data)/1024:.1f}KB), resizing further...")
+                # Resize to 75% of current size
+                new_width = int(image.size[0] * 0.75)
+                new_height = int(image.size[1] * 0.75)
+                if new_width >= 400 and new_height >= 400:  # Don't go below minimum
+                    image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+                    output_buffer = io.BytesIO()
+                    image.save(output_buffer, format='JPEG', quality=quality, optimize=True)
+                    processed_data = output_buffer.getvalue()
+                    print(f"🖼️ Final resize to: {image.size}")
+
+            print(f"🖼️ Image preprocessing complete: {original_size} -> {image.size}, {len(image_data)/1024:.1f}KB -> {len(processed_data)/1024:.1f}KB (quality: {quality})")
 
             return processed_data
 

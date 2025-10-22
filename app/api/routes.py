@@ -61,6 +61,10 @@ async def analyze_receipt(
             # Open image with PIL
             image = Image.open(io.BytesIO(file_content))
 
+            # Convert to RGB if necessary (handles RGBA, P, etc.)
+            if image.mode not in ('RGB', 'L'):
+                image = image.convert('RGB')
+
             # Create thumbnail (max 200px width/height, maintain aspect ratio)
             image.thumbnail((200, 200), Image.Resampling.LANCZOS)
 
