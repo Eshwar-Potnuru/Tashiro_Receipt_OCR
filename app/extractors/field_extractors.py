@@ -415,7 +415,18 @@ class FieldExtractor:
         # Second pass: calculate tax from subtotal and total if available
         # This is a fallback for when tax is not explicitly shown
         subtotal = self._extract_subtotal(lines)
-        total = self._extract_total(lines)
+        # Avoid circular recursion - don't call _extract_total here
+        # Instead, look for total in the lines directly
+        total = ''
+        for line in lines:
+            # Simple total patterns to avoid recursion
+            for pattern in [r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)', r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)']:
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    total = match.group(1).replace(',', '')
+                    break
+            if total:
+                break
 
         if subtotal and total:
             try:
