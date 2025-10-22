@@ -20,6 +20,9 @@ class ExcelExporter:
             filename = f"receipt_{timestamp}.xlsx"
             filepath = self.artifacts_dir / filename
 
+            print(f"📊 Generating Excel file: {filepath}")
+            print(f"📁 Artifacts directory: {self.artifacts_dir}")
+
             # Prepare data for Excel
             excel_data = self._prepare_excel_data(receipt_data, user_data)
 
@@ -42,10 +45,19 @@ class ExcelExporter:
                     ocr_df = pd.DataFrame({'OCR_Text': [receipt_data['ocr_text']]})
                     ocr_df.to_excel(writer, sheet_name='OCR_Raw', index=False)
 
+            # Verify file was created
+            if filepath.exists():
+                file_size = filepath.stat().st_size
+                print(f"✅ Excel file created successfully: {filepath} ({file_size} bytes)")
+            else:
+                print(f"❌ Excel file was not created: {filepath}")
+
             return str(filepath)
 
         except Exception as e:
-            print(f"Excel export failed: {e}")
+            print(f"❌ Excel export failed: {e}")
+            import traceback
+            traceback.print_exc()
             raise
 
     def _prepare_excel_data(self, receipt_data: Dict[str, Any], user_data: Dict[str, Any]) -> Dict[str, Dict]:
