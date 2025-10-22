@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tashiro Ironworks - Receipt OCR System</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Sans+JP:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #007BFF;
+            --primary-dark: #0056b3;
+            --success-green: #28A745;
+            --warning-orange: #FFC107;
+            --danger-red: #DC3545;
+            --light-gray: #F8F9FA;
+            --medium-gray: #E9ECEF;
+            --dark-gray: #6C757D;
+            --text-dark: #343A40;
+            --shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 4px 20px rgba(0, 0, 0, 0.12);
+            --border-radius: 12px;
+            --safe-area-top: env(safe-area-inset-top);
+            --safe-area-bottom: env(safe-area-inset-bottom);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--light-gray);
+            color: var(--text-dark);
+            line-height: 1.6;
+            overflow-x: hidden;
+            padding-top: var(--safe-area-top);
+            padding-bottom: var(--safe-area-bottom);
+        }
+
+        /* Mobile-First Welcome Modal */
+        .welcome-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 16px;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 400px;
+            padding: 32px 24px;
+            text-align: center;
+            animation: modalSlideIn 0.4s ease-out;
+        }
+
+        @keyframes modalSlideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .company-logo {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+
+        .logo-circle {
+            width: 70px;
+            height: 70px;
+            background: var(--primary-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 28px;
+        }
+
+        .modal-content h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .modal-subtitle {
+            font-size: 15px;
+            color: var(--dark-gray);
+            margin-bottom: 24px;
+        }
+
+        .registration-form {
+            text-align: left;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+            font-size: 15px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            font-size: 16px; /* Prevents zoom on iOS */
+            transition: border 0.2s, box-shadow 0.2s;
+            -webkit-appearance: none;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .required {
+            color: var(--danger-red);
+        }
+
+        .primary-button {
+            background: var(--primary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 16px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            width: 100%;
+            margin-top: 8px;
+            min-height: 52px; /* Minimum touch target size */
+            touch-action: manipulation;
+        }
+
+        .primary-button:hover {
+            background: var(--primary-dark);
+        }
+
+        .primary-button:active {
+            transform: scale(0.98);
+        }
+
+        /* Mobile-Optimized App Layout */
+        .app-container {
+            display: none;
+            max-width: 100%;
+            margin: 0 auto;
+            padding: 0;
+        }
+
+        /* Mobile Header */
+        .app-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: white;
+            padding: 16px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left h1 {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .header-left p {
+            color: var(--dark-gray);
+            font-size: 13px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .user-info {
+            text-align: right;
+            display: none; /* Hidden on mobile to save space */
+        }
+
+        /* Mobile Navigation */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            border-top: 1px solid var(--medium-gray);
+            display: flex;
+            justify-content: space-around;
+            padding: 12px 16px;
+            z-index: 100;
+            padding-bottom: calc(12px + var(--safe-area-bottom));
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+            min-width: 60px;
+            text-decoration: none;
+            color: var(--dark-gray);
+        }
+
+        .nav-item.active {
+            color: var(--primary-blue);
+            background: rgba(0, 123, 255, 0.05);
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-label {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* Main Content Area */
+        .main-content {
+            padding: 16px;
+            padding-bottom: 80px; /* Space for bottom nav */
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Mobile Cards */
+        .card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 6px;
+        }
+
+        .card-description {
+            font-size: 14px;
+            color: var(--dark-gray);
+        }
+
+        /* Mobile Upload Options */
+        .upload-options {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            flex-direction: column;
+        }
+
+        .upload-button {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px 16px;
+            border: 2px dashed var(--medium-gray);
+            border-radius: 8px;
+            background: var(--light-gray);
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 80px;
+        }
+
+        .upload-button:hover {
+            border-color: var(--primary-blue);
+            background: rgba(0, 123, 255, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 28px;
+            color: var(--primary-blue);
+            width: 40px;
+            text-align: center;
+        }
+
+        .upload-text {
+            font-weight: 500;
+            font-size: 16px;
+            color: var(--text-dark);
+        }
+
+        .upload-subtext {
+            font-size: 14px;
+            color: var(--dark-gray);
+            margin-top: 2px;
+        }
+
+        .dropzone {
+            border: 2px dashed var(--medium-gray);
+            border-radius: 8px;
+            padding: 30px 16px;
+            text-align: center;
+            background: var(--light-gray);
+            transition: all 0.2s;
+            margin-top: 12px;
+        }
+
+        .dropzone.active {
+            border-color: var(--primary-blue);
+            background: rgba(0, 123, 255, 0.05);
+        }
+
+        .dropzone-icon {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: var(--dark-gray);
+        }
+
+        /* Mobile OCR Preview */
+        .ocr-preview {
+            background: var(--light-gray);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            min-height: 180px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ocr-placeholder {
+            text-align: center;
+            color: var(--dark-gray);
+        }
+
+        .ocr-placeholder i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: var(--medium-gray);
+        }
+
+        .form-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .form-field {
+            margin-bottom: 0;
+        }
+
+        .form-field label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+            font-size: 15px;
+        }
+
+        .form-field input, .form-field select {
+            width: 100%;
+            padding: 16px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border 0.2s;
+            -webkit-appearance: none;
+            min-height: 52px;
+        }
+
+        .form-field input:focus, .form-field select:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            flex-direction: column;
+        }
+
+        .secondary-button {
+            background: white;
+            color: var(--primary-blue);
+            border: 1px solid var(--primary-blue);
+            border-radius: 8px;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            min-height: 52px;
+            touch-action: manipulation;
+        }
+
+        .secondary-button:hover {
+            background: rgba(0, 123, 255, 0.05);
+        }
+
+        /* Mobile History */
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .history-item {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-bottom: 1px solid var(--medium-gray);
+            transition: background 0.2s;
+        }
+
+        .history-item:last-child {
+            border-bottom: none;
+        }
+
+        .history-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: var(--primary-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            margin-right: 16px;
+            flex-shrink: 0;
+        }
+
+        .history-details {
+            flex: 1;
+            min-width: 0; /* Prevents flex item overflow */
+        }
+
+        .history-vendor {
+            font-weight: 600;
+            margin-bottom: 4px;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .history-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--dark-gray);
+        }
+
+        .history-amount {
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .history-status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background: rgba(40, 167, 69, 0.1);
+            color: var(--success-green);
+        }
+
+        .status-pending {
+            background: rgba(255, 193, 7, 0.1);
+            color: var(--warning-orange);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--dark-gray);
+        }
+
+        .empty-state i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            color: var(--medium-gray);
+        }
+
+        /* Mobile Toast Notifications */
+        .toast-container {
+            position: fixed;
+            top: 80px;
+            left: 16px;
+            right: 16px;
+            z-index: 1000;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .toast {
+            background: white;
+            border-radius: 8px;
+            box-shadow: var(--shadow-lg);
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            animation: toastSlideIn 0.3s ease-out;
+            border-left: 4px solid;
+        }
+
+        .toast-success { border-left-color: var(--success-green); }
+        .toast-error { border-left-color: var(--danger-red); }
+        .toast-warning { border-left-color: var(--warning-orange); }
+        .toast-info { border-left-color: var(--primary-blue); }
+
+        .toast-icon {
+            margin-right: 12px;
+            font-size: 18px;
+        }
+
+        .toast-message {
+            flex: 1;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 0;
+            margin-left: 12px;
+            color: var(--dark-gray);
+            min-width: 24px;
+            min-height: 24px;
+        }
+
+        @keyframes toastSlideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Tablet and Desktop Styles */
+        @media (min-width: 768px) {
+            .app-container {
+                max-width: 800px;
+                padding: 20px;
+            }
+
+            .main-content {
+                padding-bottom: 20px;
+            }
+
+            .mobile-nav {
+                display: none;
+            }
+
+            .user-info {
+                display: block;
+            }
+
+            .upload-options {
+                flex-direction: row;
+            }
+
+            .upload-button {
+                flex-direction: column;
+                text-align: center;
+                gap: 12px;
+            }
+
+            .form-actions {
+                flex-direction: row;
+            }
+
+            .form-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 16px;
+            }
+
+            .toast-container {
+                top: 20px;
+                right: 20px;
+                left: auto;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .app-container {
+                max-width: 1000px;
+            }
+
+            .dashboard-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+            }
+
+            .history-card {
+                grid-column: 1 / -1;
+            }
+        }
+
+        /* iPhone Notch Support */
+        @supports (padding: max(0px)) {
+            .main-content {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+            
+            .mobile-nav {
+                padding-left: max(16px, env(safe-area-inset-left));
+                padding-right: max(16px, env(safe-area-inset-right));
+            }
+        }
+
+        /* Prevent text size adjustment on orientation change */
+        html {
+            -webkit-text-size-adjust: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- Welcome Modal -->
+    <div id="welcomeModal" class="welcome-modal">
+        <div class="modal-content">
+            <div class="company-logo">
+                <div class="logo-circle">
+                    <i class="fas fa-industry"></i>
+                </div>
+            </div>
+            <h1>Tashiro Ironworks Co., Ltd.</h1>
+            <p class="modal-subtitle">Receipt OCR Automation System</p>
+            
+            <form id="registrationForm" class="registration-form">
+                <div class="form-group">
+                    <label for="userName">Full Name <span class="required">*</span></label>
+                    <input type="text" id="userName" placeholder="Enter your full name" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="userEmail">Email Address <span class="required">*</span></label>
+                    <input type="email" id="userEmail" placeholder="your.email@company.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="employeeId">Employee ID (Optional)</label>
+                    <input type="text" id="employeeId" placeholder="TY-2045">
+                </div>
+                
+                <button type="submit" class="primary-button">
+                    <i class="fas fa-rocket"></i> Launch OCR System
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Application -->
+    <div id="appContainer" class="app-container">
+        <!-- Mobile Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1>Receipt OCR System</h1>
+                <p>Tashiro Ironworks</p>
+            </div>
+            
+            <div class="user-profile">
+                <div class="user-info">
+                    <div class="user-name" id="displayUserName">Guest User</div>
+                    <div class="user-email" id="displayUserEmail">guest@example.com</div>
+                </div>
+                <div class="user-avatar" id="userAvatar">GU</div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Capture Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Capture Receipt</h2>
+                        <p class="card-description">Take a photo or upload an existing receipt image</p>
+                    </div>
+                    <i class="fas fa-camera" style="color: var(--primary-blue); font-size: 24px;"></i>
+                </div>
+                
+                <div class="upload-options">
+                    <div class="upload-button" id="cameraButton">
+                        <i class="fas fa-camera upload-icon"></i>
+                        <div>
+                            <div class="upload-text">Take Photo</div>
+                            <div class="upload-subtext">Use device camera</div>
+                        </div>
+                    </div>
+                    
+                    <div class="upload-button" id="uploadButton">
+                        <i class="fas fa-file-upload upload-icon"></i>
+                        <div>
+                            <div class="upload-text">Upload File</div>
+                            <div class="upload-subtext">JPG, PNG, or PDF</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="dropzone" id="dropzone">
+                    <i class="fas fa-cloud-upload-alt dropzone-icon"></i>
+                    <p>Drag & drop receipt image here</p>
+                    <p class="upload-subtext">or use the options above</p>
+                </div>
+                
+                <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
+            </div>
+
+            <!-- OCR Review Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">OCR Review</h2>
+                        <p class="card-description">Verify and edit extracted receipt data</p>
+                    </div>
+                    <i class="fas fa-search" style="color: var(--primary-blue); font-size: 24px;"></i>
+                </div>
+                
+                <div class="ocr-preview">
+                    <div class="ocr-placeholder" id="ocrPlaceholder">
+                        <i class="fas fa-receipt"></i>
+                        <p>No receipt analyzed yet</p>
+                        <p>Upload a receipt to see extracted data</p>
+                    </div>
+                    
+                    <div id="ocrResults" style="display: none; width: 100%;">
+                        <!-- OCR results will be displayed here -->
+                    </div>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-field">
+                        <label for="fieldDate">Date</label>
+                        <input type="text" id="fieldDate" placeholder="YYYY-MM-DD">
+                    </div>
+                    
+                    <div class="form-field">
+                        <label for="fieldVendor">Store Name</label>
+                        <input type="text" id="fieldVendor" placeholder="Store name">
+                    </div>
+                    
+                    <div class="form-field">
+                        <label for="fieldTotal">Total Amount</label>
+                        <input type="text" id="fieldTotal" placeholder="0.00">
+                    </div>
+                    
+                    <div class="form-field">
+                        <label for="fieldTax">Tax Amount</label>
+                        <input type="text" id="fieldTax" placeholder="0.00">
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button class="primary-button" id="submitButton" disabled>
+                        <i class="fas fa-paper-plane"></i> Submit to HQ
+                    </button>
+                    <button class="secondary-button" id="resetButton">
+                        <i class="fas fa-redo"></i> Start Over
+                    </button>
+                </div>
+            </div>
+
+            <!-- History Card -->
+            <div class="card history-card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title">Submission History</h2>
+                        <p class="card-description">Recent receipts and their status</p>
+                    </div>
+                    <i class="fas fa-history" style="color: var(--primary-blue); font-size: 24px;"></i>
+                </div>
+                
+                <div class="history-list" id="historyList">
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No submissions yet</p>
+                        <p>Start scanning receipts to see them here</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Mobile Navigation -->
+        <nav class="mobile-nav">
+            <a href="#" class="nav-item active">
+                <i class="fas fa-home nav-icon"></i>
+                <span class="nav-label">Home</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-camera nav-icon"></i>
+                <span class="nav-label">Capture</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-history nav-icon"></i>
+                <span class="nav-label">History</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog nav-icon"></i>
+                <span class="nav-label">Settings</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <script>
+        // DOM Elements
+        const welcomeModal = document.getElementById('welcomeModal');
+        const appContainer = document.getElementById('appContainer');
+        const registrationForm = document.getElementById('registrationForm');
+        const userNameInput = document.getElementById('userName');
+        const userEmailInput = document.getElementById('userEmail');
+        const employeeIdInput = document.getElementById('employeeId');
+        const displayUserName = document.getElementById('displayUserName');
+        const displayUserEmail = document.getElementById('displayUserEmail');
+        const userAvatar = document.getElementById('userAvatar');
+        const cameraButton = document.getElementById('cameraButton');
+        const uploadButton = document.getElementById('uploadButton');
+        const fileInput = document.getElementById('fileInput');
+        const dropzone = document.getElementById('dropzone');
+        const ocrPlaceholder = document.getElementById('ocrPlaceholder');
+        const ocrResults = document.getElementById('ocrResults');
+        const submitButton = document.getElementById('submitButton');
+        const resetButton = document.getElementById('resetButton');
+        const historyList = document.getElementById('historyList');
+        const toastContainer = document.getElementById('toastContainer');
+
+        // Check if user is already registered
+        function checkUserRegistration() {
+            const userData = localStorage.getItem('tashiro_user');
+            if (userData) {
+                const user = JSON.parse(userData);
+                displayUserInfo(user);
+                welcomeModal.style.display = 'none';
+                appContainer.style.display = 'block';
+                return true;
+            }
+            return false;
+        }
+
+        // Display user information in the header
+        function displayUserInfo(user) {
+            displayUserName.textContent = user.name;
+            displayUserEmail.textContent = user.email;
+            userAvatar.textContent = user.name.substring(0, 2).toUpperCase();
+        }
+
+        // Handle registration form submission
+        registrationForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const userData = {
+                name: userNameInput.value,
+                email: userEmailInput.value,
+                employeeId: employeeIdInput.value || null
+            };
+            
+            // Save user data to localStorage
+            localStorage.setItem('tashiro_user', JSON.stringify(userData));
+            
+            // Update UI with user info
+            displayUserInfo(userData);
+            
+            // Hide modal and show app
+            welcomeModal.style.display = 'none';
+            appContainer.style.display = 'block';
+            
+            // Show welcome toast
+            showToast(`Welcome, ${userData.name}! Ready to process receipts.`, 'success');
+        });
+
+        // Handle camera button click
+        cameraButton.addEventListener('click', function() {
+            // Trigger the file input with camera capture
+            fileInput.click();
+        });
+
+        // Handle upload button click
+        uploadButton.addEventListener('click', function() {
+            // Create a new file input without camera capture
+            const newFileInput = document.createElement('input');
+            newFileInput.type = 'file';
+            newFileInput.accept = 'image/*';
+            newFileInput.style.display = 'none';
+            document.body.appendChild(newFileInput);
+            
+            newFileInput.addEventListener('change', function(e) {
+                if (e.target.files.length > 0) {
+                    handleFileUpload(e.target.files[0]);
+                }
+                document.body.removeChild(newFileInput);
+            });
+            
+            newFileInput.click();
+        });
+
+        // Handle file selection
+        fileInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
+        });
+
+        // Handle drag and drop
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropzone.addEventListener(eventName, highlight, false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropzone.addEventListener(eventName, unhighlight, false);
+        });
+
+        function highlight() {
+            dropzone.classList.add('active');
+        }
+
+        function unhighlight() {
+            dropzone.classList.remove('active');
+        }
+
+        dropzone.addEventListener('drop', function(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
+        });
+
+        // Handle file upload
+        function handleFileUpload(file) {
+            showToast('Processing receipt image...', 'info');
+            
+            // Simulate OCR processing
+            setTimeout(() => {
+                // Hide placeholder and show results
+                ocrPlaceholder.style.display = 'none';
+                ocrResults.style.display = 'block';
+                
+                // Populate sample data
+                document.getElementById('fieldDate').value = '2023-10-15';
+                document.getElementById('fieldVendor').value = 'セブン-イレブン 日本橋店';
+                document.getElementById('fieldTotal').value = '3850';
+                document.getElementById('fieldTax').value = '350';
+                
+                // Enable submit button
+                submitButton.disabled = false;
+                
+                showToast('Receipt analyzed successfully!', 'success');
+            }, 2000);
+        }
+
+        // Handle form submission
+        submitButton.addEventListener('click', function() {
+            // Get form data
+            const receiptData = {
+                date: document.getElementById('fieldDate').value,
+                vendor: document.getElementById('fieldVendor').value,
+                total: document.getElementById('fieldTotal').value,
+                tax: document.getElementById('fieldTax').value,
+                timestamp: new Date().toISOString()
+            };
+            
+            // Save to history
+            saveToHistory(receiptData);
+            
+            // Reset form
+            resetForm();
+            
+            showToast('Receipt submitted to HQ successfully!', 'success');
+        });
+
+        // Handle reset button
+        resetButton.addEventListener('click', function() {
+            resetForm();
+            showToast('Form reset. Ready for new receipt.', 'info');
+        });
+
+        // Reset the form
+        function resetForm() {
+            document.getElementById('fieldDate').value = '';
+            document.getElementById('fieldVendor').value = '';
+            document.getElementById('fieldTotal').value = '';
+            document.getElementById('fieldTax').value = '';
+            
+            ocrPlaceholder.style.display = 'block';
+            ocrResults.style.display = 'none';
+            
+            submitButton.disabled = true;
+        }
+
+        // Save receipt to history
+        function saveToHistory(receiptData) {
+            // Get existing history or initialize empty array
+            let history = JSON.parse(localStorage.getItem('tashiro_history') || '[]');
+            
+            // Add new receipt with ID and status
+            const receipt = {
+                id: Date.now(),
+                ...receiptData,
+                status: 'submitted'
+            };
+            
+            // Add to beginning of array
+            history.unshift(receipt);
+            
+            // Keep only last 10 items
+            if (history.length > 10) {
+                history = history.slice(0, 10);
+            }
+            
+            // Save back to localStorage
+            localStorage.setItem('tashiro_history', JSON.stringify(history));
+            
+            // Update history display
+            updateHistoryDisplay();
+        }
+
+        // Update history display
+        function updateHistoryDisplay() {
+            const history = JSON.parse(localStorage.getItem('tashiro_history') || '[]');
+            
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <p>No submissions yet</p>
+                        <p>Start scanning receipts to see them here</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let historyHTML = '';
+            
+            history.forEach(item => {
+                historyHTML += `
+                    <div class="history-item">
+                        <div class="history-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="history-details">
+                            <div class="history-vendor">${item.vendor}</div>
+                            <div class="history-meta">
+                                <span class="history-date">${formatDate(item.date)}</span>
+                                <span class="history-amount">¥${item.total}</span>
+                            </div>
+                        </div>
+                        <div class="history-status status-success">Submitted</div>
+                    </div>
+                `;
+            });
+            
+            historyList.innerHTML = historyHTML;
+        }
+
+        // Format date for display
+        function formatDate(dateString) {
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            return new Date(dateString).toLocaleDateString('en-US', options);
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast toast-${type}`;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+            
+            toast.innerHTML = `
+                <span class="toast-icon">${icons[type]}</span>
+                <span class="toast-message">${message}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">×</button>
+            `;
+            
+            toastContainer.appendChild(toast);
+            
+            // Auto remove after 5 seconds
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    toast.remove();
+                }
+            }, 5000);
+        }
+
+        // Initialize the application
+        function init() {
+            if (!checkUserRegistration()) {
+                welcomeModal.style.display = 'flex';
+            } else {
+                appContainer.style.display = 'block';
+            }
+            
+            updateHistoryDisplay();
+        }
+
+        // Start the application
+        init();
+    </script>
+</body>
+</html>
