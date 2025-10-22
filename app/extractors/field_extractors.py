@@ -19,6 +19,10 @@ class FieldExtractor:
         try:
             print(f"🔍 Starting OCR extraction for file: {filename}, size: {len(image_data)} bytes")
 
+            # Validate that this is actually an image file
+            if not self._is_image_file(image_data, filename):
+                raise Exception("Uploaded file is not a valid image. Please upload a JPEG, PNG, or other image format.")
+
             # Preprocess image for better OCR results
             processed_image_data = self._preprocess_image(image_data, filename)
             print(f"🖼️ Image preprocessing complete, new size: {len(processed_image_data)} bytes")
@@ -50,7 +54,7 @@ class FieldExtractor:
 
             if not parsed_text.strip():
                 print("⚠️ OCR returned empty text!")
-                raise Exception("OCR returned no text from image")
+                raise Exception("OCR returned no text from image - the image may be too blurry or the text may be unreadable")
 
             # Extract fields using primary methods
             extracted_fields = self._parse_receipt_text(parsed_text)
@@ -92,6 +96,26 @@ class FieldExtractor:
                     'error_type': type(e).__name__
                 }
             }
+
+    def _is_image_file(self, image_data: bytes, filename: str) -> bool:
+        """Check if the uploaded file is actually an image."""
+        try:
+            # Check file extension
+            valid_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif', '.webp']
+            if any(filename.lower().endswith(ext) for ext in valid_extensions):
+                return True
+
+            # Check MIME type by trying to open with PIL
+            from PIL import Image
+            try:
+                Image.open(io.BytesIO(image_data))
+                return True
+            except Exception:
+                pass
+
+            return False
+        except Exception:
+            return False
 
     def _parse_receipt_text(self, text: str) -> Dict[str, Any]:
         """Parse OCR text to extract receipt fields."""
@@ -438,7 +462,15 @@ class FieldExtractor:
         # Detect if this is a camera image (usually has 'camera' in filename)
         is_camera_image = 'camera' in filename.lower()
 
-        files = {'file': (filename, image_data, 'application/octet-stream')}
+        # Ensure filename has a valid extension for OCR API
+        if not any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif', '.webp']):
+            # Force .jpg extension for API compatibility
+            api_filename = f"{filename}.jpg" if '.' not in filename else f"{filename.rsplit('.', 1)[0]}.jpg"
+            print(f"📝 Modified filename for API: {filename} -> {api_filename}")
+        else:
+            api_filename = filename
+
+        files = {'file': (api_filename, image_data, 'application/octet-stream')}
         data = {
             'apikey': self.api_key,
             'language': 'jpn',
@@ -457,7 +489,7 @@ class FieldExtractor:
                 'filetype': 'JPG',  # Camera images are usually JPEG
             })
 
-        print(f"📡 OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}")
+        print(f"📡 OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}, filename={api_filename}")
 
         try:
             response = requests.post(self.api_url, files=files, data=data, timeout=15)  # Reduced timeout
