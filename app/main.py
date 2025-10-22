@@ -57,11 +57,18 @@ def create_app() -> FastAPI:
         except Exception as e:
             print(f"❌ Artifacts directory error: {e}")
             # Try to create in a different location if needed
-            import tempfile
-            temp_dir = Path(tempfile.gettempdir()) / "tashiro_artifacts"
-            temp_dir.mkdir(exist_ok=True)
-            artifacts_dir = temp_dir
-            print(f"📁 Using temp artifacts directory: {artifacts_dir}")
+            try:
+                import tempfile
+                temp_dir = Path(tempfile.gettempdir()) / "tashiro_artifacts"
+                temp_dir.mkdir(exist_ok=True)
+                artifacts_dir = temp_dir
+                print(f"📁 Using temp artifacts directory: {artifacts_dir}")
+            except Exception as temp_e:
+                print(f"❌ Temp directory creation also failed: {temp_e}")
+                # Fall back to current directory
+                artifacts_dir = Path.cwd() / "artifacts_fallback"
+                artifacts_dir.mkdir(exist_ok=True)
+                print(f"📁 Using fallback artifacts directory: {artifacts_dir}")
 
         templates = Jinja2Templates(directory=str(base_dir / "app" / "templates"))
         app.mount("/static", StaticFiles(directory=str(base_dir / "app" / "static")), name="static")

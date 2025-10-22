@@ -7,123 +7,492 @@
     <meta name="description" content="Professional receipt OCR automation system for Tashiro Ironworks field operations" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/static/css/mobile_intake.css" />
     <style>
-        /* Enhanced responsive design overrides */
-        @media (max-width: 1024px) {
-            .app-shell {
-                flex-direction: column;
-            }
-            
-            .sidebar {
-                width: 100% !important;
-                height: auto !important;
-                position: relative !important;
-                transform: none !important;
-                border-radius: 0 !important;
-                margin-bottom: 20px;
-            }
-            
-            .main-panel {
-                margin-left: 0 !important;
-                padding: 16px;
-            }
-            
-            .workspace-grid {
-                grid-template-columns: 1fr !important;
-                gap: 16px;
-            }
-            
-            .topbar-actions {
-                flex-wrap: wrap;
-                gap: 8px;
-            }
-            
-            .topbar-actions button,
-            .topbar-actions .upload-button {
-                min-height: 48px;
-                font-size: 16px;
-            }
+        /* Reset and base styles */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
         }
-        
-        @media (max-width: 768px) {
-            .sidebar {
-                position: sticky !important;
-                top: 0;
-                z-index: 100;
-                backdrop-filter: blur(20px);
-                border-radius: 0 0 16px 16px;
-            }
-            
-            .sidebar .brand h1 {
-                font-size: 18px;
-            }
-            
-            .sidebar .step-list {
-                display: none; /* Hide detailed steps on mobile */
-            }
-            
-            .form-row {
-                flex-direction: column;
-                gap: 12px;
-            }
-            
-            .verification-form input,
-            .verification-form select {
-                min-height: 48px;
-                font-size: 16px;
-            }
-            
-            .history-header {
-                flex-direction: column;
-                gap: 12px;
-                align-items: flex-start;
-            }
-            
-            .camera-stage {
-                margin: 16px 0;
-            }
-            
-            .video-wrapper {
-                border-radius: 12px;
-            }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            color: #6C757D;
+            background-color: #F8F9FA;
+            min-height: 100vh;
         }
-        
-        /* Mobile-first touch improvements */
-        .mobile-optimized {
-            touch-action: manipulation;
+
+        /* Main container - vertical 5-tile layout */
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-height: 100vh;
         }
-        
-        .primary-button,
-        .secondary-button,
-        .upload-button {
+
+        /* Tile base styles */
+        .tile {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .tile:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Specific tile heights */
+        .profile-tile { flex: 0 0 15vh; min-height: 120px; }
+        .upload-tile { flex: 0 0 20vh; min-height: 160px; }
+        .capture-tile { flex: 0 0 10vh; min-height: 80px; }
+        .ocr-tile { flex: 0 0 40vh; min-height: 320px; }
+        .history-tile { flex: 0 0 25vh; min-height: 200px; }
+
+        /* Button styles */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
             min-height: 48px;
             touch-action: manipulation;
         }
-        
-        /* Improved mobile dropzone */
-        @media (max-width: 768px) {
-            .dropzone {
-                min-height: 120px;
-                padding: 20px;
-                border-width: 3px;
-            }
-        }
-        
-        /* Better mobile form styling */
-        @media (max-width: 768px) {
-            .verification-form {
-                padding: 16px;
-            }
-            
-            .form-row label {
-                margin-bottom: 12px;
-            }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* Toast Notifications */
+        .btn-primary {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: #007BFF;
+            border: 2px solid #007BFF;
+        }
+
+        .btn-secondary:hover {
+            background-color: #007BFF;
+            color: white;
+        }
+
+        .btn-success {
+            background-color: #28A745;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: #6C757D;
+            border: 1px solid #E9ECEF;
+        }
+
+        .btn-ghost:hover {
+            background-color: #F8F9FA;
+        }
+
+        /* Profile Tile */
+        .profile-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 100%;
+        }
+
+        .company-info {
+            flex: 1;
+        }
+
+        .company-info h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 4px;
+        }
+
+        .company-info p {
+            font-size: 16px;
+            color: #6C757D;
+        }
+
+        .user-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background-color: #007BFF;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 18px;
+            margin-left: 16px;
+        }
+
+        .profile-actions {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .profile-actions .btn {
+            font-size: 14px;
+            padding: 8px 16px;
+            min-height: 36px;
+        }
+
+        /* Upload Tile */
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+        }
+
+        .upload-buttons {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .upload-helper {
+            color: #6C757D;
+            font-size: 14px;
+        }
+
+        /* Capture Tile */
+        .capture-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .capture-placeholder {
+            text-align: center;
+            color: #6C757D;
+        }
+
+        .capture-loading {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid #F3F4F6;
+            border-top: 3px solid #007BFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* OCR Review Tile */
+        .ocr-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .ocr-header {
+            margin-bottom: 16px;
+        }
+
+        .ocr-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 4px;
+        }
+
+        .ocr-header p {
+            color: #6C757D;
+            font-size: 14px;
+        }
+
+        .ocr-fields {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .field-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .field-group label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #212529;
+            margin-bottom: 4px;
+        }
+
+        .field-group input,
+        .field-group select {
+            padding: 8px 12px;
+            border: 1px solid #E9ECEF;
+            border-radius: 6px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+
+        .field-group input:focus,
+        .field-group select:focus {
+            outline: none;
+            border-color: #007BFF;
+        }
+
+        .ocr-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .ocr-status {
+            margin-top: 12px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ocr-status.success {
+            background-color: #D4EDDA;
+            color: #155724;
+            border: 1px solid #C3E6CB;
+        }
+
+        .ocr-status.warning {
+            background-color: #FFF3CD;
+            color: #856404;
+            border: 1px solid #FFEAA7;
+        }
+
+        /* History Tile */
+        .history-content {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .history-header h3 {
+            font-size: 20px;
+            font-weight: 600;
+            color: #212529;
+        }
+
+        .history-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-controls select {
+            padding: 4px 8px;
+            border: 1px solid #E9ECEF;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .history-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: #F8F9FA;
+            border-radius: 8px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .history-thumbnail {
+            width: 100%;
+            height: 80px;
+            background: #E9ECEF;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #6C757D;
+        }
+
+        .history-thumbnail img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+
+        .history-meta {
+            flex: 1;
+        }
+
+        .history-title {
+            font-weight: 600;
+            color: #212529;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .history-details {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #6C757D;
+            margin-bottom: 4px;
+        }
+
+        .history-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+
+        .history-status.success {
+            background-color: #D4EDDA;
+            color: #155724;
+        }
+
+        .history-status.neutral {
+            background-color: #E9ECEF;
+            color: #6C757D;
+        }
+
+        .history-empty {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: #6C757D;
+            text-align: center;
+        }
+
+        /* Modal styles */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .modal.hidden {
+            display: none;
+        }
+
+        .modal-body {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+
+        .modal h2 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 8px;
+        }
+
+        .modal-subtitle {
+            color: #6C757D;
+            margin-bottom: 20px;
+        }
+
+        .modal-form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-field label {
+            font-weight: 500;
+            color: #212529;
+            margin-bottom: 4px;
+            display: block;
+        }
+
+        .modal-field input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #E9ECEF;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .modal-field input:focus {
+            outline: none;
+            border-color: #007BFF;
+        }
+
+        .required {
+            color: #DC3545;
+        }
+
+        /* Toast notifications */
         .toast-container {
             position: fixed;
             top: 20px;
@@ -144,10 +513,10 @@
             border-left: 4px solid;
         }
 
-        .toast-success { border-left-color: #10b981; }
-        .toast-error { border-left-color: #ef4444; }
-        .toast-warning { border-left-color: #f59e0b; }
-        .toast-info { border-left-color: #3b82f6; }
+        .toast-success { border-left-color: #28A745; }
+        .toast-error { border-left-color: #DC3545; }
+        .toast-warning { border-left-color: #FFC107; }
+        .toast-info { border-left-color: #007BFF; }
 
         .toast-icon {
             margin-right: 8px;
@@ -185,273 +554,234 @@
             }
         }
 
+        /* Responsive design */
         @media (max-width: 768px) {
-            .toast-container {
-                left: 10px;
-                right: 10px;
-                max-width: none;
+            .app-container {
+                padding: 8px;
+                gap: 8px;
+            }
+
+            .tile {
+                padding: 12px;
+            }
+
+            .profile-content {
+                flex-direction: column;
+                gap: 12px;
+                text-align: center;
+            }
+
+            .user-avatar {
+                margin-left: 0;
+            }
+
+            .upload-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .upload-buttons .btn {
+                width: 100%;
+            }
+
+            .ocr-fields {
+                grid-template-columns: 1fr;
+            }
+
+            .history-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .history-header {
+                flex-direction: column;
+                gap: 12px;
+                align-items: stretch;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .ocr-actions {
+                flex-direction: column;
+            }
+
+            .ocr-actions .btn {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Registration Modal -->
-    <div id="registrationModal" class="modal">
+    <!-- Profile Update Modal -->
+    <div id="profileModal" class="modal hidden">
         <div class="modal-body">
-            <h2>Welcome to Tashiro Ironworks</h2>
-            <p class="modal-subtitle">Professional Receipt OCR Automation System</p>
-            <p class="modal-description">Advanced receipt capture, verification, and submission system for field operations. Register your details to begin processing receipts with AI-powered OCR technology.</p>
-            <form id="registrationForm" class="modal-form">
+            <h2>Update Profile</h2>
+            <p class="modal-subtitle">Update your profile information</p>
+            <form id="profileForm" class="modal-form">
                 <label class="modal-field">
                     <span>Name <span class="required">*</span></span>
-                    <input id="regName" name="name" type="text" placeholder="Jane Operator" required />
+                    <input id="profileName" name="name" type="text" placeholder="Jane Operator" required />
                 </label>
                 <label class="modal-field">
                     <span>Email <span class="required">*</span></span>
-                    <input id="regEmail" name="email" type="email" placeholder="jane@tashiro.co.jp" required />
+                    <input id="profileEmail" name="email" type="email" placeholder="jane@tashiro.co.jp" required />
                 </label>
                 <label class="modal-field">
-                    <span>Employee ID (optional)</span>
-                    <input id="regId" name="id" type="text" placeholder="TY-2045" />
+                    <span>Employee ID</span>
+                    <input id="profileId" name="id" type="text" placeholder="TY-2045" />
                 </label>
-                <button type="submit" class="primary-button full-width mobile-optimized">Start Capturing</button>
+                <div style="display: flex; gap: 12px; margin-top: 20px;">
+                    <button type="button" id="cancelProfile" class="btn btn-ghost" style="flex: 1;">Cancel</button>
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Update Profile</button>
+                </div>
             </form>
         </div>
     </div>
 
-    <!-- Main App Shell -->
-    <div class="app-shell">
-        <!-- Sidebar with Company Info and Workflow -->
-        <aside class="sidebar">
-            <div>
-                <div class="brand">
-                    <span class="brand-mark">TI</span>
-                    <div>
-                        <h1>Tashiro Ironworks Co., Ltd.</h1>
-                        <p>Receipt OCR Automation System</p>
-                    </div>
+    <!-- Main App Container -->
+    <div class="app-container">
+        <!-- 1. Profile Tile -->
+        <div class="tile profile-tile">
+            <div class="profile-content">
+                <div class="company-info">
+                    <h1>Tashiro Ironworks Co., Ltd.</h1>
+                    <p>Receipt OCR Automation System</p>
                 </div>
-
-                <section class="sidebar-section">
-                    <h2>Processing Workflow</h2>
-                    <ol class="step-list">
-                        <li>📸 Take photo using device camera or upload image file</li>
-                        <li>🤖 AI-powered OCR extracts vendor, amounts, and dates</li>
-                        <li>✅ Review and verify extracted data fields</li>
-                        <li>📊 Automatic expense categorization and classification</li>
-                        <li>🚀 Submit to HQ approval workflow system</li>
-                        <li>📋 Track submission status in history panel</li>
-                    </ol>
-                </section>
-
-                <section class="sidebar-section sidebar-user">
-                    <h2>Current Operator</h2>
-                    <div class="user-card">
-                        <span id="userInitials" class="avatar">--</span>
-                        <div>
-                            <p id="sidebarUserName" class="user-name">Guest</p>
-                            <p id="sidebarUserEmail" class="muted">—</p>
-                            <p id="sidebarUserId" class="muted">ID: —</p>
-                        </div>
-                    </div>
-                    <button id="editProfileButton" type="button" class="ghost-button mobile-optimized" aria-label="Edit profile">Update profile</button>
-                </section>
+                <div class="profile-actions">
+                    <div id="userAvatar" class="user-avatar">--</div>
+                    <button id="updateProfileBtn" class="btn btn-ghost">Update Profile</button>
+                </div>
             </div>
+        </div>
 
-            <footer class="sidebar-footer">
-                <p><strong>Developed by Eshwar Potnuru</strong></p>
-                <p>Tashiro Ironworks Co., Ltd. © 2025</p>
-            </footer>
-        </aside>
-
-        <!-- Main Content Panel -->
-        <div class="main-panel">
-            <!-- Top Action Bar -->
-            <header class="topbar">
-                <div>
-                    <h2>Professional OCR Workspace</h2>
-                    <p class="topbar-subtitle">AI-powered receipt processing with real-time field extraction and verification</p>
-                </div>
-                <div class="topbar-actions">
-                    <label class="upload-button">
+        <!-- 2. Upload Tile -->
+        <div class="tile upload-tile">
+            <div class="upload-content">
+                <div class="upload-buttons">
+                    <label>
                         <input id="cameraInput" type="file" accept="image/*" capture="environment" style="display: none;" />
-                        <span class="primary-button mobile-optimized">📸 Take Photo</span>
+                        <span class="btn btn-primary">📸 Take Photo</span>
                     </label>
-                    <label class="upload-button">
+                    <label>
                         <input id="fileInput" type="file" accept="image/*" />
-                        <span class="secondary-button mobile-optimized">📁 Upload File</span>
+                        <span class="btn btn-secondary">📁 Upload File</span>
                     </label>
                 </div>
-            </header>
+                <p class="upload-helper">Scan your receipt quickly and accurately.</p>
+            </div>
+        </div>
 
-            <!-- Main Workspace Grid -->
-            <section class="workspace-grid">
-                <!-- Capture & Upload Section -->
-                <article class="card">
-                    <header>
-                        <h3>Capture Stage</h3>
-                        <p>Take a photo with your camera or upload a receipt image file.</p>
-                    </header>
+        <!-- 3. Capture Stage Tile -->
+        <div class="tile capture-tile">
+            <div class="capture-content">
+                <div id="capturePlaceholder" class="capture-placeholder">
+                    <p>No active capture</p>
+                </div>
+                <div id="captureLoading" class="capture-loading hidden">
+                    <div class="spinner"></div>
+                    <p>Capturing…</p>
+                </div>
+            </div>
+        </div>
 
-                    <div id="dropzone" class="dropzone mobile-optimized" aria-label="Receipt upload area">
-                        <span class="dropzone-icon">�</span>
-                        <p>Drag &amp; drop a receipt image here</p>
-                        <p class="muted">or use the camera/upload buttons above.</p>
+        <!-- 4. OCR Review Tile -->
+        <div class="tile ocr-tile">
+            <div class="ocr-content">
+                <div class="ocr-header">
+                    <h3>OCR Review</h3>
+                    <p>Verify extracted data and make corrections</p>
+                </div>
+
+                <form id="verificationForm" class="ocr-fields">
+                    <div class="field-group">
+                        <label>Store Name (店名)</label>
+                        <input id="fieldVendor" name="vendor" type="text" placeholder="Store name" />
                     </div>
-                </article>
-
-                <!-- OCR Analysis & Verification Section -->
-                <article class="card">
-                    <header>
-                        <h3>OCR Review</h3>
-                        <p>Check the detected fields, make corrections, then submit.</p>
-                    </header>
-
-                    <div class="analysis-view">
-                        <div class="analysis-canvas">
-                            <div id="analysisPlaceholder" class="analysis-placeholder">
-                                <p>No receipt analyzed yet.</p>
-                                <p class="muted">Capture or upload a receipt to see real-time overlays.</p>
-                            </div>
-                            <canvas id="analysisCanvas"></canvas>
-                            <div id="analysisLoader" class="analysis-loader hidden">
-                                <span class="spinner"></span>
-                                <p>Analyzing receipt…</p>
-                            </div>
-                        </div>
-
-                        <form id="verificationForm" class="verification-form">
-                            <!-- A-F Field Mapping Header -->
-                            <div class="field-mapping-header">
-                                <h4>📋 Receipt Field Mapping (A-F)</h4>
-                                <p>Verify extracted data matches receipt content</p>
-                            </div>
-                            
-                            <div class="form-row">
-                                <label>
-                                    <span>A - Date (日付)</span>
-                                    <input id="fieldDate" name="date" type="text" placeholder="YYYY-MM-DD" class="mobile-optimized" />
-                                </label>
-                                <label>
-                                    <span>B - Store Name (店名)</span>
-                                    <input id="fieldVendor" name="vendor" type="text" placeholder="Store name" class="mobile-optimized" />
-                                </label>
-                            </div>
-                            <div class="form-row">
-                                <label>
-                                    <span>C - Total Amount (金額)</span>
-                                    <input id="fieldTotal" name="total" type="text" placeholder="0.00" class="mobile-optimized" />
-                                </label>
-                                <label>
-                                    <span>D - Invoice Number (インボイス番号)</span>
-                                    <input id="fieldInvoiceNumber" name="invoice_number" type="text" placeholder="Invoice/Receipt No." class="mobile-optimized" />
-                                </label>
-                            </div>
-                            <div class="form-row">
-                                <label>
-                                    <span>E - Tax Category (税区分)</span>
-                                    <select id="fieldTaxCategory" name="tax_category" class="mobile-optimized">
-                                        <option value="">Select tax category</option>
-                                        <option value="課税">課税 (Taxable)</option>
-                                        <option value="軽減税率">軽減税率 (Reduced Tax Rate 8%)</option>
-                                        <option value="標準税率">標準税率 (Standard Tax Rate 10%)</option>
-                                        <option value="非課税">非課税 (Non-taxable)</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    <span>F - Account Title (勘定科目)</span>
-                                    <select id="fieldAccountTitle" name="account_title" class="mobile-optimized">
-                                        <option value="">Select account title</option>
-                                        <option value="食費">🍽️ 食費 (Meals)</option>
-                                        <option value="交通費">🚗 交通費 (Transportation)</option>
-                                        <option value="通信費">📱 通信費 (Communication)</option>
-                                        <option value="宿泊費">🏨 宿泊費 (Accommodation)</option>
-                                        <option value="接待交際費">🎉 接待交際費 (Entertainment)</option>
-                                        <option value="消耗品費">📎 消耗品費 (Supplies)</option>
-                                        <option value="水道光熱費">💡 水道光熱費 (Utilities)</option>
-                                        <option value="地代家賃">🏢 地代家賃 (Rent)</option>
-                                        <option value="租税公課">🏛️ 租税公課 (Taxes)</option>
-                                        <option value="旅費交通費">✈️ 旅費交通費 (Travel)</option>
-                                        <option value="備品費">💻 備品費 (Equipment)</option>
-                                        <option value="修繕費">🔧 修繕費 (Maintenance)</option>
-                                        <option value="車両費">⛽ 車両費 (Vehicle/Fuel)</option>
-                                        <option value="保険料">🛡️ 保険料 (Insurance)</option>
-                                        <option value="研修費">📚 研修費 (Education)</option>
-                                        <option value="その他">📋 その他 (Other)</option>
-                                    </select>
-                                </label>
-                            </div>
-                            
-                            <!-- Additional Fields for Reference -->
-                            <div class="additional-fields" style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-                                <h5>Additional Information</h5>
-                                <div class="form-row">
-                                    <label>
-                                        <span>Subtotal (参考)</span>
-                                        <input id="fieldSubtotal" name="subtotal" type="text" placeholder="0.00" class="mobile-optimized" />
-                                    </label>
-                                    <label>
-                                        <span>Tax Amount (参考)</span>
-                                        <input id="fieldTax" name="tax" type="text" placeholder="0.00" class="mobile-optimized" />
-                                    </label>
-                                </div>
-                                <label>
-                                    <span>Currency</span>
-                                    <input id="fieldCurrency" name="currency" type="text" placeholder="JPY" value="JPY" class="mobile-optimized" />
-                                </label>
-                            </div>
-
-                            <!-- Tashiro Categorization Results -->
-                            <div id="categorizationResults" class="categorization-panel" style="display: none;">
-                                <h4>🤖 AI Categorization Analysis</h4>
-                                <div id="primaryCategoryDisplay" class="primary-category-card">
-                                    <!-- Primary category will be displayed here -->
-                                </div>
-                                <div id="taxClassificationDisplay" class="tax-classification">
-                                    <!-- Tax classification will be displayed here -->
-                                </div>
-                                <div id="workflowDataDisplay" class="workflow-data">
-                                    <!-- Workflow data will be displayed here -->
-                                </div>
-                                <details class="alternative-categories">
-                                    <summary>Alternative Categories</summary>
-                                    <div id="alternativeCategoriesDisplay" class="alternative-list">
-                                        <!-- Alternative categories will be displayed here -->
-                                    </div>
-                                </details>
-                            </div>
-
-                            <p id="verificationStatus" class="verification-status"></p>
-
-                            <div class="form-actions">
-                                <button id="submitButton" type="submit" class="primary-button mobile-optimized" disabled>Submit to HQ</button>
-                                <button id="resetButton" type="button" class="ghost-button mobile-optimized">Start Over</button>
-                            </div>
-                        </form>
+                    <div class="field-group">
+                        <label>Date (日付)</label>
+                        <input id="fieldDate" name="date" type="text" placeholder="YYYY-MM-DD" />
                     </div>
-                </article>
-            </section>
+                    <div class="field-group">
+                        <label>Total Amount (金額)</label>
+                        <input id="fieldTotal" name="total" type="text" placeholder="0.00" />
+                    </div>
+                    <div class="field-group">
+                        <label>Invoice Number (インボイス番号)</label>
+                        <input id="fieldInvoiceNumber" name="invoice_number" type="text" placeholder="Invoice/Receipt No." />
+                    </div>
+                    <div class="field-group">
+                        <label>Tax Category (税区分)</label>
+                        <select id="fieldTaxCategory" name="tax_category">
+                            <option value="">Select tax category</option>
+                            <option value="課税">課税 (Taxable)</option>
+                            <option value="軽減税率">軽減税率 (Reduced Tax Rate 8%)</option>
+                            <option value="標準税率">標準税率 (Standard Tax Rate 10%)</option>
+                            <option value="非課税">非課税 (Non-taxable)</option>
+                        </select>
+                    </div>
+                    <div class="field-group">
+                        <label>Account Title (勘定科目)</label>
+                        <select id="fieldAccountTitle" name="account_title">
+                            <option value="">Select account title</option>
+                            <option value="食費">🍽️ 食費 (Meals)</option>
+                            <option value="交通費">🚗 交通費 (Transportation)</option>
+                            <option value="通信費">📱 通信費 (Communication)</option>
+                            <option value="宿泊費">🏨 宿泊費 (Accommodation)</option>
+                            <option value="接待交際費">🎉 接待交際費 (Entertainment)</option>
+                            <option value="消耗品費">📎 消耗品費 (Supplies)</option>
+                            <option value="水道光熱費">💡 水道光熱費 (Utilities)</option>
+                            <option value="地代家賃">🏢 地代家賃 (Rent)</option>
+                            <option value="租税公課">🏛️ 租税公課 (Taxes)</option>
+                            <option value="旅費交通費">✈️ 旅費交通費 (Travel)</option>
+                            <option value="備品費">💻 備品費 (Equipment)</option>
+                            <option value="修繕費">🔧 修繕費 (Maintenance)</option>
+                            <option value="車両費">⛽ 車両費 (Vehicle/Fuel)</option>
+                            <option value="保険料">🛡️ 保険料 (Insurance)</option>
+                            <option value="研修費">📚 研修費 (Education)</option>
+                            <option value="その他">📋 その他 (Other)</option>
+                        </select>
+                    </div>
+                </form>
 
-            <!-- History & Tracking Section -->
-            <section class="history-card card">
+                <div class="ocr-actions">
+                    <button id="reviewEditBtn" class="btn btn-success" disabled>Review & Edit</button>
+                    <button id="processAgainBtn" class="btn btn-secondary">Process OCR Again</button>
+                    <button id="submitBtn" class="btn btn-primary" disabled>Submit to HQ</button>
+                </div>
+
+                <div id="ocrStatus" class="ocr-status hidden">
+                    <span id="statusIcon">⏳</span>
+                    <span id="statusText">Processing receipt...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. Submission History Tile -->
+        <div class="tile history-tile">
+            <div class="history-content">
                 <div class="history-header">
                     <div>
                         <h3>Submission History</h3>
-                        <p>Keep track of recent uploads, verification status, and exports.</p>
+                        <p>Track your recent submissions</p>
                     </div>
-                    <div class="history-actions">
-                        <label class="muted" for="historyLimit">Show</label>
-                        <select id="historyLimit" class="mobile-optimized">
+                    <div class="history-controls">
+                        <label style="font-size: 14px; color: #6C757D;">Show</label>
+                        <select id="historyLimit">
                             <option value="10">10</option>
                             <option value="25">25</option>
                             <option value="50" selected>50</option>
                         </select>
-                        <button id="refreshHistoryButton" type="button" class="secondary-button mobile-optimized">Refresh</button>
+                        <button id="refreshHistoryBtn" class="btn btn-secondary" style="font-size: 14px; padding: 6px 12px; min-height: 32px;">Refresh</button>
                     </div>
                 </div>
-                <div id="historyEmpty" class="history-empty">No receipts submitted yet.</div>
-                <div id="historyList" class="history-list"></div>
-            </section>
+
+                <div id="historyEmpty" class="history-empty">
+                    No submissions yet — start scanning!
+                </div>
+
+                <div id="historyGrid" class="history-grid hidden">
+                    <!-- History items will be populated here -->
+                </div>
+            </div>
         </div>
     </div>
 
@@ -459,56 +789,70 @@
     <div id="toastContainer" class="toast-container"></div>
 
     <script>
-        console.log("Unified Mobile/Desktop interface starting...");
-        
+        console.log("Professional 5-tile interface starting...");
+
         document.addEventListener("DOMContentLoaded", function() {
             console.log("DOM loaded!");
-            
-            // Handle registration form
-            const registrationForm = document.getElementById("registrationForm");
-            const registrationModal = document.getElementById("registrationModal");
-            
-            if (registrationForm) {
-                registrationForm.addEventListener("submit", function(e) {
+
+            // Load user data on startup
+            loadUserData();
+
+            // Profile modal functionality
+            const profileModal = document.getElementById("profileModal");
+            const updateProfileBtn = document.getElementById("updateProfileBtn");
+            const cancelProfileBtn = document.getElementById("cancelProfile");
+            const profileForm = document.getElementById("profileForm");
+
+            if (updateProfileBtn) {
+                updateProfileBtn.addEventListener("click", function() {
+                    // Load current user data into form
+                    const stored = localStorage.getItem("tashiro_user_v2");
+                    if (stored) {
+                        const userData = JSON.parse(stored);
+                        document.getElementById("profileName").value = userData.name || '';
+                        document.getElementById("profileEmail").value = userData.email || '';
+                        document.getElementById("profileId").value = userData.id || '';
+                    }
+                    profileModal.classList.remove("hidden");
+                });
+            }
+
+            if (cancelProfileBtn) {
+                cancelProfileBtn.addEventListener("click", function() {
+                    profileModal.classList.add("hidden");
+                });
+            }
+
+            if (profileForm) {
+                profileForm.addEventListener("submit", function(e) {
                     e.preventDefault();
-                    console.log("Registration form submitted!");
-                    
-                    const name = document.getElementById("regName").value;
-                    const email = document.getElementById("regEmail").value;
-                    
+
+                    const name = document.getElementById("profileName").value;
+                    const email = document.getElementById("profileEmail").value;
+                    const id = document.getElementById("profileId").value;
+
                     if (name && email) {
-                        // Store user data
-                        const userData = {
-                            name: name,
-                            email: email,
-                            id: document.getElementById("regId").value || null
-                        };
-                        
+                        const userData = { name, email, id: id || null };
+
                         try {
                             localStorage.setItem("tashiro_user_v2", JSON.stringify(userData));
-                        } catch (e) {
-                            console.warn("LocalStorage not available");
+                            updateUserDisplay(userData);
+                            profileModal.classList.add("hidden");
+                            showToast("Profile updated successfully!", "success");
+                        } catch (error) {
+                            console.error("Failed to save profile:", error);
+                            showToast("Failed to update profile", "error");
                         }
-                        
-                        // Update UI
-                        document.getElementById("sidebarUserName").textContent = name;
-                        document.getElementById("sidebarUserEmail").textContent = email;
-                        document.getElementById("userInitials").textContent = name.substring(0, 2).toUpperCase();
-                        
-                        // Hide modal
-                        if (registrationModal) {
-                            registrationModal.classList.add("hidden");
-                        }
-                        
-                        alert("Registration successful! You can now use the camera and upload features.");
                     } else {
-                        alert("Please fill in name and email.");
+                        showToast("Name and email are required", "warning");
                     }
                 });
             }
-            
-            // Handle camera input (native camera app)
+
+            // File upload functionality
             const cameraInput = document.getElementById("cameraInput");
+            const fileInput = document.getElementById("fileInput");
+
             if (cameraInput) {
                 cameraInput.addEventListener("change", function(e) {
                     const file = e.target.files[0];
@@ -517,9 +861,7 @@
                     }
                 });
             }
-            
-            // Handle file upload
-            const fileInput = document.getElementById("fileInput");
+
             if (fileInput) {
                 fileInput.addEventListener("change", function(e) {
                     const file = e.target.files[0];
@@ -528,58 +870,16 @@
                     }
                 });
             }
-            
-            // Handle drag and drop
-            const dropzone = document.getElementById("dropzone");
-            if (dropzone) {
-                ["dragenter", "dragover"].forEach((eventName) => {
-                    dropzone.addEventListener(eventName, (event) => {
-                        event.preventDefault();
-                        dropzone.classList.add("dragover");
-                    });
-                });
-                ["dragleave", "drop"].forEach((eventName) => {
-                    dropzone.addEventListener(eventName, (event) => {
-                        event.preventDefault();
-                        dropzone.classList.remove("dragover");
-                    });
-                });
-                dropzone.addEventListener("drop", async (event) => {
-                    event.preventDefault();
-                    const file = event.dataTransfer?.files?.[0];
-                    if (file) {
-                        handleFileUpload(file, file.name);
-                    }
-                });
-            }
-            
-            // OCR Analysis Function
+
+            // OCR processing function
             async function handleFileUpload(file, filename) {
                 console.log("Processing file:", filename);
 
-                // Detect camera images (from camera input vs file input)
+                // Show capture loading
+                showCaptureLoading(true);
+
+                // Detect camera images
                 const isCameraImage = filename.includes('camera-capture') || filename.toLowerCase().includes('camera');
-                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
-
-                // Show loading with camera-specific message
-                const analysisLoader = document.getElementById("analysisLoader");
-                const analysisPlaceholder = document.getElementById("analysisPlaceholder");
-
-                if (analysisLoader) {
-                    analysisLoader.classList.remove("hidden");
-                    // Update loader text for camera images
-                    const loaderText = analysisLoader.querySelector('p');
-                    if (loaderText) {
-                        if (isCameraImage) {
-                            loaderText.textContent = 'Enhancing camera image and analyzing receipt…';
-                        } else {
-                            loaderText.textContent = 'Analyzing receipt…';
-                        }
-                    }
-                }
-                if (analysisPlaceholder) {
-                    analysisPlaceholder.style.display = 'none';
-                }
 
                 try {
                     // Get user data
@@ -598,296 +898,121 @@
                     formData.append('file', file);
                     formData.append('metadata', JSON.stringify({ user: userData }));
 
-                    // Call OCR API with timeout
-                    console.log(`📤 Sending ${isCameraImage ? 'camera' : 'uploaded'} file to OCR analysis:`, filename, "Size:", fileSizeMB, "MB");
+                    // Update OCR status
+                    updateOcrStatus("Analyzing receipt…", "⏳");
 
-                    // Create new AbortController for this request
-                    window.currentAnalysisRequest = new AbortController();
+                    // Call OCR API
+                    console.log(`Sending ${isCameraImage ? 'camera' : 'uploaded'} file to OCR analysis:`, filename);
 
                     const response = await fetch('/api/mobile/analyze', {
                         method: 'POST',
                         body: formData,
-                        signal: AbortSignal.timeout(60000) // 60 second timeout
+                        signal: AbortSignal.timeout(60000)
                     });
 
                     if (!response.ok) {
-                        const errorText = await response.text();
-                        throw new Error(`Server error (${response.status}): ${errorText}`);
+                        throw new Error(`Server error (${response.status}): ${await response.text()}`);
                     }
 
                     const result = await response.json();
-                    console.log("📥 OCR Analysis Complete:", result);
+                    console.log("OCR Analysis Complete:", result);
 
-                    // Check for backend errors
+                    // Check for errors
                     if (result.fields && result.fields.error) {
                         console.warn("Backend reported error:", result.fields.error);
-                        // Show warning but continue with any extracted data
                         showToast(`⚠️ OCR partially failed: ${result.fields.error}`, 'warning');
                     }
 
-                    // Check for debug info
-                    if (result.fields && result.fields.debug_info) {
-                        console.log("🔍 Debug info:", result.fields.debug_info);
-                        if (result.fields.debug_info.error_type) {
-                            showToast(`🔍 Debug: ${result.fields.debug_info.error_type}`, 'info');
-                        }
-                    }
-
-                    // Store queue_id for later submission
+                    // Store queue_id
                     if (result.queue_id) {
                         window.currentQueueId = result.queue_id;
-                        console.log("🔗 Stored queue ID:", result.queue_id);
+                        console.log("Stored queue ID:", result.queue_id);
                     }
 
-                    // Hide loading
-                    if (analysisLoader) {
-                        analysisLoader.classList.add("hidden");
-                    }
+                    // Hide capture loading
+                    showCaptureLoading(false);
 
                     // Display results
-                    displayOCRResults(result);
+                    displayOcrResults(result);
 
                 } catch (error) {
                     console.error("OCR Analysis failed:", error);
-
-                    // Hide loading
-                    if (analysisLoader) {
-                        analysisLoader.classList.add("hidden");
-                    }
-
-                    // Show detailed error message
-                    let errorMessage = "Analysis failed: " + error.message;
-                    let suggestions = [];
-
-                    if (isCameraImage) {
-                        suggestions.push("• Try taking the photo in better lighting");
-                        suggestions.push("• Hold the camera steadier");
-                        suggestions.push("• Ensure the receipt fills the frame");
-                        suggestions.push("• Try the file upload option instead");
-                    } else {
-                        suggestions.push("• Check that the image is clear and well-lit");
-                        suggestions.push("• Ensure the receipt text is readable");
-                        suggestions.push("• Try a different image format");
-                    }
-
-                    if (error.message.includes('timeout')) {
-                        suggestions.push("• Image may be too large - try a smaller file");
-                    }
-
-                    if (analysisPlaceholder) {
-                        analysisPlaceholder.style.display = 'block';
-                        analysisPlaceholder.innerHTML = `
-                            <div style="text-align: center; color: #dc2626;">
-                                <p><strong>❌ ${errorMessage}</strong></p>
-                                <p style="font-size: 14px; margin-top: 10px;">Suggestions:</p>
-                                <ul style="text-align: left; display: inline-block; font-size: 14px;">
-                                    ${suggestions.map(s => `<li>${s}</li>`).join('')}
-                                </ul>
-                            </div>
-                        `;
-                    }
-
-                    // Show toast notification
-                    showToast(`❌ ${errorMessage}`, 'error');
-
-                    // Don't show alert for camera images (too intrusive)
-                    if (!isCameraImage) {
-                        alert(errorMessage);
-                    }
+                    showCaptureLoading(false);
+                    updateOcrStatus("Analysis failed", "❌");
+                    showToast(`❌ ${error.message}`, 'error');
                 }
             }
-            
-            // Display OCR Results
-            function displayOCRResults(result) {
-                console.log("🔍 Displaying OCR results:", result);
-                
-                // Update form fields (A-F specification)
+
+            // Display OCR results
+            function displayOcrResults(result) {
+                console.log("Displaying OCR results:", result);
+
                 if (result.fields) {
                     const fields = result.fields;
-                    console.log("📋 Fields to populate:", fields);
-                    
-                    try {
-                        // A - Date
-                        const dateValue = fields.date || '';
-                        document.getElementById("fieldDate").value = dateValue;
-                        console.log("A - Date:", dateValue);
-                        
-                        // B - Store Name/Vendor
-                        const vendorValue = fields.vendor || '';
-                        document.getElementById("fieldVendor").value = vendorValue;
-                        console.log("B - Store Name:", vendorValue);
-                        
-                        // C - Total Amount
-                        let totalValue = fields.total || '';
-                        if (typeof totalValue === 'number') {
-                            totalValue = totalValue.toString();
-                        }
-                        document.getElementById("fieldTotal").value = totalValue;
-                        console.log("C - Total Amount:", totalValue);
-                        
-                        // D - Invoice Number
-                        const invoiceValue = fields.invoice_number || '';
-                        document.getElementById("fieldInvoiceNumber").value = invoiceValue;
-                        console.log("D - Invoice Number:", invoiceValue);
-                        
-                        // E - Tax Category
-                        const taxCategoryValue = fields.tax_category || '';
-                        document.getElementById("fieldTaxCategory").value = taxCategoryValue;
-                        console.log("E - Tax Category:", taxCategoryValue);
-                        
-                        // F - Account Title
-                        const accountTitleValue = fields.account_title || fields.accounting_items || '';
-                        document.getElementById("fieldAccountTitle").value = accountTitleValue;
-                        console.log("F - Account Title:", accountTitleValue);
-                        
-                        // Additional fields
-                        const subtotalValue = fields.subtotal || '';
-                        document.getElementById("fieldSubtotal").value = subtotalValue;
-                        
-                        const taxValue = fields.tax || '';
-                        document.getElementById("fieldTax").value = taxValue;
-                        
-                        const currencyValue = fields.currency || 'JPY';
-                        document.getElementById("fieldCurrency").value = currencyValue;
-                        
-                    } catch (error) {
-                        console.error("❌ Error populating form fields:", error);
-                    }
+
+                    // Populate form fields
+                    document.getElementById("fieldVendor").value = fields.vendor || '';
+                    document.getElementById("fieldDate").value = fields.date || '';
+                    document.getElementById("fieldTotal").value = fields.total || '';
+                    document.getElementById("fieldInvoiceNumber").value = fields.invoice_number || '';
+                    document.getElementById("fieldTaxCategory").value = fields.tax_category || '';
+                    document.getElementById("fieldAccountTitle").value = fields.account_title || '';
+
+                    // Update status
+                    updateOcrStatus("OCR completed successfully ✓", "✅", "success");
+
+                    // Enable buttons
+                    document.getElementById("reviewEditBtn").disabled = false;
+                    document.getElementById("submitBtn").disabled = false;
+                }
+            }
+
+            // OCR status updates
+            function updateOcrStatus(text, icon, type = "") {
+                const statusDiv = document.getElementById("ocrStatus");
+                const statusIcon = document.getElementById("statusIcon");
+                const statusText = document.getElementById("statusText");
+
+                statusIcon.textContent = icon;
+                statusText.textContent = text;
+                statusDiv.className = `ocr-status ${type}`;
+                statusDiv.classList.remove("hidden");
+            }
+
+            // Capture loading state
+            function showCaptureLoading(show) {
+                const placeholder = document.getElementById("capturePlaceholder");
+                const loading = document.getElementById("captureLoading");
+
+                if (show) {
+                    placeholder.classList.add("hidden");
+                    loading.classList.remove("hidden");
                 } else {
-                    console.warn("⚠️ No fields object in result:", result);
-                }
-                
-                // Show verification status
-                const verificationStatus = document.getElementById("verificationStatus");
-                if (verificationStatus && result.verification) {
-                    if (result.verification.verified) {
-                        verificationStatus.innerHTML = `
-                            <div class="status-success">
-                                <span class="status-icon">✅</span>
-                                <span>All fields verified successfully!</span>
-                                <span class="confidence-badge">High Confidence</span>
-                            </div>
-                        `;
-                        verificationStatus.className = "verification-status success";
-                    } else {
-                        const issues = result.verification.issues || [];
-                        verificationStatus.innerHTML = `
-                            <div class="status-warning">
-                                <span class="status-icon">⚠️</span>
-                                <span>Issues detected: ${issues.join(", ")}</span>
-                                <span class="confidence-badge">Review Required</span>
-                            </div>
-                        `;
-                        verificationStatus.className = "verification-status warning";
-                    }
-                }
-                
-                // Enable submit button
-                const submitButton = document.getElementById("submitButton");
-                if (submitButton) {
-                    submitButton.disabled = false;
-                }
-                
-                // Enhanced image display
-                if (result.fields && result.fields.source_image) {
-                    const analysisCanvas = document.getElementById("analysisCanvas");
-                    const analysisPlaceholder = document.getElementById("analysisPlaceholder");
-                    
-                    if (analysisCanvas && analysisPlaceholder) {
-                        const img = new Image();
-                        img.onload = function() {
-                            const ctx = analysisCanvas.getContext('2d');
-                            analysisCanvas.width = img.width;
-                            analysisCanvas.height = img.height;
-                            
-                            // Draw the image
-                            ctx.drawImage(img, 0, 0);
-                            
-                            analysisCanvas.style.display = 'block';
-                            analysisPlaceholder.style.display = 'none';
-                        };
-                        img.src = 'data:image/jpeg;base64,' + result.fields.source_image;
-                    }
+                    placeholder.classList.remove("hidden");
+                    loading.classList.add("hidden");
                 }
             }
-            
-            // Handle other buttons
-            const resetButton = document.getElementById("resetButton");
-            if (resetButton) {
-                resetButton.addEventListener("click", function() {
-                    console.log("Start Over button clicked - resetting workspace...");
-                    
-                    // Clear all form fields
-                    try {
-                        document.getElementById("fieldDate").value = '';
-                        document.getElementById("fieldVendor").value = '';
-                        document.getElementById("fieldTotal").value = '';
-                        document.getElementById("fieldInvoiceNumber").value = '';
-                        document.getElementById("fieldTaxCategory").value = '';
-                        document.getElementById("fieldAccountTitle").value = '';
-                        document.getElementById("fieldSubtotal").value = '';
-                        document.getElementById("fieldTax").value = '';
-                        document.getElementById("fieldCurrency").value = 'JPY';
-                    } catch (error) {
-                        console.error("Error resetting form fields:", error);
-                    }
-                    
-                    // Clear queue ID
-                    window.currentQueueId = null;
-                    
-                    // Reset verification status
-                    const verificationStatus = document.getElementById("verificationStatus");
-                    if (verificationStatus) {
-                        verificationStatus.textContent = '';
-                        verificationStatus.className = 'verification-status';
-                    }
-                    
-                    // Reset analysis display
-                    const analysisLoader = document.getElementById("analysisLoader");
-                    const analysisCanvas = document.getElementById("analysisCanvas");
-                    const analysisPlaceholder = document.getElementById("analysisPlaceholder");
-                    
-                    if (analysisLoader) {
-                        analysisLoader.classList.add("hidden");
-                    }
-                    if (analysisCanvas) {
-                        analysisCanvas.style.display = 'none';
-                    }
-                    if (analysisPlaceholder) {
-                        analysisPlaceholder.style.display = 'block';
-                        analysisPlaceholder.innerHTML = '<p>No receipt analyzed yet.</p><p class="muted">Capture or upload a receipt to see real-time overlays.</p>';
-                    }
-                    
-                    // Disable submit button
-                    const submitButton = document.getElementById("submitButton");
-                    if (submitButton) {
-                        submitButton.disabled = true;
-                    }
-                    
-                    console.log("✅ Workspace reset complete!");
-                });
-            }
-            
-            // Handle verification form submission
+
+            // Form submission
             const verificationForm = document.getElementById("verificationForm");
-            if (verificationForm) {
+            const submitBtn = document.getElementById("submitBtn");
+
+            if (verificationForm && submitBtn) {
                 verificationForm.addEventListener("submit", async function(e) {
                     e.preventDefault();
                     console.log("Submitting to HQ...");
-                    
+
                     // Get form data
                     const formData = {
-                        date: document.getElementById("fieldDate").value,
                         vendor: document.getElementById("fieldVendor").value,
+                        date: document.getElementById("fieldDate").value,
                         total: parseFloat(document.getElementById("fieldTotal").value) || 0,
                         invoice_number: document.getElementById("fieldInvoiceNumber").value,
                         tax_category: document.getElementById("fieldTaxCategory").value,
                         account_title: document.getElementById("fieldAccountTitle").value,
-                        subtotal: parseFloat(document.getElementById("fieldSubtotal").value) || 0,
-                        tax: parseFloat(document.getElementById("fieldTax").value) || 0,
-                        currency: document.getElementById("fieldCurrency").value
+                        currency: 'JPY'
                     };
-                    
+
                     // Get user data
                     let userData = { name: 'Guest', email: 'guest@example.com' };
                     try {
@@ -898,140 +1023,153 @@
                     } catch (e) {
                         console.warn("Could not load user data");
                     }
-                    
+
                     try {
-                        // Get the current queue_id
-                        let queueId = null;
-                        if (window.currentQueueId) {
-                            queueId = window.currentQueueId;
-                        } else {
+                        let queueId = window.currentQueueId;
+                        if (!queueId) {
                             throw new Error("No queue ID available. Please upload and analyze a receipt first.");
                         }
-                        
+
                         const response = await fetch('/api/mobile/submit', {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
+                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 queue_id: queueId,
                                 fields: formData,
                                 user: userData
                             })
                         });
-                        
+
                         if (!response.ok) {
                             throw new Error(`HTTP error! status: ${response.status}`);
                         }
-                        
+
                         const result = await response.json();
                         console.log("Submission result:", result);
-                        
-                        alert("✅ Receipt submitted successfully to HQ!");
-                        
-                        // Reset the form
-                        resetButton.click();
-                        
-                        // Refresh history
+
+                        showToast("✅ Receipt submitted successfully to HQ!", "success");
+
+                        // Reset form
+                        resetForm();
                         refreshHistory();
-                        
+
                     } catch (error) {
                         console.error("Submission failed:", error);
-                        alert("❌ Submission failed: " + error.message);
+                        showToast("❌ Submission failed: " + error.message, "error");
                     }
                 });
             }
-            
-            // History functionality
-            const refreshHistoryButton = document.getElementById("refreshHistoryButton");
-            if (refreshHistoryButton) {
-                refreshHistoryButton.addEventListener("click", function() {
-                    refreshHistory();
-                });
+
+            // Reset form
+            function resetForm() {
+                document.getElementById("fieldVendor").value = '';
+                document.getElementById("fieldDate").value = '';
+                document.getElementById("fieldTotal").value = '';
+                document.getElementById("fieldInvoiceNumber").value = '';
+                document.getElementById("fieldTaxCategory").value = '';
+                document.getElementById("fieldAccountTitle").value = '';
+
+                document.getElementById("reviewEditBtn").disabled = true;
+                document.getElementById("submitBtn").disabled = true;
+                updateOcrStatus("", "", "hidden");
+
+                window.currentQueueId = null;
             }
-            
-            // History refresh function
+
+            // History functionality
+            const refreshHistoryBtn = document.getElementById("refreshHistoryBtn");
+            const historyLimit = document.getElementById("historyLimit");
+
+            if (refreshHistoryBtn) {
+                refreshHistoryBtn.addEventListener("click", refreshHistory);
+            }
+
             async function refreshHistory() {
                 console.log("Refreshing history...");
-                
-                const historyList = document.getElementById("historyList");
+
                 const historyEmpty = document.getElementById("historyEmpty");
-                const historyLimit = document.getElementById("historyLimit");
-                
+                const historyGrid = document.getElementById("historyGrid");
+                const limit = historyLimit ? historyLimit.value : 50;
+
                 try {
-                    const limit = historyLimit ? historyLimit.value : 50;
                     const response = await fetch(`/api/history?limit=${limit}`);
-                    
+
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
                     }
-                    
+
                     const history = await response.json();
                     console.log("History data:", history);
-                    
-                    if (historyList) {
-                        historyList.innerHTML = '';
-                    }
-                    
+
+                    historyGrid.innerHTML = '';
+
                     if (!history || history.length === 0) {
-                        if (historyEmpty) {
-                            historyEmpty.style.display = 'block';
-                        }
-                        if (historyList) {
-                            historyList.style.display = 'none';
-                        }
+                        historyEmpty.classList.remove("hidden");
+                        historyGrid.classList.add("hidden");
                     } else {
-                        if (historyEmpty) {
-                            historyEmpty.style.display = 'none';
-                        }
-                        if (historyList) {
-                            historyList.style.display = 'block';
-                            
-                            history.forEach(entry => {
-                                const item = document.createElement("div");
-                                item.className = "history-item";
-                                
-                                item.innerHTML = `
-                                    <div class="history-thumbnail">
-                                        ${entry.thumbnail_url ? 
-                                            `<img src="${entry.thumbnail_url}" alt="Receipt thumbnail" />` : 
-                                            '<div class="thumbnail-placeholder">📄</div>'
-                                        }
+                        historyEmpty.classList.add("hidden");
+                        historyGrid.classList.remove("hidden");
+
+                        history.forEach(entry => {
+                            const item = document.createElement("div");
+                            item.className = "history-item";
+
+                            item.innerHTML = `
+                                <div class="history-thumbnail">
+                                    ${entry.thumbnail_url ?
+                                        `<img src="${entry.thumbnail_url}" alt="Receipt thumbnail" />` :
+                                        '📄'
+                                    }
+                                </div>
+                                <div class="history-meta">
+                                    <div class="history-title">${entry.vendor || 'Unknown Vendor'}</div>
+                                    <div class="history-details">
+                                        <span>¥${entry.total || '0'}</span>
+                                        <span>${entry.date || 'No date'}</span>
                                     </div>
-                                    <div class="history-meta">
-                                        <div class="history-title">${entry.vendor || 'Unknown Vendor'}</div>
-                                        <div class="history-details">
-                                            <span class="amount">${entry.currency || ''} ${entry.total || '0'}</span>
-                                            <span class="date">${entry.date || 'No date'}</span>
-                                        </div>
-                                        <div class="history-status ${entry.verified ? 'success' : 'neutral'}">
-                                            ${entry.verified ? 'Verified' : 'Pending'}
-                                        </div>
-                                        ${entry.excel_url ? 
-                                            `<a href="${entry.excel_url}" target="_blank">Download Excel</a>` : 
-                                            ''
-                                        }
+                                    <div class="history-status ${entry.verified ? 'success' : 'neutral'}">
+                                        ${entry.verified ? 'Verified' : 'Pending'}
                                     </div>
-                                `;
-                                
-                                historyList.appendChild(item);
-                            });
-                        }
+                                </div>
+                            `;
+
+                            historyGrid.appendChild(item);
+                        });
                     }
-                    
+
                 } catch (error) {
                     console.error("Failed to refresh history:", error);
-                    if (historyEmpty) {
-                        historyEmpty.style.display = 'block';
-                        historyEmpty.textContent = 'Failed to load history: ' + error.message;
-                    }
+                    historyEmpty.textContent = 'Failed to load history: ' + error.message;
+                    historyEmpty.classList.remove("hidden");
+                    historyGrid.classList.add("hidden");
                 }
             }
-            
-            // Load history on page load
+
+            // Load user data
+            function loadUserData() {
+                try {
+                    const stored = localStorage.getItem("tashiro_user_v2");
+                    if (stored) {
+                        const userData = JSON.parse(stored);
+                        updateUserDisplay(userData);
+                    }
+                } catch (e) {
+                    console.warn("Could not load user data");
+                }
+            }
+
+            // Update user display
+            function updateUserDisplay(userData) {
+                const avatar = document.getElementById("userAvatar");
+                if (avatar && userData.name) {
+                    avatar.textContent = userData.name.substring(0, 2).toUpperCase();
+                }
+            }
+
+            // Initial history load
             refreshHistory();
-            
-            console.log("All event handlers bound!");
+
+            console.log("Professional interface initialized!");
         });
 
         // Toast notification function
