@@ -127,13 +127,16 @@ class FieldExtractor:
         """Parse OCR text to extract receipt fields."""
         lines = [line.strip() for line in text.split('\n') if line.strip()]
 
+        category, confidence = self._categorize_expense(lines)
+
         extracted = {
             'date': self._extract_date(lines),
             'vendor': self._extract_vendor(lines),
             'total': self._extract_total(lines),
             'invoice_number': self._extract_invoice(lines),
             'tax_category': self._extract_tax_category(lines),
-            'account_title': self._categorize_expense(lines),
+            'account_title': category,
+            'confidence': confidence,
             'subtotal': self._extract_subtotal(lines),
             'tax': self._extract_tax(lines),
             'currency': 'JPY'
@@ -352,8 +355,9 @@ class FieldExtractor:
 
         return '課税'  # Default
 
-    def _categorize_expense(self, lines: list) -> str:
-        """AI-based categorization of expenses based on receipt content with improved context awareness."""
+    def _categorize_expense(self, lines: list) -> tuple[str, int]:
+        """AI-based categorization of expenses based on receipt content with improved context awareness.
+        Returns: (category, confidence_percentage)"""
         text = ' '.join(lines).lower()
 
         # Enhanced categorization with comprehensive keyword matching and context awareness
@@ -464,16 +468,20 @@ class FieldExtractor:
             if score > 0:
                 scores[category] = score
 
-        # Return the category with the highest score, or 'その他' if no matches
+        # Calculate confidence percentage and return category with confidence
         if scores:
             best_category = max(scores, key=scores.get)
-            print(f"🤖 AI Category Detection: {best_category} (score: {scores[best_category]})")
+            best_score = scores[best_category]
+            max_possible_score = 50  # Conservative estimate of maximum possible score
+            confidence_percentage = min(95, int((best_score / max_possible_score) * 100))  # Cap at 95%
+
+            print(f"🤖 AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%)")
             print(f"🤖 All scores: {scores}")
-            return best_category
+            return best_category, confidence_percentage
 
         # Default fallback
-        print("🤖 AI Category Detection: No matches found, defaulting to 'その他'")
-        return 'その他'
+        print("🤖 AI Category Detection: No matches found, defaulting to 'その他' (confidence: 0%)")
+        return 'その他', 0
 
     def _extract_subtotal(self, lines: list) -> str:
         """Extract subtotal."""
