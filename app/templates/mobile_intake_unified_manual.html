@@ -1468,7 +1468,7 @@
         // Apply translations to the page
         function applyLanguage(language) {
             currentLanguage = language;
-            console.log('Applying language:', language);
+            console.log('Applying language:', language, 'at', new Date().toISOString());
 
             // Update HTML lang attribute
             document.documentElement.lang = language;
@@ -1476,8 +1476,9 @@
             // Update page title
             document.title = t('pageTitle');
 
-            // Force update buttons immediately
+            // Force update buttons immediately with multiple attempts
             setTimeout(() => {
+                console.log('=== FORCED UPDATE ATTEMPT 1 ===');
                 const submitBtn = document.getElementById('submitButton');
                 const resetBtn = document.getElementById('resetButton');
                 console.log('Force updating buttons:', submitBtn, resetBtn);
@@ -1511,6 +1512,64 @@
                 // Force update history
                 updateHistoryDisplay();
             }, 100);
+
+            // Second forced update attempt
+            setTimeout(() => {
+                console.log('=== FORCED UPDATE ATTEMPT 2 ===');
+                const submitBtn = document.getElementById('submitButton');
+                const resetBtn = document.getElementById('resetButton');
+                if (submitBtn) {
+                    submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
+                    console.log('Submit button forced to (attempt 2):', submitBtn.innerHTML);
+                }
+                if (resetBtn) {
+                    resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
+                    console.log('Reset button forced to (attempt 2):', resetBtn.innerHTML);
+                }
+
+                const additionalLabels = document.querySelectorAll('.additional-info label');
+                if (additionalLabels.length >= 3) {
+                    additionalLabels[0].textContent = t('subtotalRef');
+                    additionalLabels[1].textContent = t('taxAmountRef');
+                    additionalLabels[2].textContent = t('currency');
+                    console.log('Additional labels forced to (attempt 2):', additionalLabels[2].textContent);
+                }
+
+                const developerCredit = document.querySelector('.developer-credit');
+                if (developerCredit) {
+                    developerCredit.textContent = t('developerCredit');
+                    console.log('Developer credit forced to (attempt 2):', developerCredit.textContent);
+                }
+            }, 500);
+
+            // Third forced update attempt
+            setTimeout(() => {
+                console.log('=== FORCED UPDATE ATTEMPT 3 ===');
+                const submitBtn = document.getElementById('submitButton');
+                const resetBtn = document.getElementById('resetButton');
+                if (submitBtn) {
+                    submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
+                    console.log('Submit button forced to (attempt 3):', submitBtn.innerHTML);
+                }
+                if (resetBtn) {
+                    resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
+                    console.log('Reset button forced to (attempt 3):', resetBtn.innerHTML);
+                }
+
+                const additionalLabels = document.querySelectorAll('.additional-info label');
+                if (additionalLabels.length >= 3) {
+                    additionalLabels[0].textContent = t('subtotalRef');
+                    additionalLabels[1].textContent = t('taxAmountRef');
+                    additionalLabels[2].textContent = t('currency');
+                    console.log('Additional labels forced to (attempt 3):', additionalLabels[2].textContent);
+                }
+
+                const developerCredit = document.querySelector('.developer-credit');
+                if (developerCredit) {
+                    developerCredit.textContent = t('developerCredit');
+                    console.log('Developer credit forced to (attempt 3):', developerCredit.textContent);
+                }
+            }, 1000);
 
             // Welcome Modal
             document.querySelector('#welcomeModal h1').textContent = t('welcomeTitle');
@@ -1684,25 +1743,25 @@
 
             // Additional info field labels
             const additionalLabels = document.querySelectorAll('.additional-info label');
-            console.log('Additional labels found:', additionalLabels.length);
+            console.log('Additional labels found (regular update):', additionalLabels.length);
             if (additionalLabels.length >= 3) {
                 additionalLabels[0].textContent = t('subtotalRef');
                 additionalLabels[1].textContent = t('taxAmountRef');
                 additionalLabels[2].textContent = t('currency');
-                console.log('Additional labels updated:', additionalLabels[2].textContent);
+                console.log('Additional labels updated (regular):', additionalLabels[2].textContent);
             }
 
             // Form action buttons
             const submitBtn = document.getElementById('submitButton');
             const resetBtn = document.getElementById('resetButton');
-            console.log('Updating buttons:', submitBtn, resetBtn);
+            console.log('Updating buttons (regular):', submitBtn, resetBtn);
             if (submitBtn) {
                 submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
-                console.log('Submit button updated to:', submitBtn.innerHTML);
+                console.log('Submit button updated to (regular):', submitBtn.innerHTML);
             }
             if (resetBtn) {
                 resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
-                console.log('Reset button updated to:', resetBtn.innerHTML);
+                console.log('Reset button updated to (regular):', resetBtn.innerHTML);
             }
 
             // Verification status
@@ -1717,10 +1776,10 @@
 
             // Developer credit
             const developerCredit = document.querySelector('.developer-credit');
-            console.log('Developer credit element:', developerCredit);
+            console.log('Developer credit element (regular):', developerCredit);
             if (developerCredit) {
                 developerCredit.textContent = t('developerCredit');
-                console.log('Developer credit updated to:', developerCredit.textContent);
+                console.log('Developer credit updated to (regular):', developerCredit.textContent);
             }
 
             // Update history display if it exists
@@ -2100,7 +2159,7 @@
         // Update history display
         function updateHistoryDisplay() {
             const history = JSON.parse(localStorage.getItem('tashiro_history') || '[]');
-            console.log('History items:', history.length);
+            console.log('History items:', history.length, 'Language:', currentLanguage);
             
             if (history.length === 0) {
                 const noSubmissionsText = t('noSubmissionsYet');
