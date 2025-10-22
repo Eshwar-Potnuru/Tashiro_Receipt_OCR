@@ -15,21 +15,13 @@ class FieldExtractor:
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
         """Extract structured data from receipt image."""
         try:
-            # Prepare OCR.space API request
-            files = {'file': (filename, image_data, 'application/octet-stream')}
-            data = {
-                'apikey': self.api_key,
-                'language': 'jpn',
-                'isOverlayRequired': True,
-                'detectOrientation': True,
-                'scale': True
-            }
-
-            # Make API call
-            response = requests.post(self.api_url, files=files, data=data)
-            response.raise_for_status()
-
-            result = response.json()
+            # Try OCR engine 2 first (more accurate for Japanese)
+            try:
+                result = self._call_ocr_api(image_data, filename, engine=2)
+            except Exception as e:
+                print(f"Engine 2 failed, trying engine 1: {e}")
+                # Fallback to engine 1 if engine 2 fails
+                result = self._call_ocr_api(image_data, filename, engine=1)
 
             if result.get('IsErroredOnProcessing'):
                 raise Exception(f"OCR API Error: {result.get('ErrorMessage', 'Unknown error')}")
@@ -37,12 +29,16 @@ class FieldExtractor:
             # Parse OCR text and extract fields
             parsed_text = result['ParsedResults'][0]['ParsedText'] if result['ParsedResults'] else ""
 
-            # Extract fields using pattern matching and heuristics
+            # Debug: Log the OCR text for troubleshooting
+            print(f"OCR Text extracted: {parsed_text[:500]}...")  # Log first 500 chars
+
+            # Extract fields using primary methods
             extracted_fields = self._parse_receipt_text(parsed_text)
 
-            # Add source image data for display (base64 encode the original image)
-            import base64
-            extracted_fields['source_image'] = base64.b64encode(image_data).decode('utf-8')
+            # If critical fields are missing, try fallback extraction
+            if not extracted_fields['total'] or not extracted_fields['vendor']:
+                print("Primary extraction incomplete, trying fallback methods...")
+                extracted_fields = self._fallback_extraction(parsed_text, extracted_fields)
 
             return extracted_fields
 
@@ -86,6 +82,7 @@ class FieldExtractor:
             r'(\d{4})年(\d{1,2})月(\d{1,2})日',     # Japanese format: 2025年7月2日
             r'(\d{4})年(\d{1,2})月(\d{1,2})',       # Japanese format without 日
             r'(\d{4})/(\d{1,2})/(\d{1,2})',        # YYYY/MM/DD
+            r'(\d{2})[/-](\d{1,2})[/-](\d{1,2})',  # YY-MM-DD (assume 20xx)
         ]
 
         for line in lines:
@@ -96,6 +93,9 @@ class FieldExtractor:
                         return f"{match.group(1)}-{match.group(2).zfill(2)}-{match.group(3).zfill(2)}"
                     elif len(match.group(1)) == 4:  # YYYY first
                         return f"{match.group(1)}-{match.group(2).zfill(2)}-{match.group(3).zfill(2)}"
+                    elif len(match.group(1)) == 2:  # YY-MM-DD format
+                        year = f"20{match.group(1)}"  # Assume 20xx
+                        return f"{year}-{match.group(2).zfill(2)}-{match.group(3).zfill(2)}"
                     else:  # DD first
                         return f"{match.group(3)}-{match.group(2).zfill(2)}-{match.group(1).zfill(2)}"
         return ''
@@ -134,8 +134,9 @@ class FieldExtractor:
 
             # Look for store names - prefer lines with Japanese characters
             if any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff'):
-                # Additional check: store names usually contain 食堂, 店, レストラン, etc.
-                if any(keyword in line for keyword in ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ']):
+                # Additional check: store names usually contain restaurant keywords or are substantial
+                store_keywords = ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ', '酒店', '薬局', '医院', 'クリーニング']
+                if any(keyword in line for keyword in store_keywords) or len(line) >= 3:
                     return line
 
             # Also accept English store names
@@ -154,10 +155,14 @@ class FieldExtractor:
             r'[¥\\]([0-9,]+\.?[0-9]*)\s*$',  # ¥1000 at end of line
             r'([0-9,]+\.?[0-9]*)\s*円\s*$',  # 1000円 at end of line
             r'^\s*([0-9,]+\.?[0-9]*)\s*$',  # Just numbers on a line (often totals)
+            r'金額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 金額: 1000
+            r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)',  # General number pattern with commas
         ]
 
+        # First pass: look for explicit total indicators
         for line in reversed(lines):  # Check from bottom up
-            for pattern in amount_patterns:
+            line_lower = line.lower()
+            for pattern in amount_patterns[:7]:  # Skip the general pattern first
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     amount = match.group(1).replace(',', '')
@@ -168,6 +173,24 @@ class FieldExtractor:
                             return amount
                     except ValueError:
                         continue
+
+        # Second pass: look for any reasonable amounts if no explicit totals found
+        all_amounts = []
+        for line in lines:
+            matches = re.findall(r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', line)
+            for match in matches:
+                amount = match.replace(',', '')
+                try:
+                    value = float(amount)
+                    if 1 <= value <= 1000000:  # Reasonable receipt amount
+                        all_amounts.append((value, line))
+                except ValueError:
+                    continue
+
+        # Return the largest reasonable amount found (often the total)
+        if all_amounts:
+            all_amounts.sort(key=lambda x: x[0], reverse=True)
+            return str(int(all_amounts[0][0]))
 
         return ''
 
@@ -272,3 +295,53 @@ class FieldExtractor:
                 if match:
                     return match.group(1).replace(',', '')
         return ''
+
+    def _call_ocr_api(self, image_data: bytes, filename: str, engine: int = 2) -> dict:
+        """Call OCR.space API with specified engine."""
+        files = {'file': (filename, image_data, 'application/octet-stream')}
+        data = {
+            'apikey': self.api_key,
+            'language': 'jpn',
+            'isOverlayRequired': True,
+            'detectOrientation': True,
+            'scale': True,
+            'OCREngine': engine,
+        }
+
+        response = requests.post(self.api_url, files=files, data=data)
+        response.raise_for_status()
+        return response.json()
+
+    def _fallback_extraction(self, text: str, current_fields: Dict[str, Any]) -> Dict[str, Any]:
+        """Fallback extraction methods when primary extraction fails."""
+        lines = [line.strip() for line in text.split('\n') if line.strip()]
+
+        # Fallback for vendor: look for any substantial line that might be a store name
+        if not current_fields['vendor']:
+            for line in lines[:15]:  # Check more lines
+                line = line.strip()
+                if 3 <= len(line) <= 20 and not any(char.isdigit() for char in line[:5]):
+                    # Look for lines with mixed content (letters + potential store indicators)
+                    if re.search(r'[a-zA-Z]', line) or any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff'):
+                        current_fields['vendor'] = line
+                        break
+
+        # Fallback for total: if no total found, look for the largest amount
+        if not current_fields['total']:
+            amounts = []
+            for line in lines:
+                # Find all monetary amounts
+                matches = re.findall(r'(\d{1,3}(?:,\d{3})*(?:\.\d{2})?)', line)
+                for match in matches:
+                    amount = match.replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 10 <= value <= 100000:  # Reasonable receipt range
+                            amounts.append(value)
+                    except ValueError:
+                        continue
+
+            if amounts:
+                current_fields['total'] = str(int(max(amounts)))
+
+        return current_fields
