@@ -9,7 +9,7 @@ class ExcelExporter:
 
     def __init__(self):
         self.base_dir = Path(__file__).parent.parent.parent
-        self.artifacts_dir = self.base_dir.parent / "artifacts"
+        self.artifacts_dir = self.base_dir / "artifacts"  # Fixed: was self.base_dir.parent / "artifacts"
         self.artifacts_dir.mkdir(exist_ok=True)
 
     def export_to_excel(self, receipt_data: Dict[str, Any], user_data: Dict[str, Any]) -> str:
