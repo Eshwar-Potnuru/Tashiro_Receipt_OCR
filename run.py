@@ -20,9 +20,13 @@ def main():
     print("🏭 Tashiro Ironworks Receipt OCR System")
     print("=" * 50)
     print("🚀 Starting server...")
-    print(f"📱 Mobile interface: http://localhost:8000/mobile")
-    print(f"🖥️  Desktop interface: http://localhost:8000/")
-    print(f"📚 API Documentation: http://localhost:8000/docs")
+
+    # Get port from environment (Railway provides PORT)
+    port = int(os.environ.get("PORT", 8000))
+
+    print(f"📱 Mobile interface: http://localhost:{port}/mobile")
+    print(f"🖥️  Desktop interface: http://localhost:{port}/")
+    print(f"📚 API Documentation: http://localhost:{port}/docs")
     print("=" * 50)
 
     # Create the FastAPI application
@@ -32,7 +36,7 @@ def main():
     uvicorn.run(
         app,
         host='0.0.0.0',  # Allow external access for mobile testing
-        port=8000,
+        port=port,       # Use Railway's PORT environment variable
         reload=False,    # Disable reload for production stability
         access_log=True
     )
