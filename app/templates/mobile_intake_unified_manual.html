@@ -1911,7 +1911,7 @@
 
             // Update AI indicator text if visible
             const aiIndicator = document.getElementById('aiConfidenceIndicator');
-            if (aiIndicator && aiIndicator.style.display !== 'none') {
+            if (aiIndicator) {
                 const aiText = aiIndicator.querySelector('span:last-child');
                 if (aiText) {
                     aiText.textContent = t('aiSelected');
