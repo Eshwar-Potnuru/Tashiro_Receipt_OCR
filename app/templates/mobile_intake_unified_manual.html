@@ -418,6 +418,54 @@
             color: var(--dark-gray);
         }
 
+        /* OCR Tips Section */
+        .ocr-tips {
+            background: var(--light-gray);
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-top: 16px;
+            border-left: 4px solid var(--primary-blue);
+        }
+
+        .ocr-tips h4 {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ocr-tips h4 i {
+            color: var(--primary-blue);
+        }
+
+        .ocr-tips ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .ocr-tips li {
+            font-size: 14px;
+            color: var(--dark-gray);
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .ocr-tips li:before {
+            content: "📱";
+            position: absolute;
+            left: 0;
+            top: 0;
+        }
+
+        .ocr-tips li:last-child {
+            margin-bottom: 0;
+        }
+
         /* OCR Preview Section */
         .ocr-preview-container {
             display: flex;
@@ -1015,6 +1063,18 @@
                     <p class="upload-subtext">or use the options above</p>
                 </div>
                 
+                <!-- OCR Tips Section -->
+                <div class="ocr-tips" id="ocrTips">
+                    <h4><i class="fas fa-lightbulb"></i> 📸 Quick Tips for Better OCR</h4>
+                    <ul>
+                        <li>Ensure good lighting and avoid shadows</li>
+                        <li>Hold camera steady and keep receipt flat</li>
+                        <li>Include all receipt edges in the photo</li>
+                        <li>Avoid blurry or distorted images</li>
+                        <li>Supported formats: JPG, PNG (max 5MB)</li>
+                    </ul>
+                </div>
+                
                 <input type="file" id="fileInput" accept="image/*" style="display: none;">
             </div>
 
@@ -1099,7 +1159,7 @@
                                     <span class="field-badge">F</span>
                                     Account Title (勘定科目)
                                     <span id="aiConfidenceIndicator" class="ai-indicator" style="display: none;">
-                                        <i class="fas fa-robot"></i> AI Detected
+                                        <i class="fas fa-robot"></i> AI Selected
                                     </span>
                                 </div>
                                 <select id="fieldAccountTitle">
@@ -1331,7 +1391,18 @@
                 failedDownload: "Failed to download Excel. Please try again.",
                 settingsSaved: "Settings saved successfully!",
                 profileUpdated: "Profile updated successfully!",
-                aiDetected: "AI Detected {confidence}% confident"
+                aiDetected: "AI Detected {confidence}% confident",
+
+                // OCR Tips
+                ocrTipsTitle: "📸 Quick Tips for Better OCR",
+                ocrTipLighting: "Ensure good lighting and avoid shadows",
+                ocrTipSteady: "Hold camera steady and keep receipt flat",
+                ocrTipEdges: "Include all receipt edges in the photo",
+                ocrTipBlur: "Avoid blurry or distorted images",
+                ocrTipFormats: "Supported formats: JPG, PNG (max 5MB)",
+
+                // AI Indicator
+                aiSelected: "AI Selected"
             },
             ja: {
                 // Welcome Modal
@@ -1468,7 +1539,18 @@
                 failedDownload: "Excelのダウンロードに失敗しました。もう一度お試しください。",
                 settingsSaved: "設定が正常に保存されました！",
                 profileUpdated: "プロフィールが正常に更新されました！",
-                aiDetected: "AI検出 {confidence}% 信頼性"
+                aiDetected: "AI検出 {confidence}% 信頼性",
+
+                // OCR Tips
+                ocrTipsTitle: "📸 OCR精度向上のためのクイックTips",
+                ocrTipLighting: "十分な照明を確保し、影を避ける",
+                ocrTipSteady: "カメラを安定させ、領収書を平らに保つ",
+                ocrTipEdges: "写真に領収書のすべての端を含める",
+                ocrTipBlur: "ぼやけや歪みを避ける",
+                ocrTipFormats: "対応フォーマット: JPG, PNG (最大5MB)",
+
+                // AI Indicator
+                aiSelected: "AI検出"
             }
         };
 
@@ -1808,6 +1890,34 @@
             console.log('Calling updateHistoryDisplay');
             updateHistoryDisplay();
 
+            // Update OCR tips
+            const ocrTipsElement = document.getElementById('ocrTips');
+            if (ocrTipsElement) {
+                const ocrTipsTitle = ocrTipsElement.querySelector('h4');
+                const ocrTipsList = ocrTipsElement.querySelectorAll('li');
+                
+                if (ocrTipsTitle) {
+                    ocrTipsTitle.innerHTML = `<i class="fas fa-lightbulb"></i> ${t('ocrTipsTitle')}`;
+                }
+                
+                if (ocrTipsList.length >= 5) {
+                    ocrTipsList[0].textContent = t('ocrTipLighting');
+                    ocrTipsList[1].textContent = t('ocrTipSteady');
+                    ocrTipsList[2].textContent = t('ocrTipEdges');
+                    ocrTipsList[3].textContent = t('ocrTipBlur');
+                    ocrTipsList[4].textContent = t('ocrTipFormats');
+                }
+            }
+
+            // Update AI indicator text if visible
+            const aiIndicator = document.getElementById('aiConfidenceIndicator');
+            if (aiIndicator && aiIndicator.style.display !== 'none') {
+                const aiText = aiIndicator.querySelector('span:last-child');
+                if (aiText) {
+                    aiText.textContent = t('aiSelected');
+                }
+            }
+
         }
 
         // DOM Elements
@@ -2034,8 +2144,10 @@
                     // Show AI confidence indicator if account title was AI-detected
                     const aiIndicator = document.getElementById('aiConfidenceIndicator');
                     if (aiIndicator && data.fields.account_title) {
-                        const confidence = data.fields.confidence || 0;
-                        aiIndicator.innerHTML = `<i class="fas fa-robot"></i> ${t('aiDetected', {confidence: confidence})}`;
+                        const aiText = aiIndicator.querySelector('span:last-child');
+                        if (aiText) {
+                            aiText.textContent = t('aiSelected');
+                        }
                         aiIndicator.style.display = 'inline-flex';
                     }
                     document.getElementById('fieldSubtotal').value = data.fields.subtotal || '';
