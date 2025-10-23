@@ -1613,6 +1613,47 @@
                     console.log('Developer credit forced to:', developerCredit.textContent);
                 }
 
+                // Force update OCR tips
+                const ocrTipsElement = document.getElementById('ocrTips');
+                if (ocrTipsElement) {
+                    const ocrTipsTitle = ocrTipsElement.querySelector('h4');
+                    const ocrTipsList = ocrTipsElement.querySelectorAll('li');
+                    
+                    if (ocrTipsTitle) {
+                        ocrTipsTitle.innerHTML = `<i class="fas fa-lightbulb"></i> ${t('ocrTipsTitle')}`;
+                        console.log('OCR tips title forced to:', ocrTipsTitle.innerHTML);
+                    }
+                    
+                    if (ocrTipsList.length >= 5) {
+                        ocrTipsList[0].textContent = t('ocrTipLighting');
+                        ocrTipsList[1].textContent = t('ocrTipSteady');
+                        ocrTipsList[2].textContent = t('ocrTipEdges');
+                        ocrTipsList[3].textContent = t('ocrTipBlur');
+                        ocrTipsList[4].textContent = t('ocrTipFormats');
+                        console.log('OCR tips list forced updated');
+                    }
+                }
+
+                // Force update verification status and AI indicator
+                const verificationStatusElement = document.getElementById('verificationStatus');
+                if (verificationStatusElement) {
+                    const statusElements = verificationStatusElement.querySelectorAll('.status-title, .confidence-badge');
+                    if (statusElements.length >= 2) {
+                        statusElements[0].textContent = t('allFieldsVerified');
+                        statusElements[1].textContent = t('highConfidence');
+                        console.log('Verification status forced updated');
+                    }
+                }
+
+                const aiIndicator = document.getElementById('aiConfidenceIndicator');
+                if (aiIndicator) {
+                    const aiText = aiIndicator.querySelector('span:last-child');
+                    if (aiText) {
+                        aiText.textContent = t('aiSelected');
+                        console.log('AI indicator forced updated');
+                    }
+                }
+
                 // Force update history
                 updateHistoryDisplay();
             }, 100);
@@ -1644,6 +1685,47 @@
                     developerCredit.textContent = t('developerCredit');
                     console.log('Developer credit forced to (attempt 2):', developerCredit.textContent);
                 }
+
+                // Force update OCR tips (attempt 2)
+                const ocrTipsElement = document.getElementById('ocrTips');
+                if (ocrTipsElement) {
+                    const ocrTipsTitle = ocrTipsElement.querySelector('h4');
+                    const ocrTipsList = ocrTipsElement.querySelectorAll('li');
+                    
+                    if (ocrTipsTitle) {
+                        ocrTipsTitle.innerHTML = `<i class="fas fa-lightbulb"></i> ${t('ocrTipsTitle')}`;
+                        console.log('OCR tips title forced to (attempt 2):', ocrTipsTitle.innerHTML);
+                    }
+                    
+                    if (ocrTipsList.length >= 5) {
+                        ocrTipsList[0].textContent = t('ocrTipLighting');
+                        ocrTipsList[1].textContent = t('ocrTipSteady');
+                        ocrTipsList[2].textContent = t('ocrTipEdges');
+                        ocrTipsList[3].textContent = t('ocrTipBlur');
+                        ocrTipsList[4].textContent = t('ocrTipFormats');
+                        console.log('OCR tips list forced updated (attempt 2)');
+                    }
+                }
+
+                // Force update verification status and AI indicator (attempt 2)
+                const verificationStatusElement = document.getElementById('verificationStatus');
+                if (verificationStatusElement) {
+                    const statusElements = verificationStatusElement.querySelectorAll('.status-title, .confidence-badge');
+                    if (statusElements.length >= 2) {
+                        statusElements[0].textContent = t('allFieldsVerified');
+                        statusElements[1].textContent = t('highConfidence');
+                        console.log('Verification status forced updated (attempt 2)');
+                    }
+                }
+
+                const aiIndicator = document.getElementById('aiConfidenceIndicator');
+                if (aiIndicator) {
+                    const aiText = aiIndicator.querySelector('span:last-child');
+                    if (aiText) {
+                        aiText.textContent = t('aiSelected');
+                        console.log('AI indicator forced updated (attempt 2)');
+                    }
+                }
             }, 500);
 
             // Third forced update attempt
@@ -1672,6 +1754,47 @@
                 if (developerCredit) {
                     developerCredit.textContent = t('developerCredit');
                     console.log('Developer credit forced to (attempt 3):', developerCredit.textContent);
+                }
+
+                // Force update OCR tips (attempt 3)
+                const ocrTipsElement = document.getElementById('ocrTips');
+                if (ocrTipsElement) {
+                    const ocrTipsTitle = ocrTipsElement.querySelector('h4');
+                    const ocrTipsList = ocrTipsElement.querySelectorAll('li');
+                    
+                    if (ocrTipsTitle) {
+                        ocrTipsTitle.innerHTML = `<i class="fas fa-lightbulb"></i> ${t('ocrTipsTitle')}`;
+                        console.log('OCR tips title forced to (attempt 3):', ocrTipsTitle.innerHTML);
+                    }
+                    
+                    if (ocrTipsList.length >= 5) {
+                        ocrTipsList[0].textContent = t('ocrTipLighting');
+                        ocrTipsList[1].textContent = t('ocrTipSteady');
+                        ocrTipsList[2].textContent = t('ocrTipEdges');
+                        ocrTipsList[3].textContent = t('ocrTipBlur');
+                        ocrTipsList[4].textContent = t('ocrTipFormats');
+                        console.log('OCR tips list forced updated (attempt 3)');
+                    }
+                }
+
+                // Force update verification status and AI indicator (attempt 3)
+                const verificationStatusElement = document.getElementById('verificationStatus');
+                if (verificationStatusElement) {
+                    const statusElements = verificationStatusElement.querySelectorAll('.status-title, .confidence-badge');
+                    if (statusElements.length >= 2) {
+                        statusElements[0].textContent = t('allFieldsVerified');
+                        statusElements[1].textContent = t('highConfidence');
+                        console.log('Verification status forced updated (attempt 3)');
+                    }
+                }
+
+                const aiIndicator = document.getElementById('aiConfidenceIndicator');
+                if (aiIndicator) {
+                    const aiText = aiIndicator.querySelector('span:last-child');
+                    if (aiText) {
+                        aiText.textContent = t('aiSelected');
+                        console.log('AI indicator forced updated (attempt 3)');
+                    }
                 }
             }, 1000);
 
@@ -2504,6 +2627,13 @@
                 const currentSettings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
                 applyLanguage(currentSettings.language || 'en');
             }, 500);
+
+            // Additional delayed update for OCR tips and dynamic elements
+            setTimeout(() => {
+                const currentSettings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+                applyLanguage(currentSettings.language || 'en');
+                console.log('Final language update applied for language:', currentSettings.language || 'en');
+            }, 1500);
         }
 
         // Start the application
