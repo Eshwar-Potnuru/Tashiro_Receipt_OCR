@@ -1605,6 +1605,13 @@
                     console.log('Additional labels forced to:', additionalLabels[2].textContent);
                 }
 
+                // Force update additional information header
+                const additionalInfo = document.querySelector('.additional-info h4');
+                if (additionalInfo) {
+                    additionalInfo.textContent = t('additionalInformation');
+                    console.log('Additional information header forced to:', additionalInfo.textContent);
+                }
+
                 // Force update developer credit
                 const developerCredit = document.querySelector('.developer-credit');
                 console.log('Force updating developer credit:', developerCredit);
@@ -1647,11 +1654,8 @@
 
                 const aiIndicator = document.getElementById('aiConfidenceIndicator');
                 if (aiIndicator) {
-                    const aiText = aiIndicator.querySelector('span:last-child');
-                    if (aiText) {
-                        aiText.textContent = t('aiSelected');
-                        console.log('AI indicator forced updated');
-                    }
+                    aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
+                    console.log('AI indicator forced updated');
                 }
 
                 // Force update history
@@ -1678,6 +1682,13 @@
                     additionalLabels[1].textContent = t('taxAmountRef');
                     additionalLabels[2].textContent = t('currency');
                     console.log('Additional labels forced to (attempt 2):', additionalLabels[2].textContent);
+                }
+
+                // Force update additional information header (attempt 2)
+                const additionalInfo = document.querySelector('.additional-info h4');
+                if (additionalInfo) {
+                    additionalInfo.textContent = t('additionalInformation');
+                    console.log('Additional information header forced to (attempt 2):', additionalInfo.textContent);
                 }
 
                 const developerCredit = document.querySelector('.developer-credit');
@@ -1720,11 +1731,8 @@
 
                 const aiIndicator = document.getElementById('aiConfidenceIndicator');
                 if (aiIndicator) {
-                    const aiText = aiIndicator.querySelector('span:last-child');
-                    if (aiText) {
-                        aiText.textContent = t('aiSelected');
-                        console.log('AI indicator forced updated (attempt 2)');
-                    }
+                    aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
+                    console.log('AI indicator forced updated (attempt 2)');
                 }
             }, 500);
 
@@ -1748,6 +1756,13 @@
                     additionalLabels[1].textContent = t('taxAmountRef');
                     additionalLabels[2].textContent = t('currency');
                     console.log('Additional labels forced to (attempt 3):', additionalLabels[2].textContent);
+                }
+
+                // Force update additional information header (attempt 3)
+                const additionalInfo = document.querySelector('.additional-info h4');
+                if (additionalInfo) {
+                    additionalInfo.textContent = t('additionalInformation');
+                    console.log('Additional information header forced to (attempt 3):', additionalInfo.textContent);
                 }
 
                 const developerCredit = document.querySelector('.developer-credit');
@@ -1790,11 +1805,8 @@
 
                 const aiIndicator = document.getElementById('aiConfidenceIndicator');
                 if (aiIndicator) {
-                    const aiText = aiIndicator.querySelector('span:last-child');
-                    if (aiText) {
-                        aiText.textContent = t('aiSelected');
-                        console.log('AI indicator forced updated (attempt 3)');
-                    }
+                    aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
+                    console.log('AI indicator forced updated (attempt 3)');
                 }
             }, 1000);
 
@@ -2035,10 +2047,7 @@
             // Update AI indicator text if visible
             const aiIndicator = document.getElementById('aiConfidenceIndicator');
             if (aiIndicator) {
-                const aiText = aiIndicator.querySelector('span:last-child');
-                if (aiText) {
-                    aiText.textContent = t('aiSelected');
-                }
+                aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
             }
 
         }
@@ -2267,10 +2276,7 @@
                     // Show AI confidence indicator if account title was AI-detected
                     const aiIndicator = document.getElementById('aiConfidenceIndicator');
                     if (aiIndicator && data.fields.account_title) {
-                        const aiText = aiIndicator.querySelector('span:last-child');
-                        if (aiText) {
-                            aiText.textContent = t('aiSelected');
-                        }
+                        aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
                         aiIndicator.style.display = 'inline-flex';
                     }
                     document.getElementById('fieldSubtotal').value = data.fields.subtotal || '';
