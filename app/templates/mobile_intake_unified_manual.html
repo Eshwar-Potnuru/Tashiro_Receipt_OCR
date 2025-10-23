@@ -1394,7 +1394,7 @@
                 aiDetected: "AI Detected {confidence}% confident",
 
                 // OCR Tips
-                ocrTipsTitle: "📸 Quick Tips for Better OCR",
+                ocrTipsTitle: "Quick Tips for Better OCR",
                 ocrTipLighting: "Ensure good lighting and avoid shadows",
                 ocrTipSteady: "Hold camera steady and keep receipt flat",
                 ocrTipEdges: "Include all receipt edges in the photo",
@@ -1542,7 +1542,7 @@
                 aiDetected: "AI検出 {confidence}% 信頼性",
 
                 // OCR Tips
-                ocrTipsTitle: "📸 OCR精度向上のためのクイックTips",
+                ocrTipsTitle: "OCR精度向上のためのクイックTips",
                 ocrTipLighting: "十分な照明を確保し、影を避ける",
                 ocrTipSteady: "カメラを安定させ、領収書を平らに保つ",
                 ocrTipEdges: "写真に領収書のすべての端を含める",
@@ -2157,8 +2157,13 @@
         });
 
         saveSettings.addEventListener('click', function() {
-            saveSettingsToStorage();
+            // Close modal immediately
             settingsModal.style.display = 'none';
+            
+            // Save settings and apply them
+            saveSettingsToStorage();
+            
+            // Show success toast
             showToast(t('settingsSaved'), 'success');
         });
 
