@@ -869,6 +869,92 @@
                 max-width: none;
             }
         }
+
+        /* Mobile-responsive styles for editable table */
+        @media (max-width: 768px) {
+            .table-container {
+                padding: 10px !important;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #editableTable {
+                font-size: 14px;
+                min-width: 600px; /* Ensure table doesn't get too cramped */
+            }
+
+            #editableTable th,
+            #editableTable td {
+                padding: 8px 6px !important;
+                white-space: nowrap;
+            }
+
+            #editableTable th:nth-child(1),
+            #editableTable td:nth-child(1) {
+                min-width: 120px;
+                max-width: 150px;
+            }
+
+            #editableTable th:nth-child(2),
+            #editableTable td:nth-child(2) {
+                min-width: 150px;
+            }
+
+            #editableTable th:nth-child(3),
+            #editableTable td:nth-child(3) {
+                min-width: 80px;
+                text-align: center;
+            }
+
+            .editable-field {
+                font-size: 14px !important;
+                padding: 6px !important;
+            }
+
+            .table-header {
+                flex-direction: column !important;
+                gap: 10px !important;
+                align-items: stretch !important;
+            }
+
+            .table-header h3 {
+                font-size: 16px !important;
+                margin: 0 !important;
+            }
+
+            #exportExcelBtn {
+                align-self: flex-start !important;
+                padding: 10px 16px !important;
+                font-size: 14px !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #editableTable {
+                font-size: 12px;
+                min-width: 500px;
+            }
+
+            #editableTable th,
+            #editableTable td {
+                padding: 6px 4px !important;
+            }
+
+            .editable-field {
+                font-size: 12px !important;
+                padding: 4px !important;
+            }
+
+            .table-header h3 {
+                font-size: 14px !important;
+            }
+
+            #exportExcelBtn {
+                width: 100% !important;
+                padding: 12px !important;
+                font-size: 14px !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1211,12 +1297,36 @@
                         </div>
                         
                         <div class="form-actions">
-                            <button class="primary-button" id="submitButton" disabled>
-                                <i class="fas fa-paper-plane"></i> Submit to HQ
+                            <button class="primary-button" id="reviewDataBtn" disabled>
+                                <i class="fas fa-edit"></i> Review Data
                             </button>
                             <button class="secondary-button" id="resetButton">
                                 <i class="fas fa-redo"></i> Start Over
                             </button>
+                        </div>
+
+                        <!-- Editable Data Table Container -->
+                        <div id="dataTableContainer" style="display: none; margin-top: 20px;">
+                            <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3 style="margin: 0; color: var(--text-dark);">Review & Edit Extracted Data</h3>
+                                <button class="primary-button" id="exportExcelBtn" style="padding: 8px 16px; font-size: 14px;">
+                                    <i class="fas fa-file-excel"></i> Export to Excel
+                                </button>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto; background: var(--light-gray); border-radius: 8px; padding: 15px;">
+                                <table id="editableTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    <thead>
+                                        <tr style="background: var(--primary-blue); color: white;">
+                                            <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--medium-gray);">Field</th>
+                                            <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--medium-gray);">Value</th>
+                                            <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--medium-gray);">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBody">
+                                        <!-- Table rows will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1350,6 +1460,7 @@
 
                 // Buttons
                 submitToHq: "Submit to HQ",
+                reviewData: "Review Data",
                 startOver: "Start Over",
 
                 // Verification
@@ -1498,6 +1609,7 @@
 
                 // Buttons
                 submitToHq: "本社に提出",
+                reviewData: "データを確認",
                 startOver: "最初からやり直す",
 
                 // Verification
@@ -1584,11 +1696,16 @@
             setTimeout(() => {
                 console.log('=== FORCED UPDATE ATTEMPT 1 ===');
                 const submitBtn = document.getElementById('submitButton');
+                const reviewBtn = document.getElementById('reviewDataBtn');
                 const resetBtn = document.getElementById('resetButton');
-                console.log('Force updating buttons:', submitBtn, resetBtn);
+                console.log('Force updating buttons:', submitBtn, reviewBtn, resetBtn);
                 if (submitBtn) {
                     submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
                     console.log('Submit button forced to:', submitBtn.innerHTML);
+                }
+                if (reviewBtn) {
+                    reviewBtn.innerHTML = `<i class="fas fa-edit"></i> ${t('reviewData')}`;
+                    console.log('Review button forced to:', reviewBtn.innerHTML);
                 }
                 if (resetBtn) {
                     resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
@@ -1666,10 +1783,15 @@
             setTimeout(() => {
                 console.log('=== FORCED UPDATE ATTEMPT 2 ===');
                 const submitBtn = document.getElementById('submitButton');
+                const reviewBtn = document.getElementById('reviewDataBtn');
                 const resetBtn = document.getElementById('resetButton');
                 if (submitBtn) {
                     submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
                     console.log('Submit button forced to (attempt 2):', submitBtn.innerHTML);
+                }
+                if (reviewBtn) {
+                    reviewBtn.innerHTML = `<i class="fas fa-edit"></i> ${t('reviewData')}`;
+                    console.log('Review button forced to (attempt 2):', reviewBtn.innerHTML);
                 }
                 if (resetBtn) {
                     resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
@@ -1740,10 +1862,15 @@
             setTimeout(() => {
                 console.log('=== FORCED UPDATE ATTEMPT 3 ===');
                 const submitBtn = document.getElementById('submitButton');
+                const reviewBtn = document.getElementById('reviewDataBtn');
                 const resetBtn = document.getElementById('resetButton');
                 if (submitBtn) {
                     submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
                     console.log('Submit button forced to (attempt 3):', submitBtn.innerHTML);
+                }
+                if (reviewBtn) {
+                    reviewBtn.innerHTML = `<i class="fas fa-edit"></i> ${t('reviewData')}`;
+                    console.log('Review button forced to (attempt 3):', reviewBtn.innerHTML);
                 }
                 if (resetBtn) {
                     resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
@@ -1992,11 +2119,16 @@
 
             // Form action buttons
             const submitBtn = document.getElementById('submitButton');
+            const reviewBtn = document.getElementById('reviewDataBtn');
             const resetBtn = document.getElementById('resetButton');
-            console.log('Updating buttons (regular):', submitBtn, resetBtn);
+            console.log('Updating buttons (regular):', submitBtn, reviewBtn, resetBtn);
             if (submitBtn) {
                 submitBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${t('submitToHq')}`;
                 console.log('Submit button updated to (regular):', submitBtn.innerHTML);
+            }
+            if (reviewBtn) {
+                reviewBtn.innerHTML = `<i class="fas fa-edit"></i> ${t('reviewData')}`;
+                console.log('Review button updated to (regular):', reviewBtn.innerHTML);
             }
             if (resetBtn) {
                 resetBtn.innerHTML = `<i class="fas fa-redo"></i> ${t('startOver')}`;
@@ -2077,6 +2209,7 @@
         const receiptImage = document.getElementById('receiptImage');
         const verificationStatus = document.getElementById('verificationStatus');
         const submitButton = document.getElementById('submitButton');
+        const reviewDataBtn = document.getElementById('reviewDataBtn');
         const resetButton = document.getElementById('resetButton');
         const historyList = document.getElementById('historyList');
         const toastContainer = document.getElementById('toastContainer');
@@ -2294,8 +2427,12 @@
                     // Show verification status
                     verificationStatus.style.display = 'flex';
                     
-                    // Enable submit button
-                    submitButton.disabled = false;
+                // Enable submit button
+                submitButton.disabled = false;
+                
+                // Enable review data button
+                reviewDataBtn.disabled = false;                    // Enable review data button
+                    reviewDataBtn.disabled = false;
                     
                     showToast(t('receiptAnalyzed'), 'success');
                 } else {
@@ -2322,31 +2459,184 @@
             });
         }
 
-        // Handle form submission
-        submitButton.addEventListener('click', function() {
-            if (!currentQueueId) {
-                showToast(t('noReceiptData'), 'error');
-                return;
-            }
-            
-            // Get form data
+        // Handle review data button
+        reviewDataBtn.addEventListener('click', function() {
+            populateEditableTable();
+            document.getElementById('dataTableContainer').style.display = 'block';
+            reviewDataBtn.style.display = 'none'; // Hide review button when table is shown
+        });
+
+        // Populate editable table with OCR data
+        function populateEditableTable() {
+            const tableBody = document.getElementById('tableBody');
+            tableBody.innerHTML = '';
+
+            // Get current form values
+            const fields = {
+                date: { value: document.getElementById('fieldDate').value, label: t('dateLabel'), type: 'text' },
+                vendor: { value: document.getElementById('fieldVendor').value, label: t('storeNameLabel'), type: 'text' },
+                total: { value: document.getElementById('fieldTotal').value, label: t('totalAmountLabel'), type: 'number' },
+                invoice_number: { value: document.getElementById('fieldInvoiceNumber').value, label: t('invoiceNumberLabel'), type: 'text' },
+                tax_category: { value: document.getElementById('fieldTaxCategory').value, label: t('taxCategoryLabel'), type: 'select' },
+                account_title: { value: document.getElementById('fieldAccountTitle').value, label: t('accountTitleLabel'), type: 'select' },
+                subtotal: { value: document.getElementById('fieldSubtotal').value, label: t('subtotalRef'), type: 'number' },
+                tax: { value: document.getElementById('fieldTax').value, label: t('taxAmountRef'), type: 'number' },
+                currency: { value: document.getElementById('fieldCurrency').value, label: t('currency'), type: 'text' }
+            };
+
+            // Create table rows
+            Object.keys(fields).forEach(fieldKey => {
+                const field = fields[fieldKey];
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid var(--medium-gray)';
+
+                // Field name cell
+                const fieldCell = document.createElement('td');
+                fieldCell.style.padding = '12px';
+                fieldCell.style.fontWeight = '600';
+                fieldCell.style.color = 'var(--text-dark)';
+                fieldCell.textContent = field.label;
+                row.appendChild(fieldCell);
+
+                // Value cell
+                const valueCell = document.createElement('td');
+                valueCell.style.padding = '12px';
+
+                if (field.type === 'select' && fieldKey === 'tax_category') {
+                    // Tax category dropdown
+                    const select = document.createElement('select');
+                    select.className = 'editable-field';
+                    select.dataset.field = fieldKey;
+                    select.style.width = '100%';
+                    select.style.padding = '8px';
+                    select.style.border = '1px solid var(--medium-gray)';
+                    select.style.borderRadius = '4px';
+                    select.style.background = 'white';
+
+                    const taxOptions = [
+                        { value: '', text: t('selectTaxCategory') },
+                        { value: '標準税率', text: '標準税率 (Standard Rate)' },
+                        { value: '軽減税率', text: '軽減税率 (Reduced Rate)' },
+                        { value: '非課税', text: '非課税 (Tax Exempt)' }
+                    ];
+
+                    taxOptions.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value;
+                        optionElement.textContent = option.text;
+                        if (option.value === field.value) {
+                            optionElement.selected = true;
+                        }
+                        select.appendChild(optionElement);
+                    });
+
+                    valueCell.appendChild(select);
+                } else if (field.type === 'select' && fieldKey === 'account_title') {
+                    // Account title dropdown
+                    const select = document.createElement('select');
+                    select.className = 'editable-field';
+                    select.dataset.field = fieldKey;
+                    select.style.width = '100%';
+                    select.style.padding = '8px';
+                    select.style.border = '1px solid var(--medium-gray)';
+                    select.style.borderRadius = '4px';
+                    select.style.background = 'white';
+
+                    const accountOptions = [
+                        { value: '', text: t('selectAccountTitle') },
+                        { value: '食費', text: t('meals') },
+                        { value: '交通費', text: t('transportation') },
+                        { value: '通信費', text: t('communication') },
+                        { value: '宿泊費', text: t('accommodation') },
+                        { value: '接待交際費', text: t('entertainment') },
+                        { value: '消耗品費', text: t('officeSupplies') },
+                        { value: '会議費', text: t('meetingExpenses') },
+                        { value: '研修費', text: t('training') },
+                        { value: '福利厚生費', text: t('welfare') },
+                        { value: '広告宣伝費', text: t('advertising') },
+                        { value: '車両費', text: t('vehicle') },
+                        { value: '保険料', text: t('insurance') },
+                        { value: '租税公課', text: t('taxesDues') },
+                        { value: 'その他', text: t('other') }
+                    ];
+
+                    accountOptions.forEach(option => {
+                        const optionElement = document.createElement('option');
+                        optionElement.value = option.value;
+                        optionElement.textContent = option.text;
+                        if (option.value === field.value) {
+                            optionElement.selected = true;
+                        }
+                        select.appendChild(optionElement);
+                    });
+
+                    valueCell.appendChild(select);
+                } else {
+                    // Regular text input
+                    const input = document.createElement('input');
+                    input.type = field.type;
+                    input.className = 'editable-field';
+                    input.dataset.field = fieldKey;
+                    input.value = field.value;
+                    input.style.width = '100%';
+                    input.style.padding = '8px';
+                    input.style.border = '1px solid var(--medium-gray)';
+                    input.style.borderRadius = '4px';
+                    input.style.background = 'white';
+                    valueCell.appendChild(input);
+                }
+
+                row.appendChild(valueCell);
+
+                // Status cell
+                const statusCell = document.createElement('td');
+                statusCell.style.padding = '12px';
+                statusCell.innerHTML = '<span style="color: var(--primary-blue); font-weight: 500;">✓ Ready</span>';
+                row.appendChild(statusCell);
+
+                tableBody.appendChild(row);
+            });
+        }
+
+        // Handle Excel export button
+        document.getElementById('exportExcelBtn').addEventListener('click', function() {
+            exportToExcel();
+        });
+
+        // Export corrected data to Excel
+        function exportToExcel() {
+            showToast(t('preparingDownload'), 'info');
+
+            // Collect data from editable table
+            const editableFields = document.querySelectorAll('.editable-field');
+            const correctedData = {};
+
+            editableFields.forEach(field => {
+                const fieldName = field.dataset.field;
+                if (field.tagName === 'SELECT') {
+                    correctedData[fieldName] = field.value;
+                } else {
+                    correctedData[fieldName] = field.value;
+                }
+            });
+
+            // Update the original form fields with corrected data
+            Object.keys(correctedData).forEach(fieldName => {
+                const elementId = 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.value = correctedData[fieldName];
+                }
+            });
+
+            // Prepare data for submission
             const receiptData = {
                 queue_id: currentQueueId,
-                fields: {
-                    date: document.getElementById('fieldDate').value,
-                    vendor: document.getElementById('fieldVendor').value,
-                    total: document.getElementById('fieldTotal').value,
-                    invoice_number: document.getElementById('fieldInvoiceNumber').value,
-                    tax_category: document.getElementById('fieldTaxCategory').value,
-                    account_title: document.getElementById('fieldAccountTitle').value,
-                    subtotal: document.getElementById('fieldSubtotal').value,
-                    tax: document.getElementById('fieldTax').value,
-                    currency: document.getElementById('fieldCurrency').value
-                },
+                fields: correctedData,
                 user: JSON.parse(localStorage.getItem('tashiro_user') || '{}')
             };
-            
-            // Submit to API
+
+            // Submit to API to generate Excel
             fetch('/api/mobile/submit', {
                 method: 'POST',
                 headers: {
@@ -2356,35 +2646,37 @@
             })
             .then(response => response.json())
             .then(data => {
-                if (data.status === 'success') {
-                    // Save to local history
+                if (data.status === 'success' && data.excel_url) {
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.href = data.excel_url;
+                    link.download = `receipt_${currentQueueId}_corrected.xlsx`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+
+                    // Save to history
                     saveToHistory({
-                        ...receiptData.fields,
+                        ...correctedData,
                         id: currentQueueId,
                         excel_url: data.excel_url,
                         timestamp: new Date().toISOString()
                     });
-                    
-                    // Reset form
-                    resetForm();
-                    currentQueueId = null;
-                    
-                    showToast(t('receiptSubmitted'), 'success');
+
+                    // Hide table and show success
+                    document.getElementById('dataTableContainer').style.display = 'none';
+                    document.getElementById('reviewDataBtn').style.display = 'inline-block';
+
+                    showToast(t('excelDownloaded'), 'success');
                 } else {
-                    throw new Error(data.detail || 'Submission failed');
+                    throw new Error(data.detail || 'Export failed');
                 }
             })
             .catch(error => {
-                console.error('Submit Error:', error);
-                showToast(t('failedToSubmit'), 'error');
+                console.error('Export Error:', error);
+                showToast(t('failedDownload'), 'error');
             });
-        });
-
-        // Handle reset button
-        resetButton.addEventListener('click', function() {
-            resetForm();
-            showToast(t('formReset'), 'info');
-        });
+        }
 
         // Reset the form
         function resetForm() {
@@ -2409,6 +2701,13 @@
             }
             
             submitButton.disabled = true;
+            
+            // Disable review data button
+            reviewDataBtn.disabled = true;
+            
+            // Hide table and show review button
+            document.getElementById('dataTableContainer').style.display = 'none';
+            reviewDataBtn.style.display = 'inline-block';
         }
 
         // Save receipt to history
