@@ -1198,7 +1198,7 @@
                             <div class="form-field">
                                 <div class="field-label">
                                     <span class="field-badge">A</span>
-                                    Date (日付)
+                                    <span class="field-text">Date (日付)</span>
                                 </div>
                                 <input type="text" id="fieldDate" placeholder="YYYY-MM-DD">
                             </div>
@@ -1206,7 +1206,7 @@
                             <div class="form-field">
                                 <div class="field-label">
                                     <span class="field-badge">B</span>
-                                    Store Name (店名)
+                                    <span class="field-text">Store Name (店名)</span>
                                 </div>
                                 <input type="text" id="fieldVendor" placeholder="Store name">
                             </div>
@@ -1214,7 +1214,7 @@
                             <div class="form-field">
                                 <div class="field-label">
                                     <span class="field-badge">C</span>
-                                    Total Amount (金額)
+                                    <span class="field-text">Total Amount (金額)</span>
                                 </div>
                                 <input type="text" id="fieldTotal" placeholder="0.00">
                             </div>
@@ -1222,7 +1222,7 @@
                             <div class="form-field">
                                 <div class="field-label">
                                     <span class="field-badge">D</span>
-                                    Invoice Number (インボイス番号)
+                                    <span class="field-text">Invoice Number (インボイス番号)</span>
                                 </div>
                                 <input type="text" id="fieldInvoiceNumber" placeholder="Invoice/Receipt No.">
                             </div>
@@ -1230,7 +1230,7 @@
                             <div class="form-field">
                                 <div class="field-label">
                                     <span class="field-badge">E</span>
-                                    Tax Category (税区分)
+                                    <span class="field-text">Tax Category (税区分)</span>
                                 </div>
                                 <select id="fieldTaxCategory">
                                     <option value="">Select tax category</option>
@@ -1243,7 +1243,7 @@
                             <div class="form-field">
                                 <div class="field-label">
                                     <span class="field-badge">F</span>
-                                    Account Title (勘定科目)
+                                    <span class="field-text">Account Title (勘定科目)</span>
                                     <span id="aiConfidenceIndicator" class="ai-indicator" style="display: none;">
                                         <i class="fas fa-robot"></i> AI Selected
                                     </span>
@@ -1686,7 +1686,25 @@
             return text;
         }
 
-        // Apply translations to the page
+// Update field labels based on extracted data
+function updateFieldLabels() {
+    const fieldTexts = document.querySelectorAll('.field-text');
+    if (fieldTexts.length >= 6) {
+        const dateValue = document.getElementById('fieldDate').value;
+        const vendorValue = document.getElementById('fieldVendor').value;
+        const totalValue = document.getElementById('fieldTotal').value;
+        const invoiceValue = document.getElementById('fieldInvoiceNumber').value;
+        const taxValue = document.getElementById('fieldTaxCategory').value;
+        const accountValue = document.getElementById('fieldAccountTitle').value;
+        
+        fieldTexts[0].textContent = dateValue ? `${t('dateLabel')}: ${dateValue}` : t('dateLabel');
+        fieldTexts[1].textContent = vendorValue ? `${t('storeNameLabel')}: ${vendorValue}` : t('storeNameLabel');
+        fieldTexts[2].textContent = totalValue ? `${t('totalAmountLabel')}: ${totalValue}` : t('totalAmountLabel');
+        fieldTexts[3].textContent = invoiceValue ? `${t('invoiceNumberLabel')}: ${invoiceValue}` : t('invoiceNumberLabel');
+        fieldTexts[4].textContent = taxValue ? `${t('taxCategoryLabel')}: ${taxValue}` : t('taxCategoryLabel');
+        fieldTexts[5].textContent = accountValue ? `${t('accountTitleLabel')}: ${accountValue}` : t('accountTitleLabel');
+    }
+}        // Apply translations to the page
         function applyLanguage(language) {
             currentLanguage = language;
             console.log('Applying language:', language, 'at', new Date().toISOString());
@@ -2187,6 +2205,9 @@
                 aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
             }
 
+            // Update field labels based on current form values
+            updateFieldLabels();
+
         }
 
         // DOM Elements
@@ -2436,6 +2457,9 @@
                     
                     // Store queue ID for submission
                     currentQueueId = data.queue_id;
+                    
+                    // Update field labels based on extracted data
+                    updateFieldLabels();
                     
                     // Show verification status
                     verificationStatus.style.display = 'flex';
