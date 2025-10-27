@@ -2408,7 +2408,14 @@
                     document.getElementById('fieldVendor').value = data.fields.vendor || '';
                     document.getElementById('fieldTotal').value = data.fields.total || '';
                     document.getElementById('fieldInvoiceNumber').value = data.fields.invoice_number || '';
-                    document.getElementById('fieldTaxCategory').value = data.fields.tax_category || '';
+                    
+                    // Map tax category from OCR result to dropdown value
+                    let taxCategoryValue = data.fields.tax_category || '';
+                    if (taxCategoryValue === '課税') {
+                        taxCategoryValue = '標準税率'; // Map '課税' to standard tax rate
+                    }
+                    document.getElementById('fieldTaxCategory').value = taxCategoryValue;
+                    
                     document.getElementById('fieldAccountTitle').value = data.fields.account_title || '';
                     
                     // Show AI confidence indicator if account title was AI-detected
@@ -2427,11 +2434,8 @@
                     // Show verification status
                     verificationStatus.style.display = 'flex';
                     
-                // Enable submit button
-                submitButton.disabled = false;
-                
-                // Enable review data button
-                reviewDataBtn.disabled = false;                    // Enable review data button
+                    // Enable buttons
+                    submitButton.disabled = false;
                     reviewDataBtn.disabled = false;
                     
                     showToast(t('receiptAnalyzed'), 'success');
@@ -2601,6 +2605,11 @@
         // Handle Excel export button
         document.getElementById('exportExcelBtn').addEventListener('click', function() {
             exportToExcel();
+        });
+
+        // Handle reset button
+        resetButton.addEventListener('click', function() {
+            resetForm();
         });
 
         // Export corrected data to Excel
