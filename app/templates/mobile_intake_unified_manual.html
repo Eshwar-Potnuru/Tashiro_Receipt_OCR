@@ -2234,7 +2234,6 @@ function updateFieldLabels() {
         const imagePlaceholder = document.getElementById('imagePlaceholder');
         const receiptImage = document.getElementById('receiptImage');
         const verificationStatus = document.getElementById('verificationStatus');
-        const submitButton = document.getElementById('submitButton');
         const reviewDataBtn = document.getElementById('reviewDataBtn');
         const resetButton = document.getElementById('resetButton');
         const historyList = document.getElementById('historyList');
@@ -2465,7 +2464,6 @@ function updateFieldLabels() {
                     verificationStatus.style.display = 'flex';
                     
                     // Enable buttons
-                    submitButton.disabled = false;
                     reviewDataBtn.disabled = false;
                     
                     showToast(t('receiptAnalyzed'), 'success');
@@ -2802,8 +2800,6 @@ function updateFieldLabels() {
             if (aiIndicator) {
                 aiIndicator.style.display = 'none';
             }
-            
-            submitButton.disabled = true;
             
             // Disable review data button
             reviewDataBtn.disabled = true;
