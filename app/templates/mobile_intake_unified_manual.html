@@ -1309,9 +1309,14 @@
                         <div id="dataTableContainer" style="display: none; margin-top: 20px;">
                             <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <h3 style="margin: 0; color: var(--text-dark);">Review & Edit Extracted Data</h3>
-                                <button class="primary-button" id="exportExcelBtn" style="padding: 8px 16px; font-size: 14px;">
-                                    <i class="fas fa-file-excel"></i> Export to Excel
-                                </button>
+                                <div style="display: flex; gap: 10px;">
+                                    <button class="secondary-button" id="saveChangesBtn" style="padding: 8px 16px; font-size: 14px;">
+                                        <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                    <button class="primary-button" id="exportExcelBtn" style="padding: 8px 16px; font-size: 14px;">
+                                        <i class="fas fa-file-excel"></i> Export to Excel
+                                    </button>
+                                </div>
                             </div>
                             <div class="table-container" style="overflow-x: auto; background: var(--light-gray); border-radius: 8px; padding: 15px;">
                                 <table id="editableTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
@@ -2220,6 +2225,7 @@
 
         // Global variables
         let currentQueueId = null;
+        let accountClassifications = []; // Store loaded account classifications
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2536,7 +2542,7 @@
 
                     valueCell.appendChild(select);
                 } else if (field.type === 'select' && fieldKey === 'account_title') {
-                    // Account title dropdown
+                    // Account title dropdown using official classifications
                     const select = document.createElement('select');
                     select.className = 'editable-field';
                     select.dataset.field = fieldKey;
@@ -2546,33 +2552,52 @@
                     select.style.borderRadius = '4px';
                     select.style.background = 'white';
 
-                    const accountOptions = [
-                        { value: '', text: t('selectAccountTitle') },
-                        { value: '食費', text: t('meals') },
-                        { value: '交通費', text: t('transportation') },
-                        { value: '通信費', text: t('communication') },
-                        { value: '宿泊費', text: t('accommodation') },
-                        { value: '接待交際費', text: t('entertainment') },
-                        { value: '消耗品費', text: t('officeSupplies') },
-                        { value: '会議費', text: t('meetingExpenses') },
-                        { value: '研修費', text: t('training') },
-                        { value: '福利厚生費', text: t('welfare') },
-                        { value: '広告宣伝費', text: t('advertising') },
-                        { value: '車両費', text: t('vehicle') },
-                        { value: '保険料', text: t('insurance') },
-                        { value: '租税公課', text: t('taxesDues') },
-                        { value: 'その他', text: t('other') }
-                    ];
+                    // Add default option
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = t('selectAccountTitle');
+                    select.appendChild(defaultOption);
 
-                    accountOptions.forEach(option => {
-                        const optionElement = document.createElement('option');
-                        optionElement.value = option.value;
-                        optionElement.textContent = option.text;
-                        if (option.value === field.value) {
-                            optionElement.selected = true;
-                        }
-                        select.appendChild(optionElement);
-                    });
+                    // Add options from loaded classifications
+                    if (accountClassifications.length > 0) {
+                        // Add each category as a direct option
+                        accountClassifications.forEach(item => {
+                            const optionElement = document.createElement('option');
+                            optionElement.value = item.category;
+                            optionElement.textContent = `${item.category} (${item.description})`;
+                            if (item.category === field.value) {
+                                optionElement.selected = true;
+                            }
+                            select.appendChild(optionElement);
+                        });
+                    } else {
+                        // Fallback to basic options if classifications not loaded
+                        const accountOptions = [
+                            { value: '旅費交通費', text: '旅費交通費 (Travel & Transportation)' },
+                            { value: '仕入材料', text: '仕入材料 (Purchased Materials)' },
+                            { value: '現場関係費', text: '現場関係費 (Site Related Expenses)' },
+                            { value: '交際費', text: '交際費 (Entertainment)' },
+                            { value: '厚生費', text: '厚生費 (Welfare)' },
+                            { value: '水道光熱費', text: '水道光熱費 (Utilities)' },
+                            { value: '通信費', text: '通信費 (Communication)' },
+                            { value: '租税公課', text: '租税公課 (Taxes & Dues)' },
+                            { value: '事務消耗品費', text: '事務消耗品費 (Office Supplies)' },
+                            { value: '運賃', text: '運賃 (Freight)' },
+                            { value: '消耗品', text: '消耗品 (Consumables)' },
+                            { value: '諸会費', text: '諸会費 (Membership Fees)' },
+                            { value: '諸雑費', text: '諸雑費 (Miscellaneous)' }
+                        ];
+
+                        accountOptions.forEach(option => {
+                            const optionElement = document.createElement('option');
+                            optionElement.value = option.value;
+                            optionElement.textContent = option.text;
+                            if (option.value === field.value) {
+                                optionElement.selected = true;
+                            }
+                            select.appendChild(optionElement);
+                        });
+                    }
 
                     valueCell.appendChild(select);
                 } else {
@@ -2605,6 +2630,11 @@
         // Handle Excel export button
         document.getElementById('exportExcelBtn').addEventListener('click', function() {
             exportToExcel();
+        });
+
+        // Handle save changes button
+        document.getElementById('saveChangesBtn').addEventListener('click', function() {
+            saveChanges();
         });
 
         // Handle reset button
@@ -2685,6 +2715,46 @@
                 console.error('Export Error:', error);
                 showToast(t('failedDownload'), 'error');
             });
+        }
+
+        // Save changes from editable table back to form fields
+        function saveChanges() {
+            // Collect data from editable table
+            const editableFields = document.querySelectorAll('.editable-field');
+            const correctedData = {};
+
+            editableFields.forEach(field => {
+                const fieldName = field.dataset.field;
+                if (field.tagName === 'SELECT') {
+                    correctedData[fieldName] = field.value;
+                } else {
+                    correctedData[fieldName] = field.value;
+                }
+            });
+
+            // Update the original form fields with corrected data
+            Object.keys(correctedData).forEach(fieldName => {
+                const elementId = 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.value = correctedData[fieldName];
+                }
+            });
+
+            // Show success message
+            showToast('Changes saved successfully! You can now export to Excel.', 'success');
+
+            // Update verification status to show changes were saved
+            const verificationStatus = document.getElementById('verificationStatus');
+            if (verificationStatus) {
+                verificationStatus.innerHTML = `
+                    <div class="status-icon">💾</div>
+                    <div class="status-content">
+                        <div class="status-title">Changes saved successfully!</div>
+                        <div class="confidence-badge">Ready for Export</div>
+                    </div>
+                `;
+            }
         }
 
         // Reset the form
@@ -2925,6 +2995,52 @@
             }
         }
 
+        // Load account classifications from CSV
+        function loadAccountClassifications() {
+            fetch('/static/classification_list.csv')
+                .then(response => response.text())
+                .then(csvText => {
+                    const lines = csvText.trim().split('\n');
+                    
+                    // Skip header lines (first 3 lines are headers)
+                    const dataLines = lines.slice(3);
+                    
+                    accountClassifications = dataLines.map(line => {
+                        const parts = line.split(',');
+                        if (parts.length >= 2) {
+                            return {
+                                category: parts[0]?.trim(),
+                                subcategory: parts[0]?.trim(), // Use category as subcategory for dropdown
+                                description: parts[1]?.trim()
+                            };
+                        }
+                        return null;
+                    }).filter(item => item && item.category); // Remove null entries
+                    
+                    console.log('Loaded', accountClassifications.length, 'account classifications from actual data');
+                    console.log('Sample classifications:', accountClassifications.slice(0, 3));
+                })
+                .catch(error => {
+                    console.error('Failed to load account classifications:', error);
+                    // Fallback to default classifications if CSV fails to load
+                    accountClassifications = [
+                        { category: '旅費交通費', subcategory: '旅費交通費', description: 'ガソリン代、ETC代、交通費、駐車料金、食事代（出張時）、宿泊費' },
+                        { category: '仕入材料', subcategory: '仕入材料', description: '工事原材料' },
+                        { category: '現場関係費', subcategory: '現場関係費', description: '工具、現場教育等に関する研修代・ポスター等' },
+                        { category: '交際費', subcategory: '交際費', description: '客先との飲み会・接待・ゴルフ等' },
+                        { category: '厚生費', subcategory: '厚生費', description: '健康診断料、インフルエンザワクチン接種、医薬品購入、PCR検査' },
+                        { category: '水道光熱費', subcategory: '水道光熱費', description: '電気代、水道代、ガス代、プロパン代' },
+                        { category: '通信費', subcategory: '通信費', description: '郵送料、切手代' },
+                        { category: '租税公課', subcategory: '租税公課', description: '税金、印紙、証紙' },
+                        { category: '事務消耗品費', subcategory: '事務消耗品費', description: '文房具、コピー用紙、PC部品・周辺機器等' },
+                        { category: '運賃', subcategory: '運賃', description: '宅配便等運送料' },
+                        { category: '消耗品', subcategory: '消耗品', description: '仕入材料以外の消耗品' },
+                        { category: '諸会費', subcategory: '諸会費', description: '会費' },
+                        { category: '諸雑費', subcategory: '諸雑費', description: '上記以外支出、食事代（出張以外）、お榊代、新聞代' }
+                    ];
+                });
+        }
+
         // Initialize the application
         function init() {
             if (!checkUserRegistration()) {
@@ -2932,6 +3048,9 @@
             } else {
                 appContainer.style.display = 'block';
             }
+            
+            // Load account classifications
+            loadAccountClassifications();
             
             // Load and apply saved settings
             loadSettings();

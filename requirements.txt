@@ -51,8 +51,8 @@ pydantic==2.5.0
 # sqlalchemy==2.0.23
 # aiosqlite==0.19.0
 
-# Google Vision (optional)
-# google-cloud-vision==3.4.5
+# Google Cloud Vision API
+google-cloud-vision==3.7.2
 
 # Visualization (optional for production)
 # matplotlib==3.8.0

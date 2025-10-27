@@ -7,15 +7,34 @@ from datetime import datetime
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 
+# Import OpenAI Vision extractor
+try:
+    from .openai_vision_extractor import OpenAIVisionExtractor
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
+    print("⚠️ OpenAI Vision extractor not available, will use OCR.space only")
+
 class FieldExtractor:
-    """Extract structured fields from receipt images using OCR.space API."""
+    """Extract structured fields from receipt images using OpenAI Vision API (primary) and OCR.space (fallback)."""
 
     def __init__(self):
         self.api_key = os.getenv('OCR_SPACE_API_KEY', 'K88575219088957')
         self.api_url = 'https://api.ocr.space/parse/image'
 
+        # Initialize OpenAI Vision extractor if available
+        if OPENAI_AVAILABLE:
+            try:
+                self.openai_extractor = OpenAIVisionExtractor()
+                print("✅ OpenAI Vision extractor initialized")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize OpenAI Vision: {e}")
+                self.openai_extractor = None
+        else:
+            self.openai_extractor = None
+
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
-        """Extract structured data from receipt image."""
+        """Extract structured data from receipt image using OpenAI Vision (primary) or OCR.space (fallback)."""
         try:
             print(f"Starting OCR extraction for file: {filename}, size: {len(image_data)} bytes")
 
@@ -23,64 +42,33 @@ class FieldExtractor:
             if not self._is_image_file(image_data, filename):
                 raise Exception("Uploaded file is not a valid image. Please upload a JPEG, PNG, or other image format.")
 
-            # Preprocess image for better OCR results
-            processed_image_data = self._preprocess_image(image_data, filename)
-            print(f"Image preprocessing complete, new size: {len(processed_image_data)} bytes")
-
-            # Check final file size against OCR.space limits (1MB)
-            max_api_size = 1024 * 1024  # 1MB
-            if len(processed_image_data) > max_api_size:
-                raise Exception(f"Image too large for OCR API ({len(processed_image_data)/1024:.1f}KB > {max_api_size/1024:.1f}KB). Please use a smaller image.")
-
-            # Try OCR engine 2 first (more accurate for Japanese)
-            try:
-                print("Calling OCR API with engine 2...")
-                result = self._call_ocr_api(processed_image_data, filename, engine=2)
-                print(f"OCR API call successful, response keys: {list(result.keys())}")
-            except Exception as e:
-                print(f"Engine 2 failed: {e}, trying engine 1...")
-                # Fallback to engine 1 if engine 2 fails
+            # Try OpenAI Vision first (if available)
+            if self.openai_extractor:
                 try:
-                    result = self._call_ocr_api(processed_image_data, filename, engine=1)
-                    print("OCR API fallback to engine 1 successful")
-                except Exception as e2:
-                    print(f"Both OCR engines failed: {e2}")
-                    print("Providing fallback sample data for testing...")
-                    return self._get_fallback_sample_data(filename)
+                    print("🤖 Attempting OpenAI Vision extraction...")
+                    openai_result = self.openai_extractor.extract_fields(image_data, filename)
 
-            if result.get('IsErroredOnProcessing'):
-                error_msg = result.get('ErrorMessage', 'Unknown OCR error')
-                print(f"OCR processing error: {error_msg}")
-                raise Exception(f"OCR API Error: {error_msg}")
+                    # Validate that we got meaningful results
+                    if openai_result.get('total') or openai_result.get('vendor'):
+                        print("✅ OpenAI Vision extraction successful")
+                        print(f"🤖 OpenAI results: {openai_result}")
 
-            # Parse OCR text and extract fields
-            parsed_text = result['ParsedResults'][0]['ParsedText'] if result['ParsedResults'] else ""
-            print(f"OCR extracted text length: {len(parsed_text)} characters")
-            print(f"OCR text preview: {parsed_text[:200]}...")
+                        # Add categorization using our existing logic
+                        lines = ["OpenAI Vision Result"]  # Dummy line for categorization
+                        category, confidence = self._categorize_expense(lines)
+                        openai_result['account_title'] = category
+                        openai_result['confidence'] = confidence
 
-            if not parsed_text.strip():
-                print("OCR returned empty text!")
-                raise Exception("OCR returned no text from image - the image may be too blurry or the text may be unreadable")
+                        return openai_result
+                    else:
+                        print("⚠️ OpenAI Vision returned empty results, falling back to OCR.space")
 
-            # Extract fields using primary methods
-            extracted_fields = self._parse_receipt_text(parsed_text)
-            print(f"Primary extraction results: {extracted_fields}")
+                except Exception as e:
+                    print(f"❌ OpenAI Vision failed: {e}, falling back to OCR.space")
 
-            # If critical fields are missing, try fallback extraction
-            if not extracted_fields['total'] or not extracted_fields['vendor']:
-                print("Primary extraction incomplete, trying fallback methods...")
-                extracted_fields = self._fallback_extraction(parsed_text, extracted_fields)
-                print(f"Fallback extraction results: {extracted_fields}")
-
-            # Ensure tax extraction is always attempted (critical requirement)
-            if not extracted_fields['tax']:
-                print("Tax not found, attempting additional tax extraction...")
-                lines = [line.strip() for line in parsed_text.split('\n') if line.strip()]
-                extracted_fields['tax'] = self._extract_tax(lines)
-                print(f"Additional tax extraction result: {extracted_fields['tax']}")
-
-            print(f"Final extraction results: {extracted_fields}")
-            return extracted_fields
+            # Fallback to OCR.space method
+            print("📡 Using OCR.space extraction...")
+            return self._extract_with_ocr_space(image_data, filename)
 
         except Exception as e:
             print(f"Field extraction failed: {e}")
@@ -102,6 +90,69 @@ class FieldExtractor:
                     'error_type': type(e).__name__
                 }
             }
+
+    def _extract_with_ocr_space(self, image_data: bytes, filename: str) -> Dict[str, Any]:
+        """Extract fields using OCR.space API (fallback method)."""
+        print("📡 Using OCR.space extraction...")
+
+        # Preprocess image for better OCR results
+        processed_image_data = self._preprocess_image(image_data, filename)
+        print(f"Image preprocessing complete, new size: {len(processed_image_data)} bytes")
+
+        # Check final file size against OCR.space limits (1MB)
+        max_api_size = 1024 * 1024  # 1MB
+        if len(processed_image_data) > max_api_size:
+            raise Exception(f"Image too large for OCR API ({len(processed_image_data)/1024:.1f}KB > {max_api_size/1024:.1f}KB). Please use a smaller image.")
+
+        # Try OCR engine 2 first (more accurate for Japanese)
+        try:
+            print("Calling OCR API with engine 2...")
+            result = self._call_ocr_api(processed_image_data, filename, engine=2)
+            print(f"OCR API call successful, response keys: {list(result.keys())}")
+        except Exception as e:
+            print(f"Engine 2 failed: {e}, trying engine 1...")
+            # Fallback to engine 1 if engine 2 fails
+            try:
+                result = self._call_ocr_api(processed_image_data, filename, engine=1)
+                print("OCR API fallback to engine 1 successful")
+            except Exception as e2:
+                print(f"Both OCR engines failed: {e2}")
+                print("Providing fallback sample data for testing...")
+                return self._get_fallback_sample_data(filename)
+
+        if result.get('IsErroredOnProcessing'):
+            error_msg = result.get('ErrorMessage', 'Unknown OCR error')
+            print(f"OCR processing error: {error_msg}")
+            raise Exception(f"OCR API Error: {error_msg}")
+
+        # Parse OCR text and extract fields
+        parsed_text = result['ParsedResults'][0]['ParsedText'] if result['ParsedResults'] else ""
+        print(f"OCR extracted text length: {len(parsed_text)} characters")
+        print(f"OCR text preview: {parsed_text[:200]}...")
+
+        if not parsed_text.strip():
+            print("OCR returned empty text!")
+            raise Exception("OCR returned no text from image - the image may be too blurry or the text may be unreadable")
+
+        # Extract fields using primary methods
+        extracted_fields = self._parse_receipt_text(parsed_text)
+        print(f"Primary extraction results: {extracted_fields}")
+
+        # If critical fields are missing, try fallback extraction
+        if not extracted_fields['total'] or not extracted_fields['vendor']:
+            print("Primary extraction incomplete, trying fallback methods...")
+            extracted_fields = self._fallback_extraction(parsed_text, extracted_fields)
+            print(f"Fallback extraction results: {extracted_fields}")
+
+        # Ensure tax extraction is always attempted (critical requirement)
+        if not extracted_fields['tax']:
+            print("Tax not found, attempting additional tax extraction...")
+            lines = [line.strip() for line in parsed_text.split('\n') if line.strip()]
+            extracted_fields['tax'] = self._extract_tax(lines)
+            print(f"Additional tax extraction result: {extracted_fields['tax']}")
+
+        print(f"Final extraction results: {extracted_fields}")
+        return extracted_fields
 
     def _is_image_file(self, image_data: bytes, filename: str) -> bool:
         """Check if the uploaded file is actually an image."""
