@@ -1518,7 +1518,16 @@
                 ocrTipFormats: "Supported formats: JPG, PNG (max 5MB)",
 
                 // AI Indicator
-                aiSelected: "AI Selected"
+                aiSelected: "AI Selected",
+
+                // Editable Table
+                reviewEditExtractedData: "Review & Edit Extracted Data",
+                saveChanges: "Save Changes",
+                exportToExcel: "Export to Excel",
+                field: "Field",
+                value: "Value",
+                status: "Status",
+                ready: "✓ Ready"
             },
             ja: {
                 // Welcome Modal
@@ -1667,7 +1676,16 @@
                 ocrTipFormats: "対応フォーマット: JPG, PNG (最大5MB)",
 
                 // AI Indicator
-                aiSelected: "AI検出"
+                aiSelected: "AI検出",
+
+                // Editable Table
+                reviewEditExtractedData: "抽出データの確認と編集",
+                saveChanges: "変更を保存",
+                exportToExcel: "Excelにエクスポート",
+                field: "フィールド",
+                value: "値",
+                status: "ステータス",
+                ready: "✓ 準備完了"
             }
         };
 
@@ -1958,6 +1976,34 @@ function updateFieldLabels() {
                     aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
                     console.log('AI indicator forced updated (attempt 3)');
                 }
+
+                // Force update editable table elements
+                const tableHeader = document.querySelector('.table-header h3');
+                if (tableHeader) {
+                    tableHeader.textContent = t('reviewEditExtractedData');
+                    console.log('Table header forced updated (attempt 3):', tableHeader.textContent);
+                }
+
+                const saveChangesBtn = document.getElementById('saveChangesBtn');
+                if (saveChangesBtn) {
+                    saveChangesBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveChanges')}`;
+                    console.log('Save changes button forced updated (attempt 3):', saveChangesBtn.innerHTML);
+                }
+
+                const exportExcelBtn = document.getElementById('exportExcelBtn');
+                if (exportExcelBtn) {
+                    exportExcelBtn.innerHTML = `<i class="fas fa-file-excel"></i> ${t('exportToExcel')}`;
+                    console.log('Export Excel button forced updated (attempt 3):', exportExcelBtn.innerHTML);
+                }
+
+                // Force update table headers
+                const tableHeaders = document.querySelectorAll('#editableTable th');
+                if (tableHeaders.length >= 3) {
+                    tableHeaders[0].textContent = t('field');
+                    tableHeaders[1].textContent = t('value');
+                    tableHeaders[2].textContent = t('status');
+                    console.log('Table headers forced updated (attempt 3)');
+                }
             }, 1000);
 
             // Welcome Modal
@@ -2203,6 +2249,37 @@ function updateFieldLabels() {
             const aiIndicator = document.getElementById('aiConfidenceIndicator');
             if (aiIndicator) {
                 aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
+            }
+
+            // Update editable table elements
+            const tableHeader = document.querySelector('.table-header h3');
+            if (tableHeader) {
+                tableHeader.textContent = t('reviewEditExtractedData');
+            }
+
+            const saveChangesBtn = document.getElementById('saveChangesBtn');
+            if (saveChangesBtn) {
+                saveChangesBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveChanges')}`;
+            }
+
+            const exportExcelBtn = document.getElementById('exportExcelBtn');
+            if (exportExcelBtn) {
+                exportExcelBtn.innerHTML = `<i class="fas fa-file-excel"></i> ${t('exportToExcel')}`;
+            }
+
+            // Update table headers
+            const tableHeaders = document.querySelectorAll('#editableTable th');
+            if (tableHeaders.length >= 3) {
+                tableHeaders[0].textContent = t('field');
+                tableHeaders[1].textContent = t('value');
+                tableHeaders[2].textContent = t('status');
+            }
+
+            // Update existing table rows if table is visible
+            const dataTableContainer = document.getElementById('dataTableContainer');
+            if (dataTableContainer && dataTableContainer.style.display !== 'none') {
+                // Re-populate the table to update all translated content
+                populateEditableTable();
             }
 
             // Update field labels based on current form values
@@ -2642,7 +2719,7 @@ function updateFieldLabels() {
                 // Status cell
                 const statusCell = document.createElement('td');
                 statusCell.style.padding = '12px';
-                statusCell.innerHTML = '<span style="color: var(--primary-blue); font-weight: 500;">✓ Ready</span>';
+                statusCell.innerHTML = `<span style="color: var(--primary-blue); font-weight: 500;">${t('ready')}</span>`;
                 row.appendChild(statusCell);
 
                 tableBody.appendChild(row);
