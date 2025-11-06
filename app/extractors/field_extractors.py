@@ -603,10 +603,17 @@ class FieldExtractor:
         """Extract invoice/receipt number with improved logic for Japanese receipts."""
         # Enhanced patterns for Japanese invoice numbers
         invoice_patterns = [
-            # Priority: Actual invoice/receipt numbers (not registration numbers)
+            # Priority: Various Japanese invoice/receipt number formats
             r'伝票[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 伝票番号: XXX
             r'レシート[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',  # レシート番号: XXX
+            r'領収書[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',    # 領収書番号: XXX
             r'注文[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 注文番号: XXX
+            r'請求書[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',    # 請求書番号: XXX
+            r'登録[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 登録番号: XXX
+            r'管理[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 管理番号: XXX
+            r'識別[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 識別番号: XXX
+            r'シリアル[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',  # シリアル番号: XXX
+            r'受付[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 受付番号: XXX
             r'INVOICE[:\s]*([A-Za-z0-9\-]+)',             # INVOICE: XXX
             r'NO\.[:\s]*([A-Za-z0-9\-]+)',                # NO.: XXX
             r'No\.[:\s]*([A-Za-z0-9\-]+)',                # No.: XXX
@@ -620,7 +627,7 @@ class FieldExtractor:
             if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
                 continue
 
-            for pattern in invoice_patterns[:6]:  # Skip the generic patterns first
+            for pattern in invoice_patterns[:13]:  # Check explicit prefixed patterns first (exclude generic patterns)
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     candidate = match.group(1)
@@ -654,10 +661,10 @@ class FieldExtractor:
                     print(f"📄 Found numeric invoice candidate: {candidate} in line: {line.strip()}")
                     return candidate
 
-        # Third pass: look for registration numbers (T-xxxxx format) but only if no invoice found
+        # Third pass: look for long registration numbers (T-xxxxx format) but only if no invoice found
         registration_patterns = [
-            r'([T]\d{12,})',                              # T7380001003643 (registration numbers)
-            r'([A-Za-z]\d{12,})',                         # Other registration patterns
+            r'([T]\d{12,})',                              # T7380001003643 (long registration numbers)
+            r'([A-Za-z]\d{12,})',                         # Other long registration patterns
         ]
 
         for line in lines:
