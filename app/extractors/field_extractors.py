@@ -55,11 +55,12 @@ class FieldExtractor:
         # Debug: Check available API keys
         ocr_space_key = os.getenv('OCR_SPACE_API_KEY')
         google_creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        google_creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
         openai_key = os.getenv('OPENAI_API_KEY')
         
         print("🔑 API Key Status:")
         print(f"  OCR_SPACE_API_KEY: {'✅ Available' if ocr_space_key else '❌ Missing'}")
-        print(f"  GOOGLE_APPLICATION_CREDENTIALS: {'✅ Available' if google_creds else '❌ Missing'}")
+        print(f"  GOOGLE_APPLICATION_CREDENTIALS: {'✅ Available' if google_creds or google_creds_content else '❌ Missing'}")
         print(f"  OPENAI_API_KEY: {'✅ Available' if openai_key else '❌ Missing'}")
         
         self.api_key = ocr_space_key or 'K88575219088957'

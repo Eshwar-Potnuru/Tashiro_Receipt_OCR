@@ -10,6 +10,8 @@ import re
 import cv2
 import numpy as np
 import unicodedata
+import base64
+import tempfile
 from typing import Dict, Any, Optional, List, Tuple
 from google.cloud import vision
 from google.oauth2 import service_account
@@ -33,18 +35,36 @@ class GoogleVisionExtractor:
                 credentials = service_account.Credentials.from_service_account_file(credentials_path)
                 self.client = vision.ImageAnnotatorClient(credentials=credentials)
             else:
-                # Use environment variable or default credentials
-                # In containers, credentials might be set via environment variables
-                creds_env = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-                if creds_env and os.path.exists(creds_env):
-                    credentials = service_account.Credentials.from_service_account_file(creds_env)
-                    self.client = vision.ImageAnnotatorClient(credentials=credentials)
-                else:
-                    # Try to use default credentials (for GCP environments)
+                # Check for base64 encoded credentials first
+                creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+                if creds_content:
                     try:
-                        self.client = vision.ImageAnnotatorClient()
-                    except Exception as default_error:
-                        raise ValueError(f"No valid Google Vision credentials found. Set GOOGLE_APPLICATION_CREDENTIALS environment variable or provide credentials_path. Error: {default_error}")
+                        # Decode base64 JSON content
+                        creds_json = base64.b64decode(creds_content).decode('utf-8')
+                        # Write to temporary file
+                        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
+                            f.write(creds_json)
+                            temp_creds_path = f.name
+                        # Set environment variable to temp file path
+                        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = temp_creds_path
+                        credentials = service_account.Credentials.from_service_account_file(temp_creds_path)
+                        self.client = vision.ImageAnnotatorClient(credentials=credentials)
+                        print("SUCCESS: Google Vision API initialized with base64 credentials")
+                    except Exception as e:
+                        raise ValueError(f"Failed to decode GOOGLE_APPLICATION_CREDENTIALS_CONTENT: {e}")
+                else:
+                    # Use environment variable path or default credentials
+                    # In containers, credentials might be set via environment variables
+                    creds_env = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+                    if creds_env and os.path.exists(creds_env):
+                        credentials = service_account.Credentials.from_service_account_file(creds_env)
+                        self.client = vision.ImageAnnotatorClient(credentials=credentials)
+                    else:
+                        # Try to use default credentials (for GCP environments)
+                        try:
+                            self.client = vision.ImageAnnotatorClient()
+                        except Exception as default_error:
+                            raise ValueError(f"No valid Google Vision credentials found. Set GOOGLE_APPLICATION_CREDENTIALS environment variable, GOOGLE_APPLICATION_CREDENTIALS_CONTENT, or provide credentials_path. Error: {default_error}")
 
             print("SUCCESS: Google Vision API initialized successfully")
         except Exception as e:
