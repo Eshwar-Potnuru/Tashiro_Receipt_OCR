@@ -36,7 +36,7 @@ RUN mkdir -p artifacts
 RUN mkdir -p config
 
 # Copy Google Vision credentials if they exist
-COPY config/google_vision_key.json* config/
+# COPY config/google_vision_key.json* config/
 
 # Expose port
 EXPOSE 8000
