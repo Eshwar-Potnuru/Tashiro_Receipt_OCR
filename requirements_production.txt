@@ -13,7 +13,7 @@ aiofiles==23.2.1
 
 # OCR and image processing
 pytesseract==0.3.10
-opencv-python==4.8.1.78
+opencv-python==4.6.0.66
 pillow==10.1.0
 requests==2.31.0
 
@@ -28,8 +28,8 @@ pydantic==2.5.0
 
 # OCR Engines (for container deployment)
 # PaddleOCR - Free, good accuracy, reasonable size
-paddlepaddle==2.5.1
-paddleocr==2.7.0.3
+paddlepaddle==2.6.1
+paddleocr==2.8.1
 
 # Google Cloud Vision API (requires credentials)
 google-cloud-vision==3.7.2
