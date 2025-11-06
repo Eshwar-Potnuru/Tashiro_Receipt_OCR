@@ -174,3 +174,61 @@ Example output:
             print(f"❌ Failed to parse OpenAI correction response: {e}")
             print(f"Raw response: {response}")
             raise
+
+    def extract_text(self, image_data: bytes, filename: str = "receipt.jpg") -> Dict[str, Any]:
+        """
+        Extract text from receipt image using OpenAI Vision API.
+        This is the standard interface method that matches other extractors.
+
+        Args:
+            image_data: Raw image bytes
+            filename: Original filename (for logging)
+
+        Returns:
+            Dict containing OCR results in OCR.space-compatible format
+        """
+        try:
+            print(f"🤖 Processing {filename} with OpenAI Vision API...")
+
+            # Use the receipt extraction prompt
+            prompt = self._create_receipt_prompt()
+
+            # Extract with custom prompt
+            result = self.extract_with_custom_prompt(image_data, prompt, filename)
+
+            # Convert to OCR.space-compatible format for consistency
+            raw_text = result.get('corrected_text', '')
+
+            # Return in OCR.space-compatible format
+            return {
+                'IsErroredOnProcessing': False,
+                'ParsedResults': [{
+                    'ParsedText': raw_text,
+                    'TextOverlay': {
+                        'Lines': [],  # OpenAI doesn't provide line-level data
+                        'HasOverlay': False,
+                        'Message': 'OpenAI Vision API - Structured extraction'
+                    }
+                }],
+                'ProcessingTimeInMilliseconds': '0',  # Not tracked
+                'SearchablePDFURL': '',
+                'metadata': {
+                    'engine': 'OpenAI Vision API (gpt-4o-mini)',
+                    'confidence': 0.9,  # OpenAI typically provides high confidence
+                    'language': 'ja',
+                    'filename': filename,
+                    'structured_layout': False  # OpenAI provides text but not structured layout
+                }
+            }
+
+        except Exception as e:
+            print(f"❌ OpenAI Vision extraction failed: {e}")
+            return {
+                'IsErroredOnProcessing': True,
+                'ParsedResults': [],
+                'ErrorMessage': str(e),
+                'metadata': {
+                    'engine': 'OpenAI Vision API (gpt-4o-mini)',
+                    'error': str(e)
+                }
+            }

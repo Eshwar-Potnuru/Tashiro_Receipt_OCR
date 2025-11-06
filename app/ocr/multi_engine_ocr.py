@@ -234,29 +234,22 @@ class MultiEngineOCR:
             # Handle different engine types
             if self.engine_type == "openai_vision":
                 # OpenAI Vision returns structured data, not raw OCR text
-                # We'll return the raw_text from the structured extraction
+                # Use the standard extract_text method
                 try:
-                    # Use the receipt extraction prompt
-                    prompt = """
-あなたは日本語の領収書のOCRテキストを読み取る専門家です。
+                    image_bytes = self._image_to_bytes(image)
+                    ocr_result = self.active_engine.extract_text(image_bytes, "multi_engine_image.jpg")
 
-この領収書画像から、すべてのテキストを可能な限り正確に抽出してください。
-- 日本語の漢字、ひらがな、カタカナを正しく読み取る
-- 日付、金額、店舗名などの重要な情報を含む
-- テキストのレイアウトを保ちながら、読みやすい形式で出力
+                    if ocr_result.get('IsErroredOnProcessing'):
+                        raise Exception(ocr_result.get('ErrorMessage', 'OpenAI Vision extraction failed'))
 
-抽出したテキストのみを出力してください。説明は不要です。
-"""
-                    structured_data = self.active_engine.extract_with_custom_prompt(self._image_to_bytes(image), prompt, "multi_engine_image.jpg")
-                    
-                    raw_text = structured_data.get('corrected_text', '')
-                    
+                    raw_text = ocr_result['ParsedResults'][0]['ParsedText'] if ocr_result['ParsedResults'] else ""
+
                     # Create dummy OCR boxes since OpenAI doesn't provide position data
                     ocr_boxes = [OCRBox(text=raw_text, box=[0, 0, image.size[0], image.size[1]], confidence=0.9)]
-                    
+
                     logger.info(f"✅ OpenAI Vision extraction successful: {len(raw_text)} characters")
                     return raw_text, ocr_boxes
-                    
+
                 except Exception as e:
                     logger.error(f"OpenAI Vision extraction failed: {e}")
                     raise Exception(f"OpenAI Vision extraction failed: {e}")
