@@ -642,7 +642,23 @@ class FieldExtractor:
                         return candidate
 
         # Second, look for shorter invoice-like numbers (but not registration numbers)
+        # FIRST: Check for long registration numbers to avoid conflicts with short patterns
+        registration_patterns = [
+            r'([T]\d{12,})',                              # T7380001003643 (long registration numbers)
+            r'([A-Za-z]\d{12,})',                         # Other long registration patterns
+        ]
+
         for line in lines:
+            for pattern in registration_patterns:
+                match = re.search(pattern, line)
+                if match:
+                    candidate = match.group(1)
+                    # Registration numbers are typically longer and start with T
+                    if len(candidate) >= 13 and candidate.startswith('T'):
+                        print(f"📄 Found registration number: {candidate} in line: {line.strip()}")
+                        return candidate
+
+        # THEN: Look for shorter invoice-like numbers
             # Skip lines with phone-like patterns
             if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
                 continue
@@ -666,21 +682,7 @@ class FieldExtractor:
                     print(f"📄 Found numeric invoice candidate: {candidate} in line: {line.strip()}")
                     return candidate
 
-        # Third pass: look for long registration numbers (T-xxxxx format) but only if no invoice found
-        registration_patterns = [
-            r'([T]\d{12,})',                              # T7380001003643 (long registration numbers)
-            r'([A-Za-z]\d{12,})',                         # Other long registration patterns
-        ]
 
-        for line in lines:
-            for pattern in registration_patterns:
-                match = re.search(pattern, line)
-                if match:
-                    candidate = match.group(1)
-                    # Registration numbers are typically longer and start with T
-                    if len(candidate) >= 13 and candidate.startswith('T'):
-                        print(f"📄 Found registration number: {candidate} in line: {line.strip()}")
-                        return candidate
 
         print("⚠️ No invoice number found")
         return ''
