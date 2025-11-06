@@ -497,59 +497,6 @@ class FieldExtractor:
             r'^\s*登録番号', r'^\s*T印', r'^\s*扱責'
         ]
 
-        # OCR correction patterns for common Japanese store names
-        ocr_corrections = {
-            # Common OCR errors for FamilyMart
-            'famiiymart': 'FamilyMart',
-            'famiilymart': 'FamilyMart',
-            'famiiy mart': 'FamilyMart',
-            'famiily mart': 'FamilyMart',
-            'famiiymart': 'FamilyMart',
-            'famiymart': 'FamilyMart',
-            'famimart': 'FamilyMart',
-            'family mart': 'FamilyMart',
-            'familymart': 'FamilyMart',
-            # Other common store corrections
-            'sbiusetp': 'SUBWAY',
-            'sbiisetp': 'SUBWAY',
-            'subiset': 'SUBWAY',
-            'subiiset': 'SUBWAY',
-            'subway': 'SUBWAY',
-            'macdonald': 'McDonald\'s',
-            'mcdonald': 'McDonald\'s',
-            'macdonarudo': 'McDonald\'s',
-            'kentakki': 'KFC',
-            'kentucky': 'KFC',
-            'kfc': 'KFC',
-            'mosburger': 'MOS Burger',
-            'mosubaga': 'MOS Burger',
-            'famiresu': 'Family Restaurant',
-            'konbini': 'Convenience Store',
-            'supa': 'Super',
-            'super': 'Super',
-            'drugstore': 'Drug Store',
-            'drug': 'Drug Store',
-            'restaurant': 'Restaurant',
-            'diner': 'Diner',
-            'cafe': 'Cafe',
-            'coffee': 'Coffee Shop',
-            # Additional common corrections
-            'seven eleven': '7-Eleven',
-            'seven-eleven': '7-Eleven',
-            '7 eleven': '7-Eleven',
-            '7-eleven': '7-Eleven',
-            'lawson': 'LAWSON',
-            'sunkus': 'SUNKUS',
-            'ministop': 'MINISTOP',
-            'daily yamazaki': 'Daily Yamazaki',
-            'yamaza': 'Yamazaki',
-            'yamazaki': 'Yamazaki',
-            'aeon': 'AEON',
-            'ion': 'AEON',
-            'ito yokado': 'Ito-Yokado',
-            'yokado': 'Ito-Yokado',
-        }
-
         for line in lines[:15]:  # Check first 15 lines for better coverage
             line = line.strip()
 
@@ -572,24 +519,17 @@ class FieldExtractor:
             # Clean up OCR artifacts
             cleaned_line = self._clean_ocr_text(line)
 
-            # Apply OCR corrections
-            corrected_line = cleaned_line.lower()
-            for ocr_error, correction in ocr_corrections.items():
-                if ocr_error in corrected_line:
-                    corrected_line = corrected_line.replace(ocr_error, correction.lower())
-                    break
-
             # Look for store names - prefer lines with Japanese characters or corrected names
             has_japanese = any(char for char in cleaned_line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff')
             has_english = bool(re.search(r'[a-zA-Z]', cleaned_line))
-            has_correction = corrected_line != cleaned_line.lower()
+            has_correction = False
 
             if has_japanese or has_english or has_correction:
                 # Additional check: store names usually contain restaurant keywords or are substantial
                 store_keywords = ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ', '酒店', '薬局', '医院', 'クリーニング',
                                 'restaurant', 'store', 'shop', 'cafe', 'diner', 'burger', 'pizza', 'sushi', 'ramen']
                 if any(keyword in cleaned_line.lower() for keyword in store_keywords) or len(cleaned_line) >= 3:
-                    final_name = corrected_line.title() if has_correction else cleaned_line
+                    final_name = cleaned_line
                     print(f"🏪 Found vendor: {final_name} (original: {line})")
                     return final_name
 
@@ -703,7 +643,7 @@ class FieldExtractor:
 
         # Look for reasonable amounts but be more conservative
         total_candidates = []
-        for line in reversed(lines):
+        for i, line in enumerate(lines):
             line = line.strip()
 
             # Skip lines with excluded terms
@@ -728,19 +668,30 @@ class FieldExtractor:
                     try:
                         value = float(amount)
                         # More restrictive range and additional checks
-                        if 10 <= value <= 50000:  # Reasonable receipt total range
+                        if 10 <= value <= 50000:  # Reasonable receipt total range (increased from 5000)
                             # Additional check: line should not contain item-like patterns
                             if not re.search(r'\d{3}\s+.*', line):  # Skip item codes like "061 item"
-                                total_candidates.append((value, line))
+                                # Additional check: avoid amounts that look like change (too round and large)
+                                if value >= 10000 and value % 1000 == 0:  # Amounts like 7000, 10000, 15000 are often change
+                                    continue
+                                total_candidates.append((value, line, i))  # Include line index
                                 break
                     except ValueError:
                         continue
 
-        # Return the first reasonable candidate (from bottom)
+        # Return the most reasonable candidate
         if total_candidates:
-            amount, line = total_candidates[0]
-            print(f"💰 Found isolated total candidate: {int(amount)} in line: {line}")
-            return str(int(amount))
+            # Sort by position (prefer amounts that appear later in the receipt, as totals are usually at the bottom)
+            # But avoid the very last amounts which might be change
+            total_candidates.sort(key=lambda x: x[2], reverse=True)  # Sort by line index descending
+
+            # Skip the last 1-2 lines as they might be change
+            candidates_to_check = total_candidates[:-2] if len(total_candidates) > 2 else total_candidates
+
+            if candidates_to_check:
+                amount, line, idx = candidates_to_check[0]
+                print(f"💰 Found isolated total candidate: {int(amount)} in line: {line}")
+                return str(int(amount))
 
         print("❌ No total amount found")
         return ''
@@ -1187,7 +1138,8 @@ class FieldExtractor:
                     amount = amount.replace(',', '')
                     try:
                         value = float(amount)
-                        if 1 <= value <= 5000:  # Reasonable tax range, exclude rates
+                        # Tax amounts are typically small and reasonable (exclude '1' and other nonsense)
+                        if 10 <= value <= 5000:  # Reasonable tax range, exclude tiny amounts
                             print(f"🧾 Found tax-related amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:

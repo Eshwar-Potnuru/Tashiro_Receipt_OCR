@@ -216,6 +216,9 @@ class MultiEngineOCR:
     def _image_to_bytes(self, image: Image.Image) -> bytes:
         """Convert PIL Image to bytes for API calls"""
         buffer = io.BytesIO()
+        # Convert RGBA to RGB if necessary (JPEG doesn't support RGBA)
+        if image.mode == 'RGBA':
+            image = image.convert('RGB')
         # Save as JPEG for API compatibility
         image.save(buffer, format='JPEG', quality=95)
         return buffer.getvalue()
