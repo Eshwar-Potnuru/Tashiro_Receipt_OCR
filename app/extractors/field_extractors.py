@@ -15,14 +15,39 @@ except ImportError:
     OPENAI_AVAILABLE = False
     print("⚠️ OpenAI Vision extractor not available, will use OCR.space only")
 
-class FieldExtractor:
-    """Extract structured fields from receipt images using OpenAI Vision API (primary) and OCR.space (fallback)."""
+# Import multi-engine OCR system
+try:
+    from ..ocr.multi_engine_ocr import MultiEngineOCR
+    MULTI_ENGINE_AVAILABLE = True
+except ImportError:
+    MULTI_ENGINE_AVAILABLE = False
+    print("⚠️ Multi-engine OCR not available, falling back to direct API calls")
 
-    def __init__(self):
+class FieldExtractor:
+    """Extract structured fields from receipt images using multi-engine OCR system with OpenAI Vision (primary) and OCR.space (fallback)."""
+
+    def __init__(self, preferred_engine: str = "auto"):
+        """
+        Initialize field extractor with multi-engine OCR support
+        
+        Args:
+            preferred_engine: "google_vision", "openai_vision", "auto", etc.
+        """
         self.api_key = os.getenv('OCR_SPACE_API_KEY', 'K88575219088957')
         self.api_url = 'https://api.ocr.space/parse/image'
 
-        # Initialize OpenAI Vision extractor if available
+        # Initialize multi-engine OCR system
+        if MULTI_ENGINE_AVAILABLE:
+            try:
+                self.multi_engine_ocr = MultiEngineOCR(preferred_engine=preferred_engine)
+                print("✅ Multi-engine OCR initialized")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize multi-engine OCR: {e}")
+                self.multi_engine_ocr = None
+        else:
+            self.multi_engine_ocr = None
+
+        # Initialize OpenAI Vision extractor if available (for structured extraction)
         if OPENAI_AVAILABLE:
             try:
                 self.openai_extractor = OpenAIVisionExtractor()
@@ -34,7 +59,7 @@ class FieldExtractor:
             self.openai_extractor = None
 
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
-        """Extract structured data from receipt image using OpenAI Vision (primary) or OCR.space (fallback)."""
+        """Extract structured data from receipt image using multi-engine OCR system."""
         try:
             print(f"Starting OCR extraction for file: {filename}, size: {len(image_data)} bytes")
 
@@ -42,10 +67,45 @@ class FieldExtractor:
             if not self._is_image_file(image_data, filename):
                 raise Exception("Uploaded file is not a valid image. Please upload a JPEG, PNG, or other image format.")
 
-            # Try OpenAI Vision first (if available)
+            # Try multi-engine OCR system first (includes Google Vision, OpenAI Vision, etc.)
+            if self.multi_engine_ocr:
+                try:
+                    print("🔄 Using multi-engine OCR system...")
+                    
+                    # Convert image bytes to PIL Image
+                    from PIL import Image
+                    import io
+                    image = Image.open(io.BytesIO(image_data))
+                    
+                    # Extract text using multi-engine OCR
+                    raw_text, ocr_boxes = self.multi_engine_ocr.extract(image)
+                    
+                    if raw_text and len(raw_text.strip()) > 10:  # Ensure we got meaningful text
+                        print(f"✅ Multi-engine OCR successful: {len(raw_text)} characters")
+                        
+                        # If using OpenAI Vision engine, we might already have structured data
+                        if self.multi_engine_ocr.engine_type == "openai_vision":
+                            # The multi-engine system already handled OpenAI Vision
+                            # We need to get the structured data from the engine
+                            structured_data = self.openai_extractor.extract_fields(image_data, filename)
+                            if not structured_data.get('error'):
+                                print("✅ OpenAI Vision structured extraction successful")
+                                return structured_data
+                        
+                        # For other engines, parse the raw text
+                        extracted_fields = self._parse_receipt_text(raw_text)
+                        print(f"📝 Parsed fields from multi-engine OCR: {extracted_fields}")
+                        return extracted_fields
+                    else:
+                        print("⚠️ Multi-engine OCR returned insufficient text, trying fallback methods")
+                        
+                except Exception as e:
+                    print(f"❌ Multi-engine OCR failed: {e}, falling back to direct API calls")
+
+            # Fallback: Try OpenAI Vision directly (if available)
             if self.openai_extractor:
                 try:
-                    print("🤖 Attempting OpenAI Vision extraction...")
+                    print("🤖 Attempting direct OpenAI Vision extraction...")
                     openai_result = self.openai_extractor.extract_fields(image_data, filename)
 
                     # Validate that we got meaningful results
@@ -66,7 +126,7 @@ class FieldExtractor:
                 except Exception as e:
                     print(f"❌ OpenAI Vision failed: {e}, falling back to OCR.space")
 
-            # Fallback to OCR.space method
+            # Final fallback to OCR.space method
             print("📡 Using OCR.space extraction...")
             return self._extract_with_ocr_space(image_data, filename)
 
@@ -201,9 +261,12 @@ class FieldExtractor:
             r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})',  # YYYY-MM-DD
             r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',  # DD-MM-YYYY
             r'(\d{4})年(\d{1,2})月(\d{1,2})日',     # Japanese format: 2025年7月2日
+            r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日',  # Japanese with spaces: 2025年 7月 2日
             r'(\d{4})年(\d{1,2})月(\d{1,2})',       # Japanese format without 日
+            r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})', # Japanese with spaces, no 日
             r'(\d{4})/(\d{1,2})/(\d{1,2})',        # YYYY/MM/DD
             r'(\d{2})[/-](\d{1,2})[/-](\d{1,2})',  # YY-MM-DD (assume 20xx)
+            r'(\d{4})\.(\d{1,2})\.(\d{1,2})',      # YYYY.MM.DD
         ]
 
         for line in lines:
@@ -267,18 +330,19 @@ class FieldExtractor:
         return ''
 
     def _extract_total(self, lines: list) -> str:
-        """Extract total amount."""
+        """Extract total amount with enhanced Japanese receipt logic."""
         # Priority patterns - most specific to least specific
         total_patterns = [
             r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000 (Total - highest priority)
             r'合計\s*[¥\\]?([0-9,]+\.?[0-9]*)',     # 合計 1000 (no colon)
             r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000 (Total amount)
+            r'お買上計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # お買上計 (Purchase total)
             r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)', # TOTAL: 1000
             r'[¥\\]([0-9,]+\.?[0-9]*)\s*合計',      # ¥1000 合計 (amount before total)
         ]
 
         # Search for explicit total indicators from bottom up (totals usually at bottom)
-        for line in reversed(lines):
+        for i, line in enumerate(reversed(lines)):
             line_lower = line.lower()
             for pattern in total_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
@@ -292,41 +356,55 @@ class FieldExtractor:
                     except ValueError:
                         continue
 
+            # Check if this line contains a total keyword but no amount (amount might be on next line)
+            total_keywords = ['合計', 'お買上計', 'total', 'TOTAL']
+            exclude_keywords = ['合計点数', '点数', '個数', '数量']  # Exclude "total count" etc.
+            if any(keyword in line for keyword in total_keywords) and not any(excl in line for excl in exclude_keywords):
+                # Look at the immediate next line for the amount
+                # Fix: calculate the actual index in the original lines list
+                actual_index = len(lines) - 1 - i
+                next_line_index = actual_index + 1
+                if next_line_index < len(lines):
+                    next_line = lines[next_line_index].strip()
+                    # Skip if next line contains tax or other non-total indicators
+                    if not any(skip in next_line for skip in ['消費税', '税', '内税', 'お釣', '現計', '小計', '%', '等']):
+                        amount_match = re.search(r'[¥\\]?([0-9,]+\.?[0-9]*)', next_line)
+                        if amount_match:
+                            amount = amount_match.group(1).replace(',', '')
+                            try:
+                                value = float(amount)
+                                if 1 <= value <= 1000000:  # Reasonable receipt amount
+                                    print(f"💰 Found total (split lines): {amount} in line: {line.strip()} + {next_line}")
+                                    return str(int(value))
+                            except ValueError:
+                                continue
+
         # If no explicit total found, look for amounts but exclude obvious non-total amounts
-        # This is more conservative - only pick amounts that are clearly totals
         print("⚠️ No explicit total found, checking for implicit totals...")
 
-        # Look for the pattern where we have subtotal + tax = total
-        subtotal = self._extract_subtotal(lines)
-        tax = self._extract_tax(lines)
+        # Enhanced exclusion patterns for Japanese receipts
+        exclude_patterns = [
+            r'お釣', r'釣銭', r'現計', r'預り', r'預り金',  # Change, received money
+            r'小計', r'内税', r'消費税', r'税', r'税額',    # Subtotals, taxes
+            r'ポイント', r'値引', r'割引', r'割引額',      # Points, discounts
+            r'レジ袋', r'袋代',                            # Bag fees
+            r'おつり', r'釣り',                            # Change (alternate spellings)
+            r'現金', r'カード', r'支払',                    # Payment methods
+            r'金額',                                       # Generic amount (too vague)
+        ]
 
-        if subtotal and tax:
-            try:
-                subtotal_val = float(subtotal)
-                tax_val = float(tax)
-                calculated_total = subtotal_val + tax_val
-
-                # Look for this calculated total in the receipt
-                total_str = str(int(calculated_total))
-                for line in reversed(lines):
-                    if total_str in line.replace(',', ''):
-                        print(f"💰 Found calculated total: {total_str} (subtotal {subtotal} + tax {tax})")
-                        return total_str
-            except (ValueError, TypeError):
-                pass
-
-        # Last resort: look for reasonable amounts but be very conservative
-        # Only consider amounts that appear isolated or with minimal text
+        # Look for reasonable amounts but be more conservative
         total_candidates = []
         for line in reversed(lines):
             line = line.strip()
 
             # Skip lines with excluded terms
-            exclude_patterns = [
-                r'お釣', r'釣銭', r'現計', r'預り', r'小計', r'内税',
-                r'消費税', r'税', r'ポイント', r'値引', r'割引'
-            ]
             if any(excl in line for excl in exclude_patterns):
+                continue
+
+            # Skip lines that contain multiple amounts (likely itemized)
+            amounts_in_line = re.findall(r'[¥\\]?([0-9,]+\.?[0-9]*)', line)
+            if len(amounts_in_line) > 1:
                 continue
 
             # Look for isolated amounts (just ¥XXXX or XXXX円)
@@ -341,9 +419,12 @@ class FieldExtractor:
                     amount = match.group(1).replace(',', '')
                     try:
                         value = float(amount)
-                        if 10 <= value <= 50000:  # Reasonable receipt total range (not too high)
-                            total_candidates.append((value, line))
-                            break  # Only one amount per line
+                        # More restrictive range and additional checks
+                        if 10 <= value <= 50000:  # Reasonable receipt total range
+                            # Additional check: line should not contain item-like patterns
+                            if not re.search(r'\d{3}\s+.*', line):  # Skip item codes like "061 item"
+                                total_candidates.append((value, line))
+                                break
                     except ValueError:
                         continue
 
@@ -552,12 +633,12 @@ class FieldExtractor:
     def _extract_tax(self, lines: list) -> str:
         """Extract tax amount - CRITICAL for the business requirement."""
         tax_patterns = [
-            # Primary patterns (most specific)
+            # Primary patterns (most specific) - prioritize actual amounts over rates
             r'\(消費税\s+等[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)\)',  # (消費税 等 ¥258)
             r'内税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',          # 内税額 ¥258
             r'消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',          # 消費税 ¥258
             r'税額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税額 ¥258
-            r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',              # 税 ¥258
+            r'税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',              # 税 ¥258 (but not tax rates)
             r'TAX[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',             # TAX ¥258
 
             # Additional patterns for different formats
@@ -566,19 +647,72 @@ class FieldExtractor:
             r'内消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',        # 内消費税 ¥258
         ]
 
-        # First pass: look for explicit tax indicators
-        for line in lines:
+        # First pass: look for explicit tax indicators, but exclude tax rates
+        for i, line in enumerate(lines):
+            # Skip lines that clearly contain tax rates (like "10%")
+            if '%' in line and any(rate in line for rate in ['8%', '10%', '5%']):
+                continue
+
             for pattern in tax_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     amount = match.group(1).replace(',', '')
                     try:
                         value = float(amount)
-                        if 1 <= value <= 50000:  # Reasonable tax amount range
+                        # More restrictive: tax amounts are typically small (under ¥5000 for most receipts)
+                        if 1 <= value <= 5000:  # Reasonable tax amount range
                             print(f"🧾 Found tax amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
+
+            # Check for tax keywords and look for amounts in current or next lines
+            tax_keywords = ['消費税', '内消費税', '税額', 'tax', 'TAX']
+            if any(keyword in line for keyword in tax_keywords):
+                # Look for amounts in parentheses first (common in Japanese receipts)
+                # Pattern: (anything ¥amount) or (anything amount)
+                paren_patterns = [
+                    r'\([^)]*?[¥\\]([0-9,]+\.?[0-9]*)\)',  # ( ... ¥114)
+                    r'\([^)]*?\b([0-9,]+\.?[0-9]*)\)',     # ( ... 114) - but avoid percentages
+                    r'[¥\\]([0-9,]+\.?[0-9]*)\)',          # ¥114) - for split parentheses
+                ]
+                for pattern in paren_patterns:
+                    paren_match = re.search(pattern, line)
+                    if paren_match:
+                        amount = paren_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 1 <= value <= 5000 and not ('%' in line and str(int(value)) + '%' in line):
+                                print(f"🧾 Found tax amount in parentheses: {amount} in line: {line.strip()}")
+                                return str(int(value))
+                        except ValueError:
+                            continue
+
+                # Look for amounts in the same line
+                amounts = re.findall(r'[¥\\]?([0-9,]+\.?[0-9]*)', line)
+                for amount in amounts:
+                    amount = amount.replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 1 <= value <= 5000:  # Reasonable tax range, exclude rates
+                            print(f"🧾 Found tax-related amount: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
+                # Look at the next line for the amount
+                if i + 1 < len(lines):
+                    next_line = lines[i + 1].strip()
+                    amount_match = re.search(r'[¥\\]?([0-9,]+\.?[0-9]*)', next_line)
+                    if amount_match:
+                        amount = amount_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 1 <= value <= 5000:
+                                print(f"🧾 Found tax amount (next line): {amount} in lines: {line.strip()} + {next_line}")
+                                return str(int(value))
+                        except ValueError:
+                            continue
 
         # Second pass: calculate tax from subtotal and total if available
         # This is a fallback for when tax is not explicitly shown
@@ -588,7 +722,7 @@ class FieldExtractor:
         total = ''
         for line in lines:
             # Simple total patterns to avoid recursion
-            for pattern in [r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)', r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)']:
+            for pattern in [r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)', r'お買上計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)', r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)']:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     total = match.group(1).replace(',', '')
@@ -618,8 +752,13 @@ class FieldExtractor:
                 pass
 
         # Third pass: look for any amounts in lines containing tax-related keywords
-        tax_keywords = ['税', '消費税', 'tax', 'TAX']
+        # But be more careful to avoid tax rates
+        tax_keywords = ['消費税', '内消費税', 'tax', 'TAX']
         for line in lines:
+            # Skip tax rate lines
+            if '%' in line:
+                continue
+
             if any(keyword in line for keyword in tax_keywords):
                 # Extract any numbers from tax-related lines
                 amounts = re.findall(r'([0-9,]+\.?[0-9]*)', line)
@@ -627,7 +766,7 @@ class FieldExtractor:
                     amount = amount.replace(',', '')
                     try:
                         value = float(amount)
-                        if 1 <= value <= 50000:  # Reasonable tax range
+                        if 1 <= value <= 5000:  # Reasonable tax range, exclude rates
                             print(f"🧾 Found tax-related amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:

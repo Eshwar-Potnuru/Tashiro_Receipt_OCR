@@ -16,9 +16,9 @@ try:
     from app.main import app
     
     if __name__ == "__main__":
-        print("🚀 Starting Tashiro Ironworks Receipt OCR Server...")
-        print("📱 Unified Mobile/Desktop Interface")
-        print("🌐 Server will be available at: http://localhost:8000")
+        print("Starting Tashiro Ironworks Receipt OCR Server...")
+        print("Unified Mobile/Desktop Interface")
+        print("Server will be available at: http://localhost:8000")
         
         uvicorn.run(
             "app.main:app",
@@ -30,8 +30,8 @@ try:
         )
         
 except ImportError as e:
-    print(f"❌ Missing dependencies: {e}")
-    print("📦 Please install requirements: pip install -r requirements.txt")
+    print(f"Missing dependencies: {e}")
+    print("Please install requirements: pip install -r requirements.txt")
     
 except Exception as e:
-    print(f"❌ Server startup failed: {e}")
+    print(f"Server startup failed: {e}")

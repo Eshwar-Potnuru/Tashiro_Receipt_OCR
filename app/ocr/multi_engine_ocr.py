@@ -10,16 +10,23 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 from PIL import Image
 import os
+import io
 
 # Import existing OCR system
 from .ocr_engine import OCREngine as BaseOCREngine, OCRBox
 
 # Import enhanced engines
 try:
-    from .google_vision_ocr import GoogleVisionOCR
+    from ..extractors.google_vision_extractor import GoogleVisionExtractor
     GOOGLE_VISION_AVAILABLE = True
 except ImportError:
     GOOGLE_VISION_AVAILABLE = False
+
+try:
+    from ..extractors.openai_vision_extractor import OpenAIVisionExtractor
+    OPENAI_VISION_AVAILABLE = True
+except ImportError:
+    OPENAI_VISION_AVAILABLE = False
 
 try:
     from .enhanced_japanese_ocr import EnhancedJapaneseOCR
@@ -66,6 +73,7 @@ class MultiEngineOCR:
         """Detect which OCR engines are available"""
         engines = {
             "google_vision": GOOGLE_VISION_AVAILABLE and self._check_google_credentials(),
+            "openai_vision": OPENAI_VISION_AVAILABLE and self._check_openai_key(),
             "enhanced_japanese": ENHANCED_JAPANESE_AVAILABLE,  # High-quality Japanese OCR
             "ocr_space": OCR_SPACE_AVAILABLE and self._check_ocr_space_key(),
             "paddleocr": self._check_paddleocr_available(),
@@ -95,6 +103,10 @@ class MultiEngineOCR:
             os.path.exists('google-vision-credentials.json')
         )
     
+    def _check_openai_key(self) -> bool:
+        """Check if OpenAI API key is configured"""
+        return os.getenv('OPENAI_API_KEY') is not None
+    
     def _check_ocr_space_key(self) -> bool:
         """Check if OCR.space API key is configured"""
         return os.getenv('OCR_SPACE_API_KEY') is not None
@@ -102,8 +114,8 @@ class MultiEngineOCR:
     def _initialize_engines(self):
         """Initialize OCR engines in priority order"""
         
-        # Priority order (best to fallback) - OCR.space first for superior quality
-        engine_priority = ["ocr_space", "enhanced_japanese", "google_vision", "paddleocr", "easyocr"]
+        # Priority order (best to fallback) - Premium engines first for superior quality
+        engine_priority = ["google_vision", "openai_vision", "enhanced_japanese", "ocr_space", "paddleocr", "easyocr"]
         
         if self.preferred_engine != "auto" and self.preferred_engine in self.available_engines:
             selected_engine = self.preferred_engine
@@ -129,10 +141,14 @@ class MultiEngineOCR:
                     os.getenv('GOOGLE_APPLICATION_CREDENTIALS') or 
                     'google-vision-credentials.json'
                 )
-                self.active_engine = GoogleVisionOCR(credentials_path)
+                self.active_engine = GoogleVisionExtractor(credentials_path)
                 logger.info("🚀 Primary Engine: Google Cloud Vision API (High Accuracy)")
                 
-            elif selected_engine == "ocr_space":
+            elif selected_engine == "openai_vision":
+                self.active_engine = OpenAIVisionExtractor()
+                logger.info("🚀 Primary Engine: OpenAI Vision API (Structured Field Extraction)")
+                
+            elif selected_engine == "enhanced_japanese":
                 self.active_engine = OCRSpaceOCR()
                 logger.info("🚀 Primary Engine: OCR.space API (Free Cloud OCR)")
                 
@@ -191,18 +207,60 @@ class MultiEngineOCR:
             Tuple of (raw_text, ocr_boxes)
         """
         try:
-            # Try primary engine first
-            if self.engine_type in ["enhanced_japanese", "google_vision", "ocr_space", "paddleocr"]:
-                raw_text, annotations = self.active_engine.extract_text(image)
+            # Handle different engine types
+            if self.engine_type == "openai_vision":
+                # OpenAI Vision returns structured data, not raw OCR text
+                # We'll return the raw_text from the structured extraction
+                structured_data = self.active_engine.extract_fields(self._image_to_bytes(image), "multi_engine_image.jpg")
                 
-                # Convert to OCRBox format
-                ocr_boxes = []
-                for annotation in annotations:
-                    ocr_boxes.append(OCRBox(
-                        text=annotation['text'],
-                        box=annotation['box'], 
-                        confidence=annotation['confidence']
-                    ))
+                if structured_data.get('error'):
+                    raise Exception(f"OpenAI Vision extraction failed: {structured_data['error']}")
+                
+                # Extract raw text if available, otherwise create from structured data
+                raw_text = structured_data.get('raw_text', '')
+                if not raw_text and structured_data.get('vendor'):
+                    # Create basic text representation from structured data
+                    raw_text = f"{structured_data.get('vendor', '')}\n"
+                    if structured_data.get('date'):
+                        raw_text += f"Date: {structured_data['date']}\n"
+                    if structured_data.get('total'):
+                        raw_text += f"Total: ¥{structured_data['total']}\n"
+                
+                # Create dummy OCR boxes since OpenAI doesn't provide position data
+                ocr_boxes = [OCRBox(text=raw_text, box=[0, 0, image.size[0], image.size[1]], confidence=0.9)]
+                
+                logger.info(f"✅ OpenAI Vision extraction successful: {len(raw_text)} characters")
+                return raw_text, ocr_boxes
+                
+            elif self.engine_type in ["enhanced_japanese", "google_vision", "ocr_space", "paddleocr"]:
+                image_bytes = self._image_to_bytes(image)
+                
+                if self.engine_type == "google_vision":
+                    # Google Vision extractor returns OCR.space-compatible dict
+                    result = self.active_engine.extract_text(image_bytes, "multi_engine_image.jpg")
+                    if result.get('IsErroredOnProcessing'):
+                        raise Exception(result.get('ErrorMessage', 'Google Vision extraction failed'))
+                    
+                    raw_text = result['ParsedResults'][0]['ParsedText'] if result['ParsedResults'] else ""
+                    
+                    # Create basic OCR boxes from text (Google Vision doesn't provide detailed boxes in our format)
+                    ocr_boxes = [OCRBox(
+                        text=raw_text,
+                        box=[0, 0, image.size[0], image.size[1]],
+                        confidence=result.get('metadata', {}).get('confidence', 0.9)
+                    )]
+                else:
+                    # Other engines return (raw_text, annotations)
+                    raw_text, annotations = self.active_engine.extract_text(image_bytes, "multi_engine_image.jpg")
+                    
+                    # Convert to OCRBox format
+                    ocr_boxes = []
+                    for annotation in annotations:
+                        ocr_boxes.append(OCRBox(
+                            text=annotation['text'],
+                            box=annotation['box'], 
+                            confidence=annotation['confidence']
+                        ))
                 
                 logger.info(f"✅ OCR successful with {self.engine_type}: {len(ocr_boxes)} text regions found")
                 return raw_text, ocr_boxes
@@ -233,6 +291,23 @@ class MultiEngineOCR:
             logger.error("❌ All OCR engines failed")
             return "", []
     
+    def _image_to_bytes(self, image: Image.Image) -> bytes:
+        """Convert PIL Image to bytes for engines that need it"""
+        # Ensure image is in RGB mode (no alpha channel) for JPEG compatibility
+        if image.mode in ('RGBA', 'LA', 'P'):
+            # Create white background for transparent images
+            background = Image.new('RGB', image.size, (255, 255, 255))
+            if image.mode == 'P':
+                image = image.convert('RGBA')
+            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
+            image = background
+        elif image.mode != 'RGB':
+            image = image.convert('RGB')
+            
+        buffer = io.BytesIO()
+        image.save(buffer, format='JPEG', quality=95)
+        return buffer.getvalue()
+    
     def get_engine_status(self) -> Dict[str, Any]:
         """Get detailed information about available OCR engines and setup"""
         
@@ -248,6 +323,18 @@ class MultiEngineOCR:
                     "Get API key from https://console.cloud.google.com/",
                     "Download credentials JSON file", 
                     "Set GOOGLE_APPLICATION_CREDENTIALS environment variable"
+                ]
+            },
+            "openai_vision": {
+                "available": OPENAI_VISION_AVAILABLE,
+                "credentials_configured": self._check_openai_key(),
+                "accuracy": "90-95%",
+                "cost": "$0.0013/1000 tokens (~$0.005/image)",
+                "speed": "2-5 seconds",
+                "setup": [
+                    "pip install openai",
+                    "Get API key from https://platform.openai.com/",
+                    "Set OPENAI_API_KEY environment variable"
                 ]
             },
             "paddleocr": {
@@ -285,13 +372,17 @@ class MultiEngineOCR:
     def _get_recommendation(self) -> str:
         """Get setup recommendation based on current state"""
         
-        if self.engine_type == "google_vision":
-            return "✅ Optimal setup - Google Vision provides GPT-like accuracy"
+        if self.engine_type in ["google_vision", "openai_vision"]:
+            return "✅ Optimal setup - Premium AI engines provide GPT-like accuracy and structured extraction"
         elif self.engine_type == "paddleocr":
             return "✅ Good setup - PaddleOCR provides excellent free performance"
         elif self.engine_type == "easyocr":
-            if GOOGLE_VISION_AVAILABLE:
+            if GOOGLE_VISION_AVAILABLE and OPENAI_VISION_AVAILABLE:
+                return "💡 Consider upgrading to Google Vision or OpenAI Vision for superior accuracy"
+            elif GOOGLE_VISION_AVAILABLE:
                 return "💡 Consider upgrading to Google Vision API for better accuracy"
+            elif OPENAI_VISION_AVAILABLE:
+                return "💡 Consider upgrading to OpenAI Vision for structured field extraction"
             elif PADDLEOCR_AVAILABLE:
                 return "💡 Consider upgrading to PaddleOCR for better performance" 
             else:

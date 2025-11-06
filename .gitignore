@@ -42,6 +42,13 @@ Thumbs.db
 *.log
 logs/
 
+# API Keys and Secrets
+config/google_vision_key.json
+backup_important/config/google_vision_key.json
+*.key
+*.pem
+*.p12
+
 # Environment variables
 .env
 .env.local

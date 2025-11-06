@@ -32,10 +32,10 @@ class GoogleVisionExtractor:
                 # Use environment variable or default credentials
                 self.client = vision.ImageAnnotatorClient()
 
-            print("✅ Google Vision API initialized successfully")
+            print("SUCCESS: Google Vision API initialized successfully")
         except Exception as e:
-            print(f"❌ Failed to initialize Google Vision API: {e}")
-            print("💡 Make sure GOOGLE_APPLICATION_CREDENTIALS is set or credentials_path is provided")
+            print(f"ERROR: Failed to initialize Google Vision API: {e}")
+            print("INFO: Make sure GOOGLE_APPLICATION_CREDENTIALS is set or credentials_path is provided")
             raise
 
     def extract_text(self, image_data: bytes, filename: str = "receipt.jpg") -> Dict[str, Any]:
@@ -56,20 +56,19 @@ class GoogleVisionExtractor:
             image = vision.Image(content=image_data)
 
             # Configure text detection with Japanese language hint
-            text_detection_params = vision.TextDetectionParams(
-                language_hints=["ja"],  # Japanese language hint
-                model="builtin/latest"  # Use latest model
-            )
+            # Note: language_hints are specified in the image context, not TextDetectionParams
+            image_context = vision.ImageContext(language_hints=["ja"])
 
             # Create annotate request
             features = [
-                vision.Feature(type_=vision.Feature.Type.TEXT_DETECTION, params=text_detection_params)
+                vision.Feature(type_=vision.Feature.Type.TEXT_DETECTION)
             ]
 
             # Make API request
             response = self.client.annotate_image({
                 'image': image,
                 'features': features,
+                'image_context': image_context,
             })
 
             # Check for errors
@@ -83,9 +82,23 @@ class GoogleVisionExtractor:
             if response.text_annotations:
                 # Full text is in the first annotation
                 full_text = response.text_annotations[0].description
-                confidence = response.text_annotations[0].confidence
 
-                print(".2f"            else:
+                # Confidence might not be available for the full text annotation
+                # Use the average confidence from individual text blocks if available
+                confidence = 0.0
+                if hasattr(response.text_annotations[0], 'confidence') and response.text_annotations[0].confidence is not None:
+                    confidence = response.text_annotations[0].confidence
+                else:
+                    # Calculate average confidence from text blocks
+                    confidences = []
+                    for annotation in response.text_annotations[1:]:  # Skip first (full text)
+                        if hasattr(annotation, 'confidence') and annotation.confidence is not None:
+                            confidences.append(annotation.confidence)
+                    if confidences:
+                        confidence = sum(confidences) / len(confidences)
+
+                print(f"📊 Google Vision confidence: {confidence:.2f}")
+            else:
                 print("⚠️ No text detected in image")
 
             # Return in OCR.space-compatible format for easy integration
@@ -112,7 +125,7 @@ class GoogleVisionExtractor:
             return result
 
         except Exception as e:
-            print(f"❌ Google Vision API extraction failed: {e}")
+            print(f"ERROR: Google Vision API extraction failed: {e}")
             return {
                 'IsErroredOnProcessing': True,
                 'ParsedResults': [],
@@ -188,14 +201,14 @@ def test_google_vision_connection(credentials_path: Optional[str] = None) -> boo
         result = extractor.extract_text(test_data, "test.jpg")
 
         if result.get('IsErroredOnProcessing'):
-            print(f"❌ Google Vision test failed: {result.get('ErrorMessage')}")
+            print(f"ERROR: Google Vision test failed: {result.get('ErrorMessage')}")
             return False
         else:
-            print("✅ Google Vision API connection test successful")
+            print("SUCCESS: Google Vision API connection test successful")
             return True
 
     except Exception as e:
-        print(f"❌ Google Vision API test failed: {e}")
+        print(f"ERROR: Google Vision API test failed: {e}")
         return False
 
 
@@ -206,13 +219,13 @@ if __name__ == "__main__":
     # Check for credentials
     credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
     if not credentials_path:
-        print("❌ GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
-        print("💡 Set it to the path of your Google Cloud service account JSON file")
+        print("ERROR: GOOGLE_APPLICATION_CREDENTIALS environment variable not set")
+        print("INFO: Set it to the path of your Google Cloud service account JSON file")
         exit(1)
 
     success = test_google_vision_connection(credentials_path)
     if success:
-        print("🎉 Google Vision API is ready to use!")
+        print("SUCCESS: Google Vision API is ready to use!")
     else:
-        print("❌ Google Vision API setup failed")
+        print("ERROR: Google Vision API setup failed")
         exit(1)
