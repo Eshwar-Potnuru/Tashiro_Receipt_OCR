@@ -13,13 +13,13 @@ try:
     # Try to load .env file, but don't fail if it doesn't exist (for container deployments)
     env_loaded = load_dotenv()
     if env_loaded:
-        print("✅ Environment variables loaded from .env file")
+        print("Environment variables loaded from .env file")
     else:
-        print("ℹ️ No .env file found, using environment variables directly")
+        print("No .env file found, using environment variables directly")
 except ImportError:
-    print("⚠️ python-dotenv not installed, using environment variables directly")
+    print("python-dotenv not installed, using environment variables directly")
 except Exception as e:
-    print(f"⚠️ Error loading .env file: {e}, using environment variables directly")
+    print(f"Error loading .env file: {e}, using environment variables directly")
 
 # Import enhanced Japanese extractor
 try:
@@ -58,21 +58,21 @@ class FieldExtractor:
         google_creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
         openai_key = os.getenv('OPENAI_API_KEY')
         
-        print("🔑 API Key Status:")
-        print(f"  OCR_SPACE_API_KEY: {'✅ Available' if ocr_space_key else '❌ Missing'}")
-        print(f"  GOOGLE_APPLICATION_CREDENTIALS: {'✅ Available' if google_creds or google_creds_content else '❌ Missing'}")
-        print(f"  OPENAI_API_KEY: {'✅ Available' if openai_key else '❌ Missing'}")
+        print("API Key Status:")
+        print(f"  OCR_SPACE_API_KEY: {'Available' if ocr_space_key else 'Missing'}")
+        print(f"  GOOGLE_APPLICATION_CREDENTIALS: {'Available' if google_creds or google_creds_content else 'Missing'}")
+        print(f"  OPENAI_API_KEY: {'Available' if openai_key else 'Missing'}")
         
-        self.api_key = ocr_space_key or 'K88575219088957'
+        self.api_key = ocr_space_key
         self.api_url = 'https://api.ocr.space/parse/image'
 
         # Initialize multi-engine OCR system
         if MULTI_ENGINE_AVAILABLE:
             try:
                 self.multi_engine_ocr = MultiEngineOCR(preferred_engine=preferred_engine)
-                print("✅ Multi-engine OCR initialized")
+                print("Multi-engine OCR initialized")
             except Exception as e:
-                print(f"⚠️ Failed to initialize multi-engine OCR: {e}")
+                print(f"Failed to initialize multi-engine OCR: {e}")
                 self.multi_engine_ocr = None
         else:
             self.multi_engine_ocr = None
@@ -81,9 +81,9 @@ class FieldExtractor:
         if OPENAI_AVAILABLE:
             try:
                 self.openai_extractor = OpenAIVisionExtractor()
-                print("✅ OpenAI Vision extractor initialized")
+                print("OpenAI Vision extractor initialized")
             except Exception as e:
-                print(f"⚠️ Failed to initialize OpenAI Vision: {e}")
+                print(f"Failed to initialize OpenAI Vision: {e}")
                 self.openai_extractor = None
         else:
             self.openai_extractor = None
@@ -92,9 +92,9 @@ class FieldExtractor:
         if ENHANCED_JAPANESE_AVAILABLE:
             try:
                 self.enhanced_extractor = EnhancedJapaneseExtractor()
-                print("✅ Enhanced Japanese extractor initialized")
+                print("Enhanced Japanese extractor initialized")
             except Exception as e:
-                print(f"⚠️ Failed to initialize Enhanced Japanese extractor: {e}")
+                print(f"Failed to initialize Enhanced Japanese extractor: {e}")
                 self.enhanced_extractor = None
         else:
             self.enhanced_extractor = None
@@ -111,7 +111,7 @@ class FieldExtractor:
             # Try multi-engine OCR system first (includes Google Vision, OpenAI Vision, etc.)
             if self.multi_engine_ocr:
                 try:
-                    print("🔄 Using multi-engine OCR system...")
+                    print("Using multi-engine OCR system...")
                     
                     # Convert image bytes to PIL Image
                     from PIL import Image
@@ -124,7 +124,7 @@ class FieldExtractor:
                     # Check if we got structured result from enhanced Japanese extractor
                     if isinstance(extraction_result, dict) and 'processing_method' in extraction_result:
                         # This is already a structured result from enhanced extractor
-                        print("✅ Enhanced Japanese extraction completed")
+                        print("Enhanced Japanese extraction completed")
                         return extraction_result
                     
                     # Handle tuple return (raw_text, ocr_boxes)
@@ -134,7 +134,7 @@ class FieldExtractor:
                         # Check if raw_text is actually a structured result dict
                         if isinstance(raw_text, dict) and 'processing_method' in raw_text:
                             # This is already a structured result from enhanced extractor
-                            print("✅ Enhanced Japanese extraction completed")
+                            print("Enhanced Japanese extraction completed")
                             return raw_text
                     else:
                         # Unexpected format, convert to string
@@ -142,14 +142,14 @@ class FieldExtractor:
                         ocr_boxes = []
                     
                     if raw_text and len(raw_text.strip()) > 10:  # Ensure we got meaningful text
-                        print(f"✅ Multi-engine OCR successful: {len(raw_text)} characters")
+                        print(f"Multi-engine OCR successful: {len(raw_text)} characters")
                         
                         # Parse the raw text using existing logic
                         extracted_fields = self._parse_receipt_text(raw_text)
-                        print(f"📝 Parsed fields from multi-engine OCR: {extracted_fields}")
+                        print(f"Parsed fields from multi-engine OCR: {extracted_fields}")
                         return extracted_fields
                     else:
-                        print("⚠️ Multi-engine OCR returned insufficient text, trying fallback methods")
+                        print("Multi-engine OCR returned insufficient text, trying fallback methods")
                         
                 except Exception as e:
                     print(f"❌ Multi-engine OCR failed: {e}, falling back to direct API calls")
@@ -157,7 +157,7 @@ class FieldExtractor:
             # Fallback: Try OpenAI Vision directly (if available)
             if self.openai_extractor:
                 try:
-                    print("🤖 Attempting direct OpenAI Vision extraction...")
+                    print("Attempting direct OpenAI Vision extraction...")
                     
                     # Create a prompt for structured extraction
                     prompt = """
@@ -211,8 +211,8 @@ class FieldExtractor:
                         
                         # Validate that we got meaningful results
                         if parsed_data.get('total') or parsed_data.get('vendor'):
-                            print("✅ OpenAI Vision extraction successful")
-                            print(f"🤖 OpenAI results: {parsed_data}")
+                            print("OpenAI Vision extraction successful")
+                            print(f"OpenAI results: {parsed_data}")
 
                             # Add categorization using our existing logic
                             lines = ["OpenAI Vision Result"]  # Dummy line for categorization
@@ -222,15 +222,15 @@ class FieldExtractor:
 
                             return parsed_data
                         else:
-                            print("⚠️ OpenAI Vision returned empty results, falling back to OCR.space")
+                            print("OpenAI Vision returned empty results, falling back to OCR.space")
                     else:
-                        print("⚠️ OpenAI Vision returned invalid JSON, falling back to OCR.space")
+                        print("OpenAI Vision returned invalid JSON, falling back to OCR.space")
 
                 except Exception as e:
-                    print(f"❌ OpenAI Vision failed: {e}, falling back to OCR.space")
+                    print(f"OpenAI Vision failed: {e}, falling back to OCR.space")
 
             # Final fallback to OCR.space method
-            print("📡 Using OCR.space extraction...")
+            print("Using OCR.space extraction...")
             return self._extract_with_ocr_space(image_data, filename)
 
         except Exception as e:
@@ -442,7 +442,7 @@ class FieldExtractor:
                         # Validate date ranges
                         if 2020 <= year <= 2030 and 1 <= month <= 12 and 1 <= day <= 31:
                             formatted_date = f"{year}-{month:02d}-{day:02d}"
-                            print(f"📅 Found date: {formatted_date} in line: {line.strip()}")
+                            print(f"Found date: {formatted_date} in line: {line.strip()}")
                             return formatted_date
                     except (ValueError, IndexError):
                         continue
@@ -476,12 +476,12 @@ class FieldExtractor:
 
                         if 2020 <= year <= 2030 and 1 <= month <= 12 and 1 <= day <= 31:
                             formatted_date = f"{year}-{month:02d}-{day:02d}"
-                            print(f"📅 Found partial date: {formatted_date} in line: {line.strip()}")
+                            print(f"Found partial date: {formatted_date} in line: {line.strip()}")
                             return formatted_date
                     except (ValueError, IndexError):
                         continue
 
-        print("⚠️ No date found")
+        print("No date found")
         return ''
 
     def _extract_vendor(self, lines: list) -> str:
@@ -530,12 +530,12 @@ class FieldExtractor:
                                 'restaurant', 'store', 'shop', 'cafe', 'diner', 'burger', 'pizza', 'sushi', 'ramen']
                 if any(keyword in cleaned_line.lower() for keyword in store_keywords) or len(cleaned_line) >= 3:
                     final_name = cleaned_line
-                    print(f"🏪 Found vendor: {final_name} (original: {line})")
+                    print(f"Found vendor: {final_name} (original: {line})")
                     return final_name
 
             # Also accept English store names
             if len(cleaned_line) > 3 and not cleaned_line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
-                print(f"🏪 Found vendor: {cleaned_line} (original: {line})")
+                print(f"Found vendor: {cleaned_line} (original: {line})")
                 return cleaned_line
 
         return ''
@@ -596,7 +596,7 @@ class FieldExtractor:
                     try:
                         value = float(amount)
                         if 1 <= value <= 1000000:  # Reasonable receipt amount
-                            print(f"💰 Found total: {amount} in line: {line.strip()}")
+                            print(f"Found total: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
@@ -619,13 +619,13 @@ class FieldExtractor:
                             try:
                                 value = float(amount)
                                 if 1 <= value <= 1000000:  # Reasonable receipt amount
-                                    print(f"💰 Found total (split lines): {amount} in line: {line.strip()} + {next_line}")
+                                    print(f"Found total (split lines): {amount} in line: {line.strip()} + {next_line}")
                                     return str(int(value))
                             except ValueError:
                                 continue
 
         # If no explicit total found, look for amounts but exclude obvious non-total amounts
-        print("⚠️ No explicit total found, checking for implicit totals...")
+        print("No explicit total found, checking for implicit totals...")
 
         # Enhanced exclusion patterns for Japanese receipts
         exclude_patterns = [
@@ -690,10 +690,10 @@ class FieldExtractor:
 
             if candidates_to_check:
                 amount, line, idx = candidates_to_check[0]
-                print(f"💰 Found isolated total candidate: {int(amount)} in line: {line}")
+                print(f"Found isolated total candidate: {int(amount)} in line: {line}")
                 return str(int(amount))
 
-        print("❌ No total amount found")
+        print("No total amount found")
         return ''
 
     def _extract_invoice(self, lines: list) -> str:
@@ -732,7 +732,7 @@ class FieldExtractor:
                     candidate = match.group(1)
                     # Validate the candidate
                     if self._is_valid_invoice_number(candidate):
-                        print(f"📄 Found invoice number: {candidate} in line: {line.strip()}")
+                        print(f"Found invoice number: {candidate} in line: {line.strip()}")
                         return candidate
 
         # Second, look for shorter invoice-like numbers (but not registration numbers)
@@ -749,7 +749,7 @@ class FieldExtractor:
                     candidate = match.group(1)
                     # Registration numbers are typically longer and start with T
                     if len(candidate) >= 13 and candidate.startswith('T'):
-                        print(f"📄 Found registration number: {candidate} in line: {line.strip()}")
+                        print(f"Found registration number: {candidate} in line: {line.strip()}")
                         return candidate
 
         # THEN: Look for shorter invoice-like numbers
@@ -764,7 +764,7 @@ class FieldExtractor:
                 # Avoid registration numbers (too long, start with T and have many digits)
                 if not (candidate.startswith('T') and len(candidate.replace('-', '')) > 10):
                     if self._is_valid_invoice_number(candidate):
-                        print(f"📄 Found short invoice number: {candidate} in line: {line.strip()}")
+                        print(f"Found short invoice number: {candidate} in line: {line.strip()}")
                         return candidate
 
             # Look for pure numeric sequences that could be invoice numbers
@@ -773,12 +773,12 @@ class FieldExtractor:
                 candidate = numeric_match.group(1)
                 # Avoid obvious non-invoice numbers (like years, prices, etc.)
                 if not self._is_likely_non_invoice_number(candidate, line):
-                    print(f"📄 Found numeric invoice candidate: {candidate} in line: {line.strip()}")
+                    print(f"Found numeric invoice candidate: {candidate} in line: {line.strip()}")
                     return candidate
 
 
 
-        print("⚠️ No invoice number found")
+        print("No invoice number found")
         return ''
 
     def _is_valid_invoice_number(self, candidate: str) -> bool:
@@ -997,18 +997,18 @@ class FieldExtractor:
 
             # If confidence is very low (< 20%), it might be a false positive
             if confidence_percentage < 20:
-                print(f"🤖 AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%) - LOW CONFIDENCE")
+                print(f"AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%) - LOW CONFIDENCE")
                 # For very low confidence, prefer '食費' for general retail receipts
                 if '¥' in text or '円' in text:  # If it has prices, it's likely retail
                     return '食費', max(confidence_percentage, 25)
                 return 'その他', confidence_percentage
 
-            print(f"🤖 AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%)")
-            print(f"🤖 All scores: {scores}")
+            print(f"AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%)")
+            print(f"All scores: {scores}")
             return best_category, confidence_percentage
 
         # Default fallback with better logic
-        print("🤖 AI Category Detection: No strong matches found")
+        print("AI Category Detection: No strong matches found")
         # If we have prices but no category matches, assume general retail
         if '¥' in text or '円' in text:
             return '食費', 30  # Assume food/retail with low confidence
@@ -1033,7 +1033,7 @@ class FieldExtractor:
                         value = float(amount)
                         # Subtotals are typically reasonable amounts (not too small, not too large)
                         if 10 <= value <= 100000:  # Reasonable subtotal range
-                            print(f"📊 Found subtotal: {amount} in line: {line.strip()}")
+                            print(f"Found subtotal: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
@@ -1049,7 +1049,7 @@ class FieldExtractor:
                     try:
                         value = float(amount)
                         if 10 <= value <= 100000:
-                            print(f"📊 Found subtotal amount: {amount} in line: {line.strip()}")
+                            print(f"Found subtotal amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
@@ -1093,7 +1093,7 @@ class FieldExtractor:
                         value = float(amount)
                         # More restrictive: tax amounts are typically small (under ¥5000 for most receipts)
                         if 1 <= value <= 5000:  # Reasonable tax amount range
-                            print(f"🧾 Found tax amount: {amount} in line: {line.strip()}")
+                            print(f"Found tax amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
@@ -1109,7 +1109,7 @@ class FieldExtractor:
                         try:
                             value = float(amount)
                             if 1 <= value <= 5000 and not ('%' in line and str(int(value)) + '%' in line):
-                                print(f"🧾 Found tax amount near keyword '{keyword}': {amount} in line: {line.strip()}")
+                                print(f"Found tax amount near keyword '{keyword}': {amount} in line: {line.strip()}")
                                 return str(int(value))
                         except ValueError:
                             continue
@@ -1127,7 +1127,7 @@ class FieldExtractor:
                         try:
                             value = float(amount)
                             if 1 <= value <= 5000 and not ('%' in line and str(int(value)) + '%' in line):
-                                print(f"🧾 Found tax amount in parentheses: {amount} in line: {line.strip()}")
+                                print(f"Found tax amount in parentheses: {amount} in line: {line.strip()}")
                                 return str(int(value))
                         except ValueError:
                             continue
@@ -1140,7 +1140,7 @@ class FieldExtractor:
                         value = float(amount)
                         # Tax amounts are typically small and reasonable (exclude '1' and other nonsense)
                         if 10 <= value <= 5000:  # Reasonable tax range, exclude tiny amounts
-                            print(f"🧾 Found tax-related amount: {amount} in line: {line.strip()}")
+                            print(f"Found tax-related amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
@@ -1154,7 +1154,7 @@ class FieldExtractor:
                         try:
                             value = float(amount)
                             if 1 <= value <= 5000:
-                                print(f"🧾 Found tax amount (next line): {amount} in lines: {line.strip()} + {next_line}")
+                                print(f"Found tax amount (next line): {amount} in lines: {line.strip()} + {next_line}")
                                 return str(int(value))
                         except ValueError:
                             continue
@@ -1187,10 +1187,10 @@ class FieldExtractor:
 
                 # Check if total matches subtotal + tax
                 if abs((subtotal_val + potential_tax_8) - total_val) < 1:  # Within 1 yen tolerance
-                    print(f"🧾 Calculated tax (8%): {potential_tax_8} from subtotal {subtotal_val}")
+                    print(f"Calculated tax (8%): {potential_tax_8} from subtotal {subtotal_val}")
                     return str(int(potential_tax_8))
                 elif abs((subtotal_val + potential_tax_10) - total_val) < 1:
-                    print(f"🧾 Calculated tax (10%): {potential_tax_10} from subtotal {subtotal_val}")
+                    print(f"Calculated tax (10%): {potential_tax_10} from subtotal {subtotal_val}")
                     return str(int(potential_tax_10))
 
             except (ValueError, TypeError):
@@ -1212,12 +1212,12 @@ class FieldExtractor:
                     try:
                         value = float(amount)
                         if 1 <= value <= 5000:  # Reasonable tax range, exclude rates
-                            print(f"🧾 Found tax-related amount: {amount} in line: {line.strip()}")
+                            print(f"Found tax-related amount: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
 
-        print("⚠️ No tax amount found")
+        print("No tax amount found")
         return ''
 
     def _call_ocr_api(self, image_data: bytes, filename: str, engine: int = 2) -> dict:
@@ -1229,7 +1229,7 @@ class FieldExtractor:
         if not any(filename.lower().endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.tiff', '.tif', '.webp']):
             # Force .jpg extension for API compatibility
             api_filename = f"{filename}.jpg" if '.' not in filename else f"{filename.rsplit('.', 1)[0]}.jpg"
-            print(f"📝 Modified filename for API: {filename} -> {api_filename}")
+            print(f"Modified filename for API: {filename} -> {api_filename}")
         else:
             api_filename = filename
 
@@ -1245,43 +1245,43 @@ class FieldExtractor:
 
         # Add special parameters for camera images
         if is_camera_image:
-            print(f"📷 Detected camera image, applying enhanced OCR settings")
+            print(f"Detected camera image, applying enhanced OCR settings")
             data.update({
                 'scale': True,  # Better scaling for camera images
                 'isTable': False,  # Receipts are not tables
                 'filetype': 'JPG',  # Camera images are usually JPEG
             })
 
-        print(f"📡 OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}, filename={api_filename}")
+        print(f"OCR API call details: engine={engine}, camera={is_camera_image}, size={len(image_data)}, filename={api_filename}")
 
         # Retry logic for timeouts - INCREASED RETRIES AND LONGER TIMEOUT
         max_retries = 3  # Increased from 2
         for attempt in range(max_retries + 1):
             try:
-                print(f"📡 Attempt {attempt + 1}/{max_retries + 1}...")
+                print(f"Attempt {attempt + 1}/{max_retries + 1}...")
                 # Increased timeout from 20 to 30 seconds
                 response = requests.post(self.api_url, files=files, data=data, timeout=30)
                 response.raise_for_status()
 
                 result = response.json()
-                print(f"📡 OCR API response status: {response.status_code}")
+                print(f"OCR API response status: {response.status_code}")
 
                 return result
 
             except requests.exceptions.Timeout:
                 if attempt < max_retries:
                     wait_time = 3 + attempt  # Progressive backoff: 3s, 4s, 5s
-                    print(f"❌ OCR API timeout (30s), retrying in {wait_time} seconds...")
+                    print(f"OCR API timeout (30s), retrying in {wait_time} seconds...")
                     import time
                     time.sleep(wait_time)
                     continue
                 else:
-                    print("❌ OCR API timeout (30s) - final attempt")
+                    print("OCR API timeout (30s) - final attempt")
                     raise Exception("OCR API timeout - service may be experiencing issues")
             except requests.exceptions.RequestException as e:
-                print(f"❌ OCR API request error: {e}")
+                print(f"OCR API request error: {e}")
                 if "429" in str(e):  # Rate limit
-                    print("🚦 Rate limit detected, waiting longer...")
+                    print("Rate limit detected, waiting longer...")
                     import time
                     time.sleep(5)
                     continue
@@ -1298,13 +1298,13 @@ class FieldExtractor:
                 image = image.convert('RGB')
 
             original_size = image.size
-            print(f"🖼️ Original image size: {original_size}, mode: {image.mode}")
+            print(f"Original image size: {original_size}, mode: {image.mode}")
 
             # Detect if this is a camera image
             is_camera_image = 'camera' in filename.lower()
 
             if is_camera_image:
-                print("📷 Applying camera image enhancements...")
+                print("Applying camera image enhancements...")
 
                 # Enhance contrast for camera images
                 enhancer = ImageEnhance.Contrast(image)
@@ -1326,7 +1326,7 @@ class FieldExtractor:
             max_size = (2000, 2000)  # Reasonable max size
             if image.size[0] > max_size[0] or image.size[1] > max_size[1]:
                 image.thumbnail(max_size, Image.Resampling.LANCZOS)
-                print(f"🖼️ Resized image to: {image.size}")
+                print(f"Resized image to: {image.size}")
 
             # Ensure minimum size for OCR
             min_size = (400, 400)
@@ -1335,7 +1335,7 @@ class FieldExtractor:
                 scale_factor = max(min_size[0] / image.size[0], min_size[1] / image.size[1])
                 new_size = (int(image.size[0] * scale_factor), int(image.size[1] * scale_factor))
                 image = image.resize(new_size, Image.Resampling.LANCZOS)
-                print(f"🖼️ Upscaled image to: {image.size}")
+                print(f"Upscaled image to: {image.size}")
 
             # AGGRESSIVE COMPRESSION to meet OCR.space 1MB limit
             max_file_size = 900 * 1024  # 900KB to be safe (under 1MB limit)
@@ -1351,13 +1351,13 @@ class FieldExtractor:
                     break
 
                 quality -= 10
-                print(f"🖼️ File too large ({len(output_buffer.getvalue())/1024:.1f}KB), reducing quality to {quality}")
+                print(f"File too large ({len(output_buffer.getvalue())/1024:.1f}KB), reducing quality to {quality}")
 
             processed_data = output_buffer.getvalue()
 
             # If still too large after minimum quality, resize further
             if len(processed_data) > max_file_size:
-                print(f"🖼️ Still too large ({len(processed_data)/1024:.1f}KB), resizing further...")
+                print(f"Still too large ({len(processed_data)/1024:.1f}KB), resizing further...")
                 # Resize to 75% of current size
                 new_width = int(image.size[0] * 0.75)
                 new_height = int(image.size[1] * 0.75)
@@ -1366,25 +1366,25 @@ class FieldExtractor:
                     output_buffer = io.BytesIO()
                     image.save(output_buffer, format='JPEG', quality=quality, optimize=True)
                     processed_data = output_buffer.getvalue()
-                    print(f"🖼️ Final resize to: {image.size}")
+                    print(f"Final resize to: {image.size}")
 
-            print(f"🖼️ Image preprocessing complete: {original_size} -> {image.size}, {len(image_data)/1024:.1f}KB -> {len(processed_data)/1024:.1f}KB (quality: {quality})")
+            print(f"Image preprocessing complete: {original_size} -> {image.size}, {len(image_data)/1024:.1f}KB -> {len(processed_data)/1024:.1f}KB (quality: {quality})")
 
             return processed_data
 
         except Exception as e:
-            print(f"⚠️ Image preprocessing failed: {e}, using original image")
+            print(f"Image preprocessing failed: {e}, using original image")
             return image_data
 
     def _fallback_extraction(self, text: str, current_fields: Dict[str, Any]) -> Dict[str, Any]:
         """Enhanced fallback extraction methods when primary extraction fails."""
         lines = [line.strip() for line in text.split('\n') if line.strip()]
 
-        print(f"🔄 Starting fallback extraction for missing fields: total={bool(current_fields['total'])}, vendor={bool(current_fields['vendor'])}, tax={bool(current_fields['tax'])}")
+        print(f"Starting fallback extraction for missing fields: total={bool(current_fields['total'])}, vendor={bool(current_fields['vendor'])}, tax={bool(current_fields['tax'])}")
 
         # Enhanced vendor fallback: look for any substantial line that might be a store name
         if not current_fields['vendor']:
-            print("🔄 Searching for vendor name...")
+            print("Searching for vendor name...")
             for line in lines[:20]:  # Check more lines
                 line = line.strip()
                 if 2 <= len(line) <= 25 and not any(char.isdigit() for char in line[:3]):
@@ -1397,12 +1397,12 @@ class FieldExtractor:
                         skip_keywords = ['レシート', '領収書', 'RECEIPT', 'INVOICE', '日付', '時間', 'TEL', '〒', '¥', '円']
                         if not any(skip in line for skip in skip_keywords):
                             current_fields['vendor'] = line
-                            print(f"🔄 Found vendor: {line}")
+                            print(f"Found vendor: {line}")
                             break
 
         # Enhanced total fallback: smarter amount detection
         if not current_fields['total']:
-            print("🔄 Searching for total amount...")
+            print("Searching for total amount...")
             amounts = []
             exclude_terms = ['お釣', '釣銭', '現計', '預り', 'ポイント', '値引', '割引', '小計', '消費税', '税']
 
@@ -1437,18 +1437,18 @@ class FieldExtractor:
                 # But let's be smarter: prefer amounts that appear near the bottom
                 bottom_amounts = amounts[:3]  # Top 3 highest amounts
                 current_fields['total'] = str(int(bottom_amounts[0][0]))
-                print(f"🔄 Found total: {current_fields['total']} from line: {bottom_amounts[0][1].strip()}")
+                print(f"Found total: {current_fields['total']} from line: {bottom_amounts[0][1].strip()}")
 
         # Enhanced tax fallback: try harder to find tax
         if not current_fields['tax']:
-            print("🔄 Searching for tax amount...")
+            print("Searching for tax amount...")
             current_fields['tax'] = self._extract_tax(lines)  # Re-run tax extraction
 
         return current_fields
 
     def _get_fallback_sample_data(self, filename: str) -> Dict[str, Any]:
         """Provide sample OCR data when API is unavailable for testing."""
-        print("🔄 Using fallback sample data - OCR API is currently unavailable")
+        print("Using fallback sample data - OCR API is currently unavailable")
 
         # Sample receipt data for testing
         sample_data = {
@@ -1486,5 +1486,5 @@ class FieldExtractor:
             }]
         }
 
-        print(f"🔄 Fallback data provided: {sample_data}")
+        print(f"Fallback data provided: {sample_data}")
         return mock_response
