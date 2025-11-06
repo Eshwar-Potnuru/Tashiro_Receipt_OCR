@@ -438,39 +438,128 @@ class FieldExtractor:
         return ''
 
     def _extract_invoice(self, lines: list) -> str:
-        """Extract invoice/receipt number."""
+        """Extract invoice/receipt number with improved logic for Japanese receipts."""
+        # Enhanced patterns for Japanese invoice numbers
         invoice_patterns = [
-            r'伝票[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',
-            r'レシート[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',
-            r'注文[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',
-            r'INVOICE[:\s]*([A-Za-z0-9\-]+)',
-            r'NO\.[:\s]*([A-Za-z0-9\-]+)',
-            r'No\.[:\s]*([A-Za-z0-9\-]+)',
-            r'登録番号[:\s]*([A-Za-z0-9\-]+)',
-            r'([A-Za-z]\d{12,})',  # Registration numbers like T7380001003643
+            # Priority: Actual invoice/receipt numbers (not registration numbers)
+            r'伝票[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 伝票番号: XXX
+            r'レシート[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',  # レシート番号: XXX
+            r'注文[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 注文番号: XXX
+            r'INVOICE[:\s]*([A-Za-z0-9\-]+)',             # INVOICE: XXX
+            r'NO\.[:\s]*([A-Za-z0-9\-]+)',                # NO.: XXX
+            r'No\.[:\s]*([A-Za-z0-9\-]+)',                # No.: XXX
+            r'([A-Za-z]\d{3,6})',                         # Invoice numbers like T001, R123456
+            r'(\d{4,8})',                                 # Numeric invoice numbers
         ]
 
-        # First, try to find registration numbers (most specific)
-        for line in lines:
-            match = re.search(r'([A-Za-z]\d{12,})', line)
-            if match:
-                return match.group(1)
-
-        # Then try other patterns, but avoid phone numbers
+        # First, look for explicit invoice indicators (highest priority)
         for line in lines:
             # Skip lines that look like phone numbers
             if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
                 continue
 
-            for pattern in invoice_patterns[:6]:  # Skip the registration pattern we already tried
+            for pattern in invoice_patterns[:6]:  # Skip the generic patterns first
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     candidate = match.group(1)
-                    # Avoid short numbers that might be part of phone numbers
-                    if len(candidate) >= 3:
+                    # Validate the candidate
+                    if self._is_valid_invoice_number(candidate):
+                        print(f"📄 Found invoice number: {candidate} in line: {line.strip()}")
                         return candidate
 
+        # Second pass: look for registration numbers (T-xxxxx format) but only if no invoice found
+        registration_patterns = [
+            r'([T]\d{12,})',                              # T7380001003643 (registration numbers)
+            r'([A-Za-z]\d{12,})',                         # Other registration patterns
+        ]
+
+        for line in lines:
+            for pattern in registration_patterns:
+                match = re.search(pattern, line)
+                if match:
+                    candidate = match.group(1)
+                    # Registration numbers are typically longer and start with T
+                    if len(candidate) >= 13 and candidate.startswith('T'):
+                        print(f"📄 Found registration number: {candidate} in line: {line.strip()}")
+                        return candidate
+
+        # Third pass: look for shorter invoice-like numbers
+        for line in lines:
+            # Skip lines with phone-like patterns
+            if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
+                continue
+
+            # Look for patterns like "T-001" or "R-123"
+            short_invoice_match = re.search(r'([A-Za-z]-?\d{1,6})', line)
+            if short_invoice_match:
+                candidate = short_invoice_match.group(1)
+                if self._is_valid_invoice_number(candidate):
+                    print(f"📄 Found short invoice number: {candidate} in line: {line.strip()}")
+                    return candidate
+
+            # Look for pure numeric sequences that could be invoice numbers
+            numeric_match = re.search(r'\b(\d{4,8})\b', line)
+            if numeric_match:
+                candidate = numeric_match.group(1)
+                # Avoid obvious non-invoice numbers (like years, prices, etc.)
+                if not self._is_likely_non_invoice_number(candidate, line):
+                    print(f"📄 Found numeric invoice candidate: {candidate} in line: {line.strip()}")
+                    return candidate
+
+        print("⚠️ No invoice number found")
         return ''
+
+    def _is_valid_invoice_number(self, candidate: str) -> bool:
+        """Validate if a string looks like a valid invoice number."""
+        # Remove hyphens for validation
+        clean_candidate = candidate.replace('-', '')
+
+        # Must contain at least one digit
+        if not any(char.isdigit() for char in clean_candidate):
+            return False
+
+        # Length checks
+        if len(clean_candidate) < 3:
+            return False  # Too short
+        if len(clean_candidate) > 15:
+            return False  # Too long for invoice number
+
+        # Avoid obvious patterns that aren't invoice numbers
+        # Like percentages, times, etc.
+        if '%' in candidate or ':' in candidate or '/' in candidate:
+            return False
+
+        # Avoid single digits or very short numbers unless they have letters
+        if len(clean_candidate) <= 2 and not any(char.isalpha() for char in clean_candidate):
+            return False
+
+        return True
+
+    def _is_likely_non_invoice_number(self, candidate: str, context_line: str) -> bool:
+        """Check if a number is likely NOT an invoice number based on context."""
+        # Check for common non-invoice contexts
+        non_invoice_contexts = [
+            '¥', '円', '年', '月', '日', '時', '分', '秒',  # Money, dates, times
+            '%', 'パーセント', '点', '個', '枚', '本',      # Units, percentages
+            'TEL', '電話', '〒', '郵便',                   # Contact info
+            '税率', '消費税', '内税',                       # Tax related
+            '小計', '合計', 'お釣', '釣銭',               # Amount related
+        ]
+
+        # If the line contains these terms, it's likely not an invoice number
+        for context in non_invoice_contexts:
+            if context in context_line:
+                return True
+
+        # Numbers that are too round (like 100, 1000, 10000) are often amounts, not invoice numbers
+        try:
+            num_val = int(candidate)
+            if num_val in [10, 100, 1000, 10000, 100000] or (num_val % 10 == 0 and num_val <= 10000):
+                return True
+        except ValueError:
+            pass
+
+        return False
 
     def _extract_tax_category(self, lines: list) -> str:
         """Extract tax category."""
@@ -616,22 +705,51 @@ class FieldExtractor:
         return 'その他', 0
 
     def _extract_subtotal(self, lines: list) -> str:
-        """Extract subtotal."""
+        """Extract subtotal with enhanced Japanese receipt support."""
         subtotal_patterns = [
             r'小計額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 小計額: 2848 (Subtotal amount)
             r'小計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',   # 小計: 1000 (Subtotal)
             r'SUBTOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',
+            r'小計/\s*[¥\\]?([0-9,]+\.?[0-9]*)',     # 小計/ 1000 (with slash)
+            r'金額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',   # 金額: 1000 (Amount - but not total)
         ]
 
         for line in lines:
             for pattern in subtotal_patterns:
                 match = re.search(pattern, line, re.IGNORECASE)
                 if match:
-                    return match.group(1).replace(',', '')
+                    amount = match.group(1).replace(',', '')
+                    try:
+                        value = float(amount)
+                        # Subtotals are typically reasonable amounts (not too small, not too large)
+                        if 10 <= value <= 100000:  # Reasonable subtotal range
+                            print(f"📊 Found subtotal: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
+        # Look for amounts in lines containing subtotal-related keywords
+        subtotal_keywords = ['小計', 'subtotal', 'SUBTOTAL']
+        for line in lines:
+            if any(keyword in line for keyword in subtotal_keywords):
+                # Extract any amounts from subtotal lines
+                amounts = re.findall(r'[¥\\]?([0-9,]+\.?[0-9]*)', line)
+                for amount in amounts:
+                    amount = amount.replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 10 <= value <= 100000:
+                            print(f"📊 Found subtotal amount: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
         return ''
 
     def _extract_tax(self, lines: list) -> str:
         """Extract tax amount - CRITICAL for the business requirement."""
+    def _extract_tax(self, lines: list) -> str:
+        """Extract tax amount - CRITICAL for the business requirement with enhanced Japanese receipt support."""
         tax_patterns = [
             # Primary patterns (most specific) - prioritize actual amounts over rates
             r'\(消費税\s+等[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)\)',  # (消費税 等 ¥258)
@@ -645,6 +763,11 @@ class FieldExtractor:
             r'税込[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税込 ¥258
             r'税別[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税別 ¥258
             r'内消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',        # 内消費税 ¥258
+
+            # Enhanced patterns for complex Japanese receipt formats
+            r'内消費税等\s*\d+%?\s*[¥\\]?([0-9,]+\.?[0-9]*)', # 内消費税等 8% ¥114
+            r'消費税等\s*[¥\\]?([0-9,]+\.?[0-9]*)',           # 消費税等 ¥258
+            r'\(\s*内消費税等\s*\d+%?\s*[¥\\]?([0-9,]+\.?[0-9]*)\s*\)', # (内消費税等 8% ¥114)
         ]
 
         # First pass: look for explicit tax indicators, but exclude tax rates
