@@ -31,7 +31,7 @@ pydantic==2.5.0
 # torchvision==0.16.0
 
 # Optional: PaddleOCR (recommended for container deployment - free and good accuracy)
-paddlepaddle==2.5.1
+paddlepaddle==2.6.1
 paddleocr==2.7.0.3
 
 # Testing and development (optional for production)
