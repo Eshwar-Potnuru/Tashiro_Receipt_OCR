@@ -274,19 +274,34 @@ class FieldExtractor:
     def _extract_date(self, lines: list) -> str:
         """Extract date from receipt lines with enhanced patterns and fallback logic."""
         date_patterns = [
+            # YYYY-MM-DD formats
             r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})',  # YYYY-MM-DD
+            r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})\s*\([^)]*\)',  # YYYY-MM-DD (曜日)
+            # DD-MM-YYYY formats
             r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',  # DD-MM-YYYY
-            r'(\d{4})年(\d{1,2})月(\d{1,2})日',     # Japanese format: 2025年7月2日
-            r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日',  # Japanese with spaces: 2025年 7月 2日
-            r'(\d{4})年(\d{1,2})月(\d{1,2})',       # Japanese format without 日
-            r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})', # Japanese with spaces, no 日
-            r'(\d{4})/(\d{1,2})/(\d{1,2})',        # YYYY/MM/DD
-            r'(\d{2})[/-](\d{1,2})[/-](\d{1,2})',  # YY-MM-DD (assume 20xx)
+            # Japanese formats
+            r'(\d{4})年(\d{1,2})月(\d{1,2})日',     # 2025年7月2日
+            r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})日',  # 2025年 7月 2日
+            r'(\d{4})年(\d{1,2})月(\d{1,2})',       # 2025年7月2 (no 日)
+            r'(\d{4})年\s*(\d{1,2})月\s*(\d{1,2})', # 2025年 7月 2
+            # YY-MM-DD (assume 20xx)
+            r'(\d{2})[/-](\d{1,2})[/-](\d{1,2})',  # YY-MM-DD
+            # YYYY.MM.DD
             r'(\d{4})\.(\d{1,2})\.(\d{1,2})',      # YYYY.MM.DD
-            # Additional patterns for various formats
+            # DD.MM.YYYY
             r'(\d{1,2})\.(\d{1,2})\.(\d{4})',      # DD.MM.YYYY
-            r'(\d{1,2})/(\d{1,2})/(\d{4})',        # MM/DD/YYYY (US format)
-            r'(\d{4})-(\d{1,2})-(\d{1,2})',        # YYYY-MM-DD with hyphens
+            # MM/DD/YYYY (US format)
+            r'(\d{1,2})/(\d{1,2})/(\d{4})',        # MM/DD/YYYY
+            # YYYY-MM-DD with hyphens
+            r'(\d{4})-(\d{1,2})-(\d{1,2})',        # YYYY-MM-DD
+            # Additional Japanese patterns
+            r'(\d{4})年(\d{1,2})月(\d{1,2})日\s*\([^)]*\)',  # With day of week
+            r'(\d{4})年(\d{1,2})月(\d{1,2})日\s*曜日',      # With 曜日
+            # Time-based patterns that might include dates
+            r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})\s+\d{1,2}:\d{1,2}',  # Date with time
+            # Short date patterns
+            r'(\d{1,2})月(\d{1,2})日',  # MM月DD日 (assume current year)
+            r'(\d{1,2})/(\d{1,2})',     # MM/DD (assume current year)
         ]
 
         for line in lines:
@@ -306,6 +321,17 @@ class FieldExtractor:
                             year = 2000 + int(match.group(1))  # Assume 20xx
                             month = int(match.group(2))
                             day = int(match.group(3))
+                        elif pattern in [r'(\d{1,2})月(\d{1,2})日', r'(\d{1,2})/(\d{1,2})']:  # Short Japanese or MM/DD
+                            # Assume current year for short dates
+                            from datetime import datetime
+                            current_year = datetime.now().year
+                            if pattern == r'(\d{1,2})月(\d{1,2})日':  # MM月DD日
+                                month = int(match.group(1))
+                                day = int(match.group(2))
+                            else:  # MM/DD
+                                month = int(match.group(1))
+                                day = int(match.group(2))
+                            year = current_year
                         else:  # DD first or MM/DD/YYYY
                             # Check if it's MM/DD/YYYY (common in some receipts)
                             if pattern == r'(\d{1,2})/(\d{1,2})/(\d{4})':
@@ -386,7 +412,18 @@ class FieldExtractor:
 
         # OCR correction patterns for common Japanese store names
         ocr_corrections = {
-            'sbiusetp': 'SUBWAY',  # Common OCR error for SUBWAY
+            # Common OCR errors for FamilyMart
+            'famiiymart': 'FamilyMart',
+            'famiilymart': 'FamilyMart',
+            'famiiy mart': 'FamilyMart',
+            'famiily mart': 'FamilyMart',
+            'famiiymart': 'FamilyMart',
+            'famiymart': 'FamilyMart',
+            'famimart': 'FamilyMart',
+            'family mart': 'FamilyMart',
+            'familymart': 'FamilyMart',
+            # Other common store corrections
+            'sbiusetp': 'SUBWAY',
             'sbiisetp': 'SUBWAY',
             'subiset': 'SUBWAY',
             'subiiset': 'SUBWAY',
@@ -409,6 +446,21 @@ class FieldExtractor:
             'diner': 'Diner',
             'cafe': 'Cafe',
             'coffee': 'Coffee Shop',
+            # Additional common corrections
+            'seven eleven': '7-Eleven',
+            'seven-eleven': '7-Eleven',
+            '7 eleven': '7-Eleven',
+            '7-eleven': '7-Eleven',
+            'lawson': 'LAWSON',
+            'sunkus': 'SUNKUS',
+            'ministop': 'MINISTOP',
+            'daily yamazaki': 'Daily Yamazaki',
+            'yamaza': 'Yamazaki',
+            'yamazaki': 'Yamazaki',
+            'aeon': 'AEON',
+            'ion': 'AEON',
+            'ito yokado': 'Ito-Yokado',
+            'yokado': 'Ito-Yokado',
         }
 
         for line in lines[:15]:  # Check first 15 lines for better coverage
@@ -478,13 +530,17 @@ class FieldExtractor:
             '€': 'C',  # Euro symbol to C
             '@': 'a',  # @ to a
             '$': 'S',  # $ to S
+            'ii': 'ly',  # Common error: "ii" read as "ly" (Family -> FamiIy)
+            'iii': 'ily',  # Triple i to ily
+            'iil': 'ill',  # iil to ill
+            'iie': 'ile',  # iie to ile
         }
 
         # Apply corrections (but be careful not to break valid text)
         cleaned = text
         for wrong, right in corrections.items():
             # Only apply if the wrong character appears in isolation or in specific contexts
-            if wrong in ['0', '1', 'l'] and len(text) > 3:  # Only for longer words
+            if wrong in ['0', '1', 'l', 'ii', 'iii', 'iil', 'iie'] and len(text) > 3:  # Only for longer words
                 cleaned = cleaned.replace(wrong, right)
 
         return cleaned
@@ -696,9 +752,9 @@ class FieldExtractor:
         if not any(char.isdigit() for char in clean_candidate):
             return False
 
-        # Length checks
-        if len(clean_candidate) < 3:
-            return False  # Too short
+        # Length checks - be more restrictive
+        if len(clean_candidate) < 4:
+            return False  # Too short for invoice numbers
         if len(clean_candidate) > 15:
             return False  # Too long for invoice number
 
@@ -707,11 +763,24 @@ class FieldExtractor:
         if '%' in candidate or ':' in candidate or '/' in candidate:
             return False
 
-        # Avoid single digits or very short numbers unless they have letters
-        if len(clean_candidate) <= 2 and not any(char.isalpha() for char in clean_candidate):
+        # Avoid single letters followed by short digit sequences (likely item codes)
+        if len(clean_candidate) <= 4 and clean_candidate[0].isalpha() and clean_candidate[1:].isdigit():
+            return False  # Patterns like "e445", "a123" are likely item codes
+
+        # Avoid very short numbers unless they have multiple letters
+        if len(clean_candidate) <= 3 and sum(1 for c in clean_candidate if c.isalpha()) < 2:
             return False
 
-        return True
+        # For Japanese receipts, prefer patterns that look like proper invoice numbers
+        # T + digits (registration numbers), or longer alphanumeric mixes
+        if len(clean_candidate) >= 6 or (clean_candidate[0].isalpha() and len(clean_candidate) >= 5):
+            return True
+
+        # For shorter patterns, require more structure
+        if len(clean_candidate) >= 4 and any(char.isalpha() for char in clean_candidate):
+            return True
+
+        return False
 
     def _is_likely_non_invoice_number(self, candidate: str, context_line: str) -> bool:
         """Check if a number is likely NOT an invoice number based on context."""
@@ -857,12 +926,26 @@ class FieldExtractor:
                     score += 2  # Increased weight for secondary keywords
 
             # Special context bonuses
-            if category == '食費' and any(word in text for word in ['メニュー', '注文', '料理', '飲食']):
-                score += 3  # Bonus for food context
+            if category == '食費' and any(word in text for word in ['メニュー', '注文', '料理', '飲食', 'コンビニ', 'スーパー', 'ファミマ', 'ファミリーマート', 'familymart', 'ローソン', 'セブン']):
+                score += 3  # Bonus for food context, especially convenience stores
             elif category == '交通費' and any(word in text for word in ['乗車', '運賃', '料金']):
                 score += 3  # Bonus for transportation context
             elif category == '消耗品費' and any(word in text for word in ['スーパー', 'コンビニ', '日用品']):
                 score += 3  # Bonus for supplies context
+
+            # Vendor-based categorization hints
+            vendor_lower = text.lower()
+            if 'family' in vendor_lower or 'mart' in vendor_lower or 'コンビニ' in vendor_lower:
+                if category == '食費':
+                    score += 4  # FamilyMart is primarily food
+                elif category == '消耗品費':
+                    score += 2  # Some supplies but food is primary
+            elif 'mcdonald' in vendor_lower or 'マクドナルド' in vendor_lower:
+                if category == '食費':
+                    score += 5  # Definitely food
+            elif 'starbucks' in vendor_lower or 'スターバックス' in vendor_lower:
+                if category == '食費':
+                    score += 5  # Definitely food/drinks
 
             if score > 0:
                 scores[category] = score
@@ -871,15 +954,26 @@ class FieldExtractor:
         if scores:
             best_category = max(scores, key=scores.get)
             best_score = scores[best_category]
-            max_possible_score = 50  # Conservative estimate of maximum possible score
+            max_possible_score = 60  # Increased conservative estimate of maximum possible score
             confidence_percentage = min(95, int((best_score / max_possible_score) * 100))  # Cap at 95%
+
+            # If confidence is very low (< 20%), it might be a false positive
+            if confidence_percentage < 20:
+                print(f"🤖 AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%) - LOW CONFIDENCE")
+                # For very low confidence, prefer '食費' for general retail receipts
+                if '¥' in text or '円' in text:  # If it has prices, it's likely retail
+                    return '食費', max(confidence_percentage, 25)
+                return 'その他', confidence_percentage
 
             print(f"🤖 AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%)")
             print(f"🤖 All scores: {scores}")
             return best_category, confidence_percentage
 
-        # Default fallback
-        print("🤖 AI Category Detection: No matches found, defaulting to 'その他' (confidence: 0%)")
+        # Default fallback with better logic
+        print("🤖 AI Category Detection: No strong matches found")
+        # If we have prices but no category matches, assume general retail
+        if '¥' in text or '円' in text:
+            return '食費', 30  # Assume food/retail with low confidence
         return 'その他', 0
 
     def _extract_subtotal(self, lines: list) -> str:
@@ -950,7 +1044,7 @@ class FieldExtractor:
         # First pass: look for explicit tax indicators, but exclude tax rates
         for i, line in enumerate(lines):
             # Skip lines that clearly contain tax rates (like "10%")
-            if '%' in line and any(rate in line for rate in ['8%', '10%', '5%']):
+            if '%' in line and any(rate in line for rate in ['8%', '10%', '5%', '8', '10', '5']):
                 continue
 
             for pattern in tax_patterns:
@@ -966,9 +1060,21 @@ class FieldExtractor:
                     except ValueError:
                         continue
 
-            # Check for tax keywords and look for amounts in current or next lines
-            tax_keywords = ['消費税', '内消費税', '税額', 'tax', 'TAX']
-            if any(keyword in line for keyword in tax_keywords):
+            # Additional check: look for amounts after tax keywords
+            tax_keywords = ['消費税', '内消費税', '税額', 'tax', 'TAX', '税', '外税', '内税']
+            for keyword in tax_keywords:
+                if keyword in line:
+                    # Look for any number in the same line or next line
+                    amount_match = re.search(r'([0-9,]+\.?[0-9]*)', line)
+                    if amount_match:
+                        amount = amount_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 1 <= value <= 5000 and not ('%' in line and str(int(value)) + '%' in line):
+                                print(f"🧾 Found tax amount near keyword '{keyword}': {amount} in line: {line.strip()}")
+                                return str(int(value))
+                        except ValueError:
+                            continue
                 # Look for amounts in parentheses first (common in Japanese receipts)
                 # Pattern: (anything ¥amount) or (anything amount)
                 paren_patterns = [

@@ -57,7 +57,12 @@ class OCREngine:
             if easyocr is None:
                 logger.warning("EasyOCR not available; will attempt fallback engine.")
             else:
-                self._reader_cache[tuple(self.languages)] = easyocr.Reader(self.languages, gpu=self.use_gpu, detector=self.detector)
+                try:
+                    self._reader_cache[tuple(self.languages)] = easyocr.Reader(self.languages, gpu=self.use_gpu, detector=self.detector)
+                    logger.info("EasyOCR reader initialized successfully")
+                except Exception as e:
+                    logger.error(f"Failed to initialize EasyOCR reader: {e}")
+                    self._reader_cache[tuple(self.languages)] = None
         elif self.primary_engine == "tesseract":
             if pytesseract is None:
                 logger.warning("pytesseract not available; OCR will fail unless fallback is enabled.")
@@ -264,10 +269,16 @@ class OCREngine:
             if easyocr is None:
                 raise RuntimeError("EasyOCR is not installed")
             logger.debug("Initialising EasyOCR reader for languages: %s", ",".join(lang_tuple))
-            self._reader_cache[lang_tuple] = easyocr.Reader(list(lang_tuple), gpu=self.use_gpu, detector=self.detector)
+            try:
+                self._reader_cache[lang_tuple] = easyocr.Reader(list(lang_tuple), gpu=self.use_gpu, detector=self.detector)
+                logger.info(f"EasyOCR reader created successfully for languages: {lang_tuple}")
+            except Exception as e:
+                logger.error(f"Failed to create EasyOCR reader for languages {lang_tuple}: {e}")
+                self._reader_cache[lang_tuple] = None
+                raise RuntimeError(f"Failed to initialise EasyOCR reader for languages {lang_tuple}: {e}")
         reader = self._reader_cache[lang_tuple]
         if reader is None:
-            raise RuntimeError("Failed to initialise EasyOCR reader")
+            raise RuntimeError(f"EasyOCR reader for languages {lang_tuple} is not available")
         return reader
 
     @staticmethod
