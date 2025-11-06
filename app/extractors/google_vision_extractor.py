@@ -88,7 +88,8 @@ class GoogleVisionExtractor:
 
             if response.full_text_annotation:
                 full_text = response.full_text_annotation.text
-                confidence = response.full_text_annotation.confidence or 0.0
+                # Note: confidence field may not be available in all API versions
+                confidence = getattr(response.full_text_annotation, 'confidence', 0.0) or 0.0
 
                 # Extract structured blocks with position information
                 for page in response.full_text_annotation.pages:

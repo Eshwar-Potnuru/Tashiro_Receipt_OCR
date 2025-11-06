@@ -7,6 +7,16 @@ from datetime import datetime
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 
+# Load environment variables from .env file at module level
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("✅ Environment variables loaded from .env file")
+except ImportError:
+    print("⚠️ python-dotenv not installed, environment variables may not be loaded")
+except Exception as e:
+    print(f"⚠️ Error loading .env file: {e}")
+
 # Import enhanced Japanese extractor
 try:
     from .enhanced_japanese_extractor import EnhancedJapaneseExtractor
@@ -38,7 +48,17 @@ class FieldExtractor:
         Args:
             preferred_engine: "google_vision", "openai_vision", "auto", etc.
         """
-        self.api_key = os.getenv('OCR_SPACE_API_KEY', 'K88575219088957')
+        # Debug: Check available API keys
+        ocr_space_key = os.getenv('OCR_SPACE_API_KEY')
+        google_creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        openai_key = os.getenv('OPENAI_API_KEY')
+        
+        print("🔑 API Key Status:")
+        print(f"  OCR_SPACE_API_KEY: {'✅ Available' if ocr_space_key else '❌ Missing'}")
+        print(f"  GOOGLE_APPLICATION_CREDENTIALS: {'✅ Available' if google_creds else '❌ Missing'}")
+        print(f"  OPENAI_API_KEY: {'✅ Available' if openai_key else '❌ Missing'}")
+        
+        self.api_key = ocr_space_key or 'K88575219088957'
         self.api_url = 'https://api.ocr.space/parse/image'
 
         # Initialize multi-engine OCR system
@@ -102,8 +122,19 @@ class FieldExtractor:
                         print("✅ Enhanced Japanese extraction completed")
                         return extraction_result
                     
-                    # Otherwise, process raw OCR result
-                    raw_text, ocr_boxes = extraction_result
+                    # Handle tuple return (raw_text, ocr_boxes)
+                    if isinstance(extraction_result, tuple) and len(extraction_result) == 2:
+                        raw_text, ocr_boxes = extraction_result
+                        
+                        # Check if raw_text is actually a structured result dict
+                        if isinstance(raw_text, dict) and 'processing_method' in raw_text:
+                            # This is already a structured result from enhanced extractor
+                            print("✅ Enhanced Japanese extraction completed")
+                            return raw_text
+                    else:
+                        # Unexpected format, convert to string
+                        raw_text = str(extraction_result)
+                        ocr_boxes = []
                     
                     if raw_text and len(raw_text.strip()) > 10:  # Ensure we got meaningful text
                         print(f"✅ Multi-engine OCR successful: {len(raw_text)} characters")
@@ -122,22 +153,73 @@ class FieldExtractor:
             if self.openai_extractor:
                 try:
                     print("🤖 Attempting direct OpenAI Vision extraction...")
-                    openai_result = self.openai_extractor.extract_fields(image_data, filename)
+                    
+                    # Create a prompt for structured extraction
+                    prompt = """
+あなたは日本語の領収書の情報を抽出する専門家です。この領収書画像から以下の情報をJSON形式で抽出してください：
 
-                    # Validate that we got meaningful results
-                    if openai_result.get('total') or openai_result.get('vendor'):
-                        print("✅ OpenAI Vision extraction successful")
-                        print(f"🤖 OpenAI results: {openai_result}")
+必須フィールド：
+- date: 領収書の日付（YYYY-MM-DD形式）
+- vendor: 店舗名
+- total: 合計金額（数字のみ、通貨記号なし）
+- invoice_number: 領収書番号
+- tax_category: "標準税率" または "軽減税率"
+- account_title: 経費区分（食費、交通費、接待交際費など）
+- subtotal: 小計金額（ある場合）
+- tax: 消費税金額（ある場合）
+- currency: 常に "JPY"
 
-                        # Add categorization using our existing logic
-                        lines = ["OpenAI Vision Result"]  # Dummy line for categorization
-                        category, confidence = self._categorize_expense(lines)
-                        openai_result['account_title'] = category
-                        openai_result['confidence'] = confidence
+指示：
+1. 日本語のテキストと数字を正確に読み取る
+2. 日付をYYYY-MM-DD形式に変換
+3. 店舗名を探す（通常上部）
+4. 合計金額を探す（通常下部）
+5. 税率から税区分を決定（8% = 軽減税率、10% = 標準税率）
+6. 購入内容に基づいて経費を分類
+7. JSONのみを返却、追加テキスト不要
 
-                        return openai_result
+出力例：
+{
+  "date": "2025-01-15",
+  "vendor": "セブンイレブン",
+  "total": "1250",
+  "invoice_number": "123456789",
+  "tax_category": "軽減税率",
+  "account_title": "食費",
+  "subtotal": "1136",
+  "tax": "114",
+  "currency": "JPY"
+}
+"""
+                    
+                    openai_result = self.openai_extractor.extract_with_custom_prompt(image_data, prompt, filename)
+                    
+                    # Parse the JSON response
+                    import json
+                    import re
+                    
+                    content = openai_result.get('corrected_text', '')
+                    json_match = re.search(r'\{.*\}', content, re.DOTALL)
+                    if json_match:
+                        json_str = json_match.group(0)
+                        parsed_data = json.loads(json_str)
+                        
+                        # Validate that we got meaningful results
+                        if parsed_data.get('total') or parsed_data.get('vendor'):
+                            print("✅ OpenAI Vision extraction successful")
+                            print(f"🤖 OpenAI results: {parsed_data}")
+
+                            # Add categorization using our existing logic
+                            lines = ["OpenAI Vision Result"]  # Dummy line for categorization
+                            category, confidence = self._categorize_expense(lines)
+                            parsed_data['account_title'] = category
+                            parsed_data['confidence'] = confidence
+
+                            return parsed_data
+                        else:
+                            print("⚠️ OpenAI Vision returned empty results, falling back to OCR.space")
                     else:
-                        print("⚠️ OpenAI Vision returned empty results, falling back to OCR.space")
+                        print("⚠️ OpenAI Vision returned invalid JSON, falling back to OCR.space")
 
                 except Exception as e:
                     print(f"❌ OpenAI Vision failed: {e}, falling back to OCR.space")

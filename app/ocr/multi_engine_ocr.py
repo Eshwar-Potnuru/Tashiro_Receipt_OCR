@@ -194,8 +194,13 @@ class MultiEngineOCR:
                 except Exception as fallback_error:
                     logger.error(f"Fallback also failed: {fallback_error}")
                     raise
-            else:
-                raise
+    
+    def _image_to_bytes(self, image: Image.Image) -> bytes:
+        """Convert PIL Image to bytes for API calls"""
+        buffer = io.BytesIO()
+        # Save as JPEG for API compatibility
+        image.save(buffer, format='JPEG', quality=95)
+        return buffer.getvalue()
     
     def extract(self, image: Image.Image) -> Tuple[str, List[OCRBox]]:
         """
@@ -209,26 +214,31 @@ class MultiEngineOCR:
             if self.engine_type == "openai_vision":
                 # OpenAI Vision returns structured data, not raw OCR text
                 # We'll return the raw_text from the structured extraction
-                structured_data = self.active_engine.extract_fields(self._image_to_bytes(image), "multi_engine_image.jpg")
-                
-                if structured_data.get('error'):
-                    raise Exception(f"OpenAI Vision extraction failed: {structured_data['error']}")
-                
-                # Extract raw text if available, otherwise create from structured data
-                raw_text = structured_data.get('raw_text', '')
-                if not raw_text and structured_data.get('vendor'):
-                    # Create basic text representation from structured data
-                    raw_text = f"{structured_data.get('vendor', '')}\n"
-                    if structured_data.get('date'):
-                        raw_text += f"Date: {structured_data['date']}\n"
-                    if structured_data.get('total'):
-                        raw_text += f"Total: ¥{structured_data['total']}\n"
-                
-                # Create dummy OCR boxes since OpenAI doesn't provide position data
-                ocr_boxes = [OCRBox(text=raw_text, box=[0, 0, image.size[0], image.size[1]], confidence=0.9)]
-                
-                logger.info(f"✅ OpenAI Vision extraction successful: {len(raw_text)} characters")
-                return raw_text, ocr_boxes
+                try:
+                    # Use the receipt extraction prompt
+                    prompt = """
+あなたは日本語の領収書のOCRテキストを読み取る専門家です。
+
+この領収書画像から、すべてのテキストを可能な限り正確に抽出してください。
+- 日本語の漢字、ひらがな、カタカナを正しく読み取る
+- 日付、金額、店舗名などの重要な情報を含む
+- テキストのレイアウトを保ちながら、読みやすい形式で出力
+
+抽出したテキストのみを出力してください。説明は不要です。
+"""
+                    structured_data = self.active_engine.extract_with_custom_prompt(self._image_to_bytes(image), prompt, "multi_engine_image.jpg")
+                    
+                    raw_text = structured_data.get('corrected_text', '')
+                    
+                    # Create dummy OCR boxes since OpenAI doesn't provide position data
+                    ocr_boxes = [OCRBox(text=raw_text, box=[0, 0, image.size[0], image.size[1]], confidence=0.9)]
+                    
+                    logger.info(f"✅ OpenAI Vision extraction successful: {len(raw_text)} characters")
+                    return raw_text, ocr_boxes
+                    
+                except Exception as e:
+                    logger.error(f"OpenAI Vision extraction failed: {e}")
+                    raise Exception(f"OpenAI Vision extraction failed: {e}")
                 
             elif self.engine_type in ["google_vision"]:
                 image_bytes = self._image_to_bytes(image)
@@ -259,7 +269,7 @@ class MultiEngineOCR:
                         try:
                             structured_result = self.enhanced_extractor.extract_fields_enhanced(ocr_result, "multi_engine_image.jpg")
                             logger.info("✅ Enhanced Japanese field extraction successful")
-                            # Return the structured result instead of raw OCR
+                            # Return the structured result directly - this indicates structured extraction
                             return structured_result, []
                         except Exception as enhanced_error:
                             logger.warning(f"Enhanced extraction failed, falling back to basic: {enhanced_error}")
