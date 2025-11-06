@@ -7,13 +7,19 @@ from datetime import datetime
 from PIL import Image, ImageEnhance, ImageFilter
 import io
 
+# Import enhanced Japanese extractor
+try:
+    from .enhanced_japanese_extractor import EnhancedJapaneseExtractor
+    ENHANCED_JAPANESE_AVAILABLE = True
+except ImportError:
+    ENHANCED_JAPANESE_AVAILABLE = False
+
 # Import OpenAI Vision extractor
 try:
     from .openai_vision_extractor import OpenAIVisionExtractor
     OPENAI_AVAILABLE = True
 except ImportError:
     OPENAI_AVAILABLE = False
-    print("⚠️ OpenAI Vision extractor not available, will use OCR.space only")
 
 # Import multi-engine OCR system
 try:
@@ -21,7 +27,6 @@ try:
     MULTI_ENGINE_AVAILABLE = True
 except ImportError:
     MULTI_ENGINE_AVAILABLE = False
-    print("⚠️ Multi-engine OCR not available, falling back to direct API calls")
 
 class FieldExtractor:
     """Extract structured fields from receipt images using multi-engine OCR system with OpenAI Vision (primary) and OCR.space (fallback)."""
@@ -58,6 +63,17 @@ class FieldExtractor:
         else:
             self.openai_extractor = None
 
+        # Initialize enhanced Japanese extractor if available
+        if ENHANCED_JAPANESE_AVAILABLE:
+            try:
+                self.enhanced_extractor = EnhancedJapaneseExtractor()
+                print("✅ Enhanced Japanese extractor initialized")
+            except Exception as e:
+                print(f"⚠️ Failed to initialize Enhanced Japanese extractor: {e}")
+                self.enhanced_extractor = None
+        else:
+            self.enhanced_extractor = None
+
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
         """Extract structured data from receipt image using multi-engine OCR system."""
         try:
@@ -78,21 +94,21 @@ class FieldExtractor:
                     image = Image.open(io.BytesIO(image_data))
                     
                     # Extract text using multi-engine OCR
-                    raw_text, ocr_boxes = self.multi_engine_ocr.extract(image)
+                    extraction_result = self.multi_engine_ocr.extract(image)
+                    
+                    # Check if we got structured result from enhanced Japanese extractor
+                    if isinstance(extraction_result, dict) and 'processing_method' in extraction_result:
+                        # This is already a structured result from enhanced extractor
+                        print("✅ Enhanced Japanese extraction completed")
+                        return extraction_result
+                    
+                    # Otherwise, process raw OCR result
+                    raw_text, ocr_boxes = extraction_result
                     
                     if raw_text and len(raw_text.strip()) > 10:  # Ensure we got meaningful text
                         print(f"✅ Multi-engine OCR successful: {len(raw_text)} characters")
                         
-                        # If using OpenAI Vision engine, we might already have structured data
-                        if self.multi_engine_ocr.engine_type == "openai_vision":
-                            # The multi-engine system already handled OpenAI Vision
-                            # We need to get the structured data from the engine
-                            structured_data = self.openai_extractor.extract_fields(image_data, filename)
-                            if not structured_data.get('error'):
-                                print("✅ OpenAI Vision structured extraction successful")
-                                return structured_data
-                        
-                        # For other engines, parse the raw text
+                        # Parse the raw text using existing logic
                         extracted_fields = self._parse_receipt_text(raw_text)
                         print(f"📝 Parsed fields from multi-engine OCR: {extracted_fields}")
                         return extracted_fields
@@ -894,8 +910,6 @@ class FieldExtractor:
 
         return ''
 
-    def _extract_tax(self, lines: list) -> str:
-        """Extract tax amount - CRITICAL for the business requirement."""
     def _extract_tax(self, lines: list) -> str:
         """Extract tax amount - CRITICAL for the business requirement with enhanced Japanese receipt support."""
         tax_patterns = [

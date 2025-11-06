@@ -29,7 +29,7 @@ except ImportError:
     OPENAI_VISION_AVAILABLE = False
 
 try:
-    from .enhanced_japanese_ocr import EnhancedJapaneseOCR
+    from ..extractors.enhanced_japanese_extractor import EnhancedJapaneseExtractor
     ENHANCED_JAPANESE_AVAILABLE = True
 except ImportError:
     ENHANCED_JAPANESE_AVAILABLE = False
@@ -68,13 +68,19 @@ class MultiEngineOCR:
         
         # Initialize engines
         self._initialize_engines()
+        
+        # Initialize enhanced Japanese extractor for post-processing
+        if ENHANCED_JAPANESE_AVAILABLE:
+            self.enhanced_extractor = EnhancedJapaneseExtractor()
+            logger.info("✅ Enhanced Japanese field extractor initialized")
+        else:
+            self.enhanced_extractor = None
     
     def _detect_available_engines(self) -> Dict[str, bool]:
         """Detect which OCR engines are available"""
         engines = {
             "google_vision": GOOGLE_VISION_AVAILABLE and self._check_google_credentials(),
             "openai_vision": OPENAI_VISION_AVAILABLE and self._check_openai_key(),
-            "enhanced_japanese": ENHANCED_JAPANESE_AVAILABLE,  # High-quality Japanese OCR
             "ocr_space": OCR_SPACE_AVAILABLE and self._check_ocr_space_key(),
             "paddleocr": self._check_paddleocr_available(),
             "easyocr": True  # Always use existing fallback
@@ -115,7 +121,7 @@ class MultiEngineOCR:
         """Initialize OCR engines in priority order"""
         
         # Priority order (best to fallback) - Premium engines first for superior quality
-        engine_priority = ["google_vision", "openai_vision", "enhanced_japanese", "ocr_space", "paddleocr", "easyocr"]
+        engine_priority = ["google_vision", "openai_vision", "paddleocr", "easyocr"]
         
         if self.preferred_engine != "auto" and self.preferred_engine in self.available_engines:
             selected_engine = self.preferred_engine
@@ -132,11 +138,7 @@ class MultiEngineOCR:
         
         # Initialize primary engine
         try:
-            if selected_engine == "enhanced_japanese":
-                self.active_engine = EnhancedJapaneseOCR(use_gpu=True)
-                logger.info("🚀 Primary Engine: Enhanced Japanese OCR (GPU-Accelerated for Speed)")
-                
-            elif selected_engine == "google_vision":
+            if selected_engine == "google_vision":
                 credentials_path = (
                     os.getenv('GOOGLE_APPLICATION_CREDENTIALS') or 
                     'google-vision-credentials.json'
@@ -147,10 +149,6 @@ class MultiEngineOCR:
             elif selected_engine == "openai_vision":
                 self.active_engine = OpenAIVisionExtractor()
                 logger.info("🚀 Primary Engine: OpenAI Vision API (Structured Field Extraction)")
-                
-            elif selected_engine == "enhanced_japanese":
-                self.active_engine = OCRSpaceOCR()
-                logger.info("🚀 Primary Engine: OCR.space API (Free Cloud OCR)")
                 
             elif selected_engine == "paddleocr":
                 # Lazy import to avoid startup issues
@@ -232,22 +230,45 @@ class MultiEngineOCR:
                 logger.info(f"✅ OpenAI Vision extraction successful: {len(raw_text)} characters")
                 return raw_text, ocr_boxes
                 
-            elif self.engine_type in ["enhanced_japanese", "google_vision", "ocr_space", "paddleocr"]:
+            elif self.engine_type in ["google_vision"]:
                 image_bytes = self._image_to_bytes(image)
                 
                 if self.engine_type == "google_vision":
                     # Google Vision extractor returns OCR.space-compatible dict
-                    result = self.active_engine.extract_text(image_bytes, "multi_engine_image.jpg")
-                    if result.get('IsErroredOnProcessing'):
-                        raise Exception(result.get('ErrorMessage', 'Google Vision extraction failed'))
+                    ocr_result = self.active_engine.extract_text(image_bytes, "multi_engine_image.jpg")
+                    if ocr_result.get('IsErroredOnProcessing'):
+                        raise Exception(ocr_result.get('ErrorMessage', 'Google Vision extraction failed'))
                     
-                    raw_text = result['ParsedResults'][0]['ParsedText'] if result['ParsedResults'] else ""
+                    raw_text = ocr_result['ParsedResults'][0]['ParsedText'] if ocr_result['ParsedResults'] else ""
                     
-                    # Create basic OCR boxes from text (Google Vision doesn't provide detailed boxes in our format)
+                    # Apply OpenAI corrective pass for mis-segmented kanji and date formats
+                    if OPENAI_VISION_AVAILABLE and self._should_apply_openai_correction(raw_text):
+                        try:
+                            corrected_text = self._apply_openai_correction(raw_text, image_bytes)
+                            if corrected_text and len(corrected_text) > len(raw_text) * 0.8:  # Ensure meaningful correction
+                                logger.info("✅ OpenAI correction applied - improved text quality")
+                                raw_text = corrected_text
+                                # Update the OCR result with corrected text
+                                if ocr_result['ParsedResults']:
+                                    ocr_result['ParsedResults'][0]['ParsedText'] = raw_text
+                        except Exception as correction_error:
+                            logger.warning(f"OpenAI correction failed, using original text: {correction_error}")
+                    
+                    # Use enhanced Japanese extractor for structured field extraction
+                    if self.enhanced_extractor and ocr_result.get('metadata', {}).get('structured_layout'):
+                        try:
+                            structured_result = self.enhanced_extractor.extract_fields_enhanced(ocr_result, "multi_engine_image.jpg")
+                            logger.info("✅ Enhanced Japanese field extraction successful")
+                            # Return the structured result instead of raw OCR
+                            return structured_result, []
+                        except Exception as enhanced_error:
+                            logger.warning(f"Enhanced extraction failed, falling back to basic: {enhanced_error}")
+                    
+                    # Fallback: Create basic OCR boxes from text
                     ocr_boxes = [OCRBox(
                         text=raw_text,
                         box=[0, 0, image.size[0], image.size[1]],
-                        confidence=result.get('metadata', {}).get('confidence', 0.9)
+                        confidence=ocr_result.get('metadata', {}).get('confidence', 0.9)
                     )]
                 else:
                     # Other engines return (raw_text, annotations)
@@ -291,22 +312,82 @@ class MultiEngineOCR:
             logger.error("❌ All OCR engines failed")
             return "", []
     
-    def _image_to_bytes(self, image: Image.Image) -> bytes:
-        """Convert PIL Image to bytes for engines that need it"""
-        # Ensure image is in RGB mode (no alpha channel) for JPEG compatibility
-        if image.mode in ('RGBA', 'LA', 'P'):
-            # Create white background for transparent images
-            background = Image.new('RGB', image.size, (255, 255, 255))
-            if image.mode == 'P':
-                image = image.convert('RGBA')
-            background.paste(image, mask=image.split()[-1] if image.mode == 'RGBA' else None)
-            image = background
-        elif image.mode != 'RGB':
-            image = image.convert('RGB')
+    def _should_apply_openai_correction(self, raw_text: str) -> bool:
+        """
+        Determine if OpenAI correction should be applied based on text characteristics
+        
+        Args:
+            raw_text: Raw OCR text from Google Vision
             
-        buffer = io.BytesIO()
-        image.save(buffer, format='JPEG', quality=95)
-        return buffer.getvalue()
+        Returns:
+            True if correction should be applied
+        """
+        if not raw_text or len(raw_text.strip()) < 50:
+            return False
+            
+        # Check for indicators of poor OCR quality that OpenAI can help with
+        indicators = [
+            '日' in raw_text and ('年' not in raw_text or '月' not in raw_text),  # Fragmented dates
+            '合計' in raw_text and '¥' not in raw_text and '￥' not in raw_text,  # Missing currency symbols
+            len([c for c in raw_text if ord(c) > 0x3000 and ord(c) < 0x9FFF]) < 10,  # Too few kanji characters
+            'レジ' in raw_text or '領収' in raw_text,  # Japanese receipt indicators
+        ]
+        
+        return any(indicators)
+    
+    def _apply_openai_correction(self, raw_text: str, image_bytes: bytes) -> Optional[str]:
+        """
+        Apply OpenAI Vision correction to improve OCR text quality
+        
+        Args:
+            raw_text: Raw OCR text from Google Vision
+            image_bytes: Original image bytes
+            
+        Returns:
+            Corrected text or None if correction failed
+        """
+        try:
+            # Initialize OpenAI extractor if not already done
+            if not hasattr(self, '_openai_extractor'):
+                if OPENAI_VISION_AVAILABLE:
+                    self._openai_extractor = OpenAIVisionExtractor()
+                else:
+                    return None
+            
+            # Create a focused prompt for correction
+            correction_prompt = f"""
+あなたは日本語の領収書のOCRテキストを修正する専門家です。
+
+元のOCRテキスト:
+{raw_text}
+
+このテキストを分析し、以下の問題を修正してください：
+1. 誤って分割された漢字を正しく結合する
+2. 日付形式を正しい日本語形式に修正する（例: 2024年1月15日）
+3. 金額に通貨記号（¥または￥）が欠けている場合は追加する
+4. 店舗名や商品名が正しく読み取れていない場合は修正する
+5. 合計や小計の金額が正しくない場合は修正する
+
+修正した完全なテキストのみを出力してください。説明は不要です。
+"""
+            
+            # Use OpenAI Vision with the correction prompt
+            corrected_result = self._openai_extractor.extract_with_custom_prompt(
+                image_bytes, 
+                correction_prompt,
+                filename="correction_image.jpg"
+            )
+            
+            if corrected_result and 'corrected_text' in corrected_result:
+                corrected_text = corrected_result['corrected_text'].strip()
+                if corrected_text and len(corrected_text) > len(raw_text) * 0.5:  # Ensure meaningful result
+                    return corrected_text
+            
+            return None
+            
+        except Exception as e:
+            logger.warning(f"OpenAI correction failed: {e}")
+            return None
     
     def get_engine_status(self) -> Dict[str, Any]:
         """Get detailed information about available OCR engines and setup"""

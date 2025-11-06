@@ -23,30 +23,27 @@ class OpenAIVisionExtractor:
         self.api_url = "https://api.openai.com/v1/chat/completions"
         self.model = "gpt-4o-mini"  # Using the cost-effective vision model
 
-    def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
-        """Extract structured data from receipt image using OpenAI Vision API."""
-
+    def extract_with_custom_prompt(self, image_data: bytes, custom_prompt: str, filename: str) -> Dict[str, Any]:
+        """Extract data using a custom prompt for specialized corrections."""
+        
         try:
-            print(f"🤖 Starting OpenAI Vision extraction for: {filename}")
+            print(f"🤖 Starting OpenAI Vision correction for: {filename}")
 
             # Convert image to base64
             base64_image = self._encode_image(image_data)
 
-            # Create the prompt for receipt analysis
-            prompt = self._create_receipt_prompt()
+            # Make API call with custom prompt
+            response = self._call_openai_api(base64_image, custom_prompt)
 
-            # Make API call
-            response = self._call_openai_api(base64_image, prompt)
+            # Parse the response for correction
+            corrected_data = self._parse_correction_response(response)
 
-            # Parse the response
-            extracted_data = self._parse_openai_response(response)
+            print(f"🤖 OpenAI Vision correction completed")
 
-            print(f"🤖 OpenAI Vision extraction completed: {extracted_data}")
-
-            return extracted_data
+            return corrected_data
 
         except Exception as e:
-            print(f"❌ OpenAI Vision extraction failed: {e}")
+            print(f"❌ OpenAI Vision correction failed: {e}")
             raise
 
     def _encode_image(self, image_data: bytes) -> str:
@@ -157,5 +154,23 @@ Example output:
 
         except Exception as e:
             print(f"❌ Failed to parse OpenAI response: {e}")
+            print(f"Raw response: {response}")
+            raise
+
+    def _parse_correction_response(self, response: Dict[str, Any]) -> Dict[str, Any]:
+        """Parse the OpenAI API response for text correction."""
+        try:
+            content = response['choices'][0]['message']['content']
+            
+            # For correction, we expect just the corrected text
+            corrected_text = content.strip()
+            
+            return {
+                'corrected_text': corrected_text,
+                'original_response': content
+            }
+
+        except Exception as e:
+            print(f"❌ Failed to parse OpenAI correction response: {e}")
             print(f"Raw response: {response}")
             raise
