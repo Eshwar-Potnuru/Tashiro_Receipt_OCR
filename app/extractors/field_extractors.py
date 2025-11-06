@@ -494,6 +494,8 @@ class FieldExtractor:
         # Priority patterns - most specific to least specific
         total_patterns = [
             r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000 (Total - highest priority)
+            r'合計金額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計金額: 1000 (Total amount)
+            r'総合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総合計: 1000 (Grand total)
             r'合計\s*[¥\\]?([0-9,]+\.?[0-9]*)',     # 合計 1000 (no colon)
             r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000 (Total amount)
             r'お買上計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # お買上計 (Purchase total)
@@ -545,6 +547,7 @@ class FieldExtractor:
         # Enhanced exclusion patterns for Japanese receipts
         exclude_patterns = [
             r'お釣', r'釣銭', r'現計', r'預り', r'預り金',  # Change, received money
+            r'お預かり', r'釣り',                            # Amount tendered, change (additional)
             r'小計', r'内税', r'消費税', r'税', r'税額',    # Subtotals, taxes
             r'ポイント', r'値引', r'割引', r'割引額',      # Points, discounts
             r'レジ袋', r'袋代',                            # Bag fees
@@ -609,6 +612,8 @@ class FieldExtractor:
             r'領収書[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',    # 領収書番号: XXX
             r'注文[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 注文番号: XXX
             r'請求書[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',    # 請求書番号: XXX
+            r'お会計[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',    # お会計番号: XXX
+            r'明細書[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',    # 明細書番号: XXX
             r'登録[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 登録番号: XXX
             r'管理[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 管理番号: XXX
             r'識別[番号No\.]*[:\s]*([A-Za-z0-9\-]+)',      # 識別番号: XXX
@@ -931,6 +936,7 @@ class FieldExtractor:
             # Additional patterns for different formats
             r'税込[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税込 ¥258
             r'税別[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 税別 ¥258
+            r'外税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',            # 外税 ¥258
             r'内消費税[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',        # 内消費税 ¥258
 
             # Enhanced patterns for complex Japanese receipt formats
