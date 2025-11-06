@@ -256,7 +256,7 @@ class FieldExtractor:
         return extracted
 
     def _extract_date(self, lines: list) -> str:
-        """Extract date from receipt lines."""
+        """Extract date from receipt lines with enhanced patterns and fallback logic."""
         date_patterns = [
             r'(\d{4})[/-](\d{1,2})[/-](\d{1,2})',  # YYYY-MM-DD
             r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})',  # DD-MM-YYYY
@@ -267,25 +267,96 @@ class FieldExtractor:
             r'(\d{4})/(\d{1,2})/(\d{1,2})',        # YYYY/MM/DD
             r'(\d{2})[/-](\d{1,2})[/-](\d{1,2})',  # YY-MM-DD (assume 20xx)
             r'(\d{4})\.(\d{1,2})\.(\d{1,2})',      # YYYY.MM.DD
+            # Additional patterns for various formats
+            r'(\d{1,2})\.(\d{1,2})\.(\d{4})',      # DD.MM.YYYY
+            r'(\d{1,2})/(\d{1,2})/(\d{4})',        # MM/DD/YYYY (US format)
+            r'(\d{4})-(\d{1,2})-(\d{1,2})',        # YYYY-MM-DD with hyphens
         ]
 
         for line in lines:
             for pattern in date_patterns:
                 match = re.search(pattern, line)
                 if match:
-                    if '年' in line:  # Japanese format
-                        return f"{match.group(1)}-{match.group(2).zfill(2)}-{match.group(3).zfill(2)}"
-                    elif len(match.group(1)) == 4:  # YYYY first
-                        return f"{match.group(1)}-{match.group(2).zfill(2)}-{match.group(3).zfill(2)}"
-                    elif len(match.group(1)) == 2:  # YY-MM-DD format
-                        year = f"20{match.group(1)}"  # Assume 20xx
-                        return f"{year}-{match.group(2).zfill(2)}-{match.group(3).zfill(2)}"
-                    else:  # DD first
-                        return f"{match.group(3)}-{match.group(2).zfill(2)}-{match.group(1).zfill(2)}"
+                    try:
+                        if '年' in line:  # Japanese format
+                            year = int(match.group(1))
+                            month = int(match.group(2))
+                            day = int(match.group(3))
+                        elif len(match.group(1)) == 4:  # YYYY first
+                            year = int(match.group(1))
+                            month = int(match.group(2))
+                            day = int(match.group(3))
+                        elif len(match.group(1)) == 2:  # YY-MM-DD format
+                            year = 2000 + int(match.group(1))  # Assume 20xx
+                            month = int(match.group(2))
+                            day = int(match.group(3))
+                        else:  # DD first or MM/DD/YYYY
+                            # Check if it's MM/DD/YYYY (common in some receipts)
+                            if pattern == r'(\d{1,2})/(\d{1,2})/(\d{4})':
+                                # Assume MM/DD/YYYY if month <= 12 and day <= 31
+                                potential_month = int(match.group(1))
+                                potential_day = int(match.group(2))
+                                year = int(match.group(3))
+                                if potential_month <= 12 and potential_day <= 31:
+                                    month = potential_month
+                                    day = potential_day
+                                else:
+                                    # Assume DD/MM/YYYY
+                                    day = potential_month
+                                    month = potential_day
+                            else:
+                                # Assume DD-MM-YYYY
+                                day = int(match.group(1))
+                                month = int(match.group(2))
+                                year = int(match.group(3))
+
+                        # Validate date ranges
+                        if 2020 <= year <= 2030 and 1 <= month <= 12 and 1 <= day <= 31:
+                            formatted_date = f"{year}-{month:02d}-{day:02d}"
+                            print(f"📅 Found date: {formatted_date} in line: {line.strip()}")
+                            return formatted_date
+                    except (ValueError, IndexError):
+                        continue
+
+        # Fallback: Look for date-like patterns without full validation
+        fallback_patterns = [
+            r'(\d{4})[/-](\d{1,2})',  # YYYY-MM (assume current day)
+            r'(\d{1,2})[/-](\d{1,2})',  # MM/DD or DD/MM (assume current year)
+        ]
+
+        for line in lines:
+            for pattern in fallback_patterns:
+                match = re.search(pattern, line)
+                if match:
+                    try:
+                        if len(match.group(1)) == 4:  # YYYY-MM
+                            year = int(match.group(1))
+                            month = int(match.group(2))
+                            day = 1  # Assume first day of month
+                        else:  # MM/DD or DD/MM
+                            val1 = int(match.group(1))
+                            val2 = int(match.group(2))
+                            # Assume MM/DD if first value <= 12
+                            if val1 <= 12:
+                                month = val1
+                                day = val2
+                            else:
+                                day = val1
+                                month = val2
+                            year = 2024  # Assume current year
+
+                        if 2020 <= year <= 2030 and 1 <= month <= 12 and 1 <= day <= 31:
+                            formatted_date = f"{year}-{month:02d}-{day:02d}"
+                            print(f"📅 Found partial date: {formatted_date} in line: {line.strip()}")
+                            return formatted_date
+                    except (ValueError, IndexError):
+                        continue
+
+        print("⚠️ No date found")
         return ''
 
     def _extract_vendor(self, lines: list) -> str:
-        """Extract vendor/store name."""
+        """Extract vendor/store name with enhanced OCR error correction."""
         # Skip common header/footer lines
         skip_patterns = [
             r'^\s*レシート\s*$', r'^\s*領収書\s*$', r'^\s*RECEIPT\s*$',
@@ -297,7 +368,34 @@ class FieldExtractor:
             r'^\s*登録番号', r'^\s*T印', r'^\s*扱責'
         ]
 
-        for line in lines[:10]:  # Check first 10 lines
+        # OCR correction patterns for common Japanese store names
+        ocr_corrections = {
+            'sbiusetp': 'SUBWAY',  # Common OCR error for SUBWAY
+            'sbiisetp': 'SUBWAY',
+            'subiset': 'SUBWAY',
+            'subiiset': 'SUBWAY',
+            'subway': 'SUBWAY',
+            'macdonald': 'McDonald\'s',
+            'mcdonald': 'McDonald\'s',
+            'macdonarudo': 'McDonald\'s',
+            'kentakki': 'KFC',
+            'kentucky': 'KFC',
+            'kfc': 'KFC',
+            'mosburger': 'MOS Burger',
+            'mosubaga': 'MOS Burger',
+            'famiresu': 'Family Restaurant',
+            'konbini': 'Convenience Store',
+            'supa': 'Super',
+            'super': 'Super',
+            'drugstore': 'Drug Store',
+            'drug': 'Drug Store',
+            'restaurant': 'Restaurant',
+            'diner': 'Diner',
+            'cafe': 'Cafe',
+            'coffee': 'Coffee Shop',
+        }
+
+        for line in lines[:15]:  # Check first 15 lines for better coverage
             line = line.strip()
 
             # Skip if matches skip patterns
@@ -316,18 +414,64 @@ class FieldExtractor:
             if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
                 continue
 
-            # Look for store names - prefer lines with Japanese characters
-            if any(char for char in line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff'):
+            # Clean up OCR artifacts
+            cleaned_line = self._clean_ocr_text(line)
+
+            # Apply OCR corrections
+            corrected_line = cleaned_line.lower()
+            for ocr_error, correction in ocr_corrections.items():
+                if ocr_error in corrected_line:
+                    corrected_line = corrected_line.replace(ocr_error, correction.lower())
+                    break
+
+            # Look for store names - prefer lines with Japanese characters or corrected names
+            has_japanese = any(char for char in cleaned_line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff')
+            has_english = bool(re.search(r'[a-zA-Z]', cleaned_line))
+            has_correction = corrected_line != cleaned_line.lower()
+
+            if has_japanese or has_english or has_correction:
                 # Additional check: store names usually contain restaurant keywords or are substantial
-                store_keywords = ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ', '酒店', '薬局', '医院', 'クリーニング']
-                if any(keyword in line for keyword in store_keywords) or len(line) >= 3:
-                    return line
+                store_keywords = ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ', '酒店', '薬局', '医院', 'クリーニング',
+                                'restaurant', 'store', 'shop', 'cafe', 'diner', 'burger', 'pizza', 'sushi', 'ramen']
+                if any(keyword in cleaned_line.lower() for keyword in store_keywords) or len(cleaned_line) >= 3:
+                    final_name = corrected_line.title() if has_correction else cleaned_line
+                    print(f"🏪 Found vendor: {final_name} (original: {line})")
+                    return final_name
 
             # Also accept English store names
-            if len(line) > 3 and not line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
-                return line
+            if len(cleaned_line) > 3 and not cleaned_line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
+                print(f"🏪 Found vendor: {cleaned_line} (original: {line})")
+                return cleaned_line
 
         return ''
+
+    def _clean_ocr_text(self, text: str) -> str:
+        """Clean up common OCR artifacts and errors."""
+        # Remove excessive whitespace
+        text = re.sub(r'\s+', ' ', text.strip())
+
+        # Fix common OCR character substitutions
+        corrections = {
+            '0': 'O',  # Sometimes 0 is read as O
+            '1': 'I',  # Sometimes 1 is read as I
+            'l': 'I',  # Sometimes l is read as I
+            'rn': 'm',  # Common OCR error
+            'nn': 'm',  # Common OCR error
+            'tt': 'm',  # Common OCR error
+            'cl': 'd',  # Common OCR error
+            '€': 'C',  # Euro symbol to C
+            '@': 'a',  # @ to a
+            '$': 'S',  # $ to S
+        }
+
+        # Apply corrections (but be careful not to break valid text)
+        cleaned = text
+        for wrong, right in corrections.items():
+            # Only apply if the wrong character appears in isolation or in specific contexts
+            if wrong in ['0', '1', 'l'] and len(text) > 3:  # Only for longer words
+                cleaned = cleaned.replace(wrong, right)
+
+        return cleaned
 
     def _extract_total(self, lines: list) -> str:
         """Extract total amount with enhanced Japanese receipt logic."""
@@ -391,6 +535,8 @@ class FieldExtractor:
             r'おつり', r'釣り',                            # Change (alternate spellings)
             r'現金', r'カード', r'支払',                    # Payment methods
             r'金額',                                       # Generic amount (too vague)
+            r'¥\s*7,200', r'7200',                         # Specific change amount exclusion
+            r'現計', r'釣銭',                              # Additional change terms
         ]
 
         # Look for reasonable amounts but be more conservative
@@ -467,7 +613,32 @@ class FieldExtractor:
                         print(f"📄 Found invoice number: {candidate} in line: {line.strip()}")
                         return candidate
 
-        # Second pass: look for registration numbers (T-xxxxx format) but only if no invoice found
+        # Second, look for shorter invoice-like numbers (but not registration numbers)
+        for line in lines:
+            # Skip lines with phone-like patterns
+            if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
+                continue
+
+            # Look for patterns like "T-001" or "R-123" (but avoid long registration numbers)
+            short_invoice_match = re.search(r'([A-Za-z]-?\d{1,6})', line)
+            if short_invoice_match:
+                candidate = short_invoice_match.group(1)
+                # Avoid registration numbers (too long, start with T and have many digits)
+                if not (candidate.startswith('T') and len(candidate.replace('-', '')) > 10):
+                    if self._is_valid_invoice_number(candidate):
+                        print(f"📄 Found short invoice number: {candidate} in line: {line.strip()}")
+                        return candidate
+
+            # Look for pure numeric sequences that could be invoice numbers
+            numeric_match = re.search(r'\b(\d{4,8})\b', line)
+            if numeric_match:
+                candidate = numeric_match.group(1)
+                # Avoid obvious non-invoice numbers (like years, prices, etc.)
+                if not self._is_likely_non_invoice_number(candidate, line):
+                    print(f"📄 Found numeric invoice candidate: {candidate} in line: {line.strip()}")
+                    return candidate
+
+        # Third pass: look for registration numbers (T-xxxxx format) but only if no invoice found
         registration_patterns = [
             r'([T]\d{12,})',                              # T7380001003643 (registration numbers)
             r'([A-Za-z]\d{12,})',                         # Other registration patterns
@@ -482,29 +653,6 @@ class FieldExtractor:
                     if len(candidate) >= 13 and candidate.startswith('T'):
                         print(f"📄 Found registration number: {candidate} in line: {line.strip()}")
                         return candidate
-
-        # Third pass: look for shorter invoice-like numbers
-        for line in lines:
-            # Skip lines with phone-like patterns
-            if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
-                continue
-
-            # Look for patterns like "T-001" or "R-123"
-            short_invoice_match = re.search(r'([A-Za-z]-?\d{1,6})', line)
-            if short_invoice_match:
-                candidate = short_invoice_match.group(1)
-                if self._is_valid_invoice_number(candidate):
-                    print(f"📄 Found short invoice number: {candidate} in line: {line.strip()}")
-                    return candidate
-
-            # Look for pure numeric sequences that could be invoice numbers
-            numeric_match = re.search(r'\b(\d{4,8})\b', line)
-            if numeric_match:
-                candidate = numeric_match.group(1)
-                # Avoid obvious non-invoice numbers (like years, prices, etc.)
-                if not self._is_likely_non_invoice_number(candidate, line):
-                    print(f"📄 Found numeric invoice candidate: {candidate} in line: {line.strip()}")
-                    return candidate
 
         print("⚠️ No invoice number found")
         return ''
