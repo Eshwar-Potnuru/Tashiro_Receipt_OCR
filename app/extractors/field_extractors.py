@@ -10,12 +10,16 @@ import io
 # Load environment variables from .env file at module level
 try:
     from dotenv import load_dotenv
-    load_dotenv()
-    print("✅ Environment variables loaded from .env file")
+    # Try to load .env file, but don't fail if it doesn't exist (for container deployments)
+    env_loaded = load_dotenv()
+    if env_loaded:
+        print("✅ Environment variables loaded from .env file")
+    else:
+        print("ℹ️ No .env file found, using environment variables directly")
 except ImportError:
-    print("⚠️ python-dotenv not installed, environment variables may not be loaded")
+    print("⚠️ python-dotenv not installed, using environment variables directly")
 except Exception as e:
-    print(f"⚠️ Error loading .env file: {e}")
+    print(f"⚠️ Error loading .env file: {e}, using environment variables directly")
 
 # Import enhanced Japanese extractor
 try:

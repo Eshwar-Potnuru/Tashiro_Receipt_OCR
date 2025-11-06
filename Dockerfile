@@ -18,16 +18,25 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
-COPY requirements.txt .
+COPY requirements_production.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
-COPY . .
+COPY . ./
+
+# Copy .env file if it exists (for local development)
+COPY .env* ./
 
 # Create artifacts directory inside the app directory
 RUN mkdir -p artifacts
+
+# Create config directory for Google Vision credentials
+RUN mkdir -p config
+
+# Copy Google Vision credentials if they exist
+COPY config/google_vision_key.json* config/
 
 # Expose port
 EXPOSE 8000

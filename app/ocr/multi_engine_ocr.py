@@ -141,20 +141,38 @@ class MultiEngineOCR:
             if selected_engine == "google_vision":
                 credentials_path = (
                     os.getenv('GOOGLE_APPLICATION_CREDENTIALS') or 
-                    'google-vision-credentials.json'
+                    '/app/config/google_vision_key.json' or
+                    'config/google_vision_key.json'
                 )
+                # Check if credentials file exists
+                if not os.path.exists(credentials_path):
+                    raise ValueError(f"Google Vision credentials file not found: {credentials_path}")
                 self.active_engine = GoogleVisionExtractor(credentials_path)
                 logger.info("🚀 Primary Engine: Google Cloud Vision API (High Accuracy)")
                 
             elif selected_engine == "openai_vision":
+                # Check if OpenAI key is available
+                if not os.getenv('OPENAI_API_KEY'):
+                    raise ValueError("OPENAI_API_KEY environment variable not set")
                 self.active_engine = OpenAIVisionExtractor()
                 logger.info("🚀 Primary Engine: OpenAI Vision API (Structured Field Extraction)")
                 
             elif selected_engine == "paddleocr":
                 # Lazy import to avoid startup issues
-                from .enhanced_paddle_ocr import PaddleOCREngine
-                self.active_engine = PaddleOCREngine(use_gpu=False)
-                logger.info("🚀 Primary Engine: Enhanced PaddleOCR (Free, High Accuracy)")
+                try:
+                    from .enhanced_paddle_ocr import PaddleOCREngine
+                    self.active_engine = PaddleOCREngine(use_gpu=False)
+                    logger.info("🚀 Primary Engine: Enhanced PaddleOCR (Free, High Accuracy)")
+                except ImportError as e:
+                    logger.warning(f"PaddleOCR not available: {e}, falling back to EasyOCR")
+                    # Fallback to EasyOCR if PaddleOCR is not installed
+                    self.active_engine = BaseOCREngine(
+                        languages=["ja", "en"],
+                        use_gpu=False,
+                        primary_engine="easyocr"
+                    )
+                    self.engine_type = "easyocr"
+                    logger.info("🔄 Fell back to EasyOCR (PaddleOCR not available)")
                 
             elif selected_engine == "easyocr":
                 self.active_engine = BaseOCREngine(

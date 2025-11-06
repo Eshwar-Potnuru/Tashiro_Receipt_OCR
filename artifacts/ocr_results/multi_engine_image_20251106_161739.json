@@ -1,0 +1,28 @@
+{
+  "date": "",
+  "vendor": "",
+  "total": "",
+  "invoice_number": "",
+  "tax_category": "標準税率",
+  "account_title": "その他",
+  "confidence": 0.0,
+  "subtotal": "",
+  "tax": "",
+  "currency": "JPY",
+  "payment": "",
+  "change": "",
+  "field_confidence": {
+    "date": 0.0,
+    "vendor": 0.0,
+    "total": 0.0,
+    "tax": 0.0,
+    "subtotal": 0.0,
+    "payment": 0.0,
+    "change": 0.0,
+    "invoice_number": 0.0
+  },
+  "raw_text": "TEST",
+  "normalized_text": "TEST",
+  "processing_method": "enhanced_japanese",
+  "ocr_engine": "Google Vision API (DOCUMENT_TEXT_DETECTION)"
+}

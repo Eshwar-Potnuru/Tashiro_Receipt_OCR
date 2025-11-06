@@ -34,7 +34,17 @@ class GoogleVisionExtractor:
                 self.client = vision.ImageAnnotatorClient(credentials=credentials)
             else:
                 # Use environment variable or default credentials
-                self.client = vision.ImageAnnotatorClient()
+                # In containers, credentials might be set via environment variables
+                creds_env = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+                if creds_env and os.path.exists(creds_env):
+                    credentials = service_account.Credentials.from_service_account_file(creds_env)
+                    self.client = vision.ImageAnnotatorClient(credentials=credentials)
+                else:
+                    # Try to use default credentials (for GCP environments)
+                    try:
+                        self.client = vision.ImageAnnotatorClient()
+                    except Exception as default_error:
+                        raise ValueError(f"No valid Google Vision credentials found. Set GOOGLE_APPLICATION_CREDENTIALS environment variable or provide credentials_path. Error: {default_error}")
 
             print("SUCCESS: Google Vision API initialized successfully")
         except Exception as e:
