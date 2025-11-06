@@ -10,7 +10,7 @@ aiofiles==23.2.1
 
 # OCR and image processing (lightweight)
 pytesseract==0.3.10
-opencv-python==4.8.1.78
+opencv-python==4.6.0.66
 pillow==10.1.0
 requests==2.31.0
 
@@ -32,7 +32,7 @@ pydantic==2.5.0
 
 # Optional: PaddleOCR (recommended for container deployment - free and good accuracy)
 paddlepaddle==2.6.1
-paddleocr==2.7.0.3
+paddleocr==2.8.1
 
 # Testing and development (optional for production)
 # pytest==7.4.3
