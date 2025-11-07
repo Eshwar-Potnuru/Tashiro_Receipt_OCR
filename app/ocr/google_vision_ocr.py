@@ -33,11 +33,71 @@ class GoogleVisionOCR:
         if credentials_path and os.path.exists(credentials_path):
             os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
         
-        self.client = vision.ImageAnnotatorClient()
+        # Try to initialize client, but handle missing credentials gracefully
+        try:
+            self.client = vision.ImageAnnotatorClient()
+            self._client_available = True
+        except Exception as e:
+            logger.warning(f"Google Vision client initialization failed: {e}")
+            self.client = None
+            self._client_available = False
     
-    def extract_text(self, image: Image.Image) -> Tuple[str, List[dict]]:
+    def extract_text(self, image_data) -> str:
         """
         Extract text from image using Google Cloud Vision API
+        
+        Args:
+            image_data: PIL Image object or bytes
+            
+        Returns:
+            Extracted text string
+        """
+        if not self.is_available():
+            logger.warning("Google Vision client not available")
+            return ""
+            
+        try:
+            # Handle both PIL Image and bytes input
+            if isinstance(image_data, bytes):
+                img_byte_arr = image_data
+            else:
+                # Convert PIL Image to bytes
+                img_byte_arr = io.BytesIO()
+                image_data.save(img_byte_arr, format='PNG')
+                img_byte_arr = img_byte_arr.getvalue()
+            
+            # Create Vision API image object
+            vision_image = vision.Image(content=img_byte_arr)
+            
+            # Perform text detection with language hints for Japanese
+            response = self.client.document_text_detection(
+                image=vision_image,
+                image_context=vision.ImageContext(
+                    language_hints=['ja', 'en']  # Japanese and English
+                )
+            )
+            
+            if response.error.message:
+                raise Exception(f"Google Vision API error: {response.error.message}")
+            
+            # Extract full text
+            full_text = response.full_text_annotation.text if response.full_text_annotation else ""
+            
+            logger.info(f"Google Vision extracted {len(full_text)} characters")
+            
+            return full_text
+            
+        except Exception as e:
+            logger.error(f"Google Vision OCR failed: {e}")
+            return ""
+    
+    def is_available(self) -> bool:
+        """Check if Google Vision is available"""
+        return GOOGLE_VISION_AVAILABLE and getattr(self, '_client_available', False)
+    
+    def extract_text_with_boxes(self, image: Image.Image) -> Tuple[str, List[dict]]:
+        """
+        Extract text from image using Google Cloud Vision API with bounding boxes
         
         Returns:
             Tuple of (full_text, text_annotations)

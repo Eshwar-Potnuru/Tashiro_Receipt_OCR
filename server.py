@@ -11,6 +11,16 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
+# Load environment variables from .env file
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("✓ Environment variables loaded from .env file")
+except ImportError:
+    print("✗ python-dotenv not installed")
+except Exception as e:
+    print(f"✗ Error loading .env file: {e}")
+
 try:
     import uvicorn
     from app.main import app

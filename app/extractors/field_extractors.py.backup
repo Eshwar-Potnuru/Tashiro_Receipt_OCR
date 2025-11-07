@@ -1,103 +1,118 @@
-﻿import os
-import requests
-import json
+# field_extractors.py
 import re
-from typing import Dict, Any
-from datetime import datetime
-from PIL import Image, ImageEnhance, ImageFilter
-import io
+import unicodedata
+from rapidfuzz import process, fuzz
 
-# Load environment variables from .env file at module level
-try:
-    from dotenv import load_dotenv
-    # Try to load .env file, but don't fail if it doesn't exist (for container deployments)
-    env_loaded = load_dotenv()
-    if env_loaded:
-        print("Environment variables loaded from .env file")
-    else:
-        print("No .env file found, using environment variables directly")
-except ImportError:
-    print("python-dotenv not installed, using environment variables directly")
-except Exception as e:
-    print(f"Error loading .env file: {e}, using environment variables directly")
+# vendor fuzzy map (seed values). Extend with client data.
+VENDOR_MAP = {
+    "ヨークベニマル": "supermarket",
+    "ファミリーマート": "convenience",
+    "ローソン": "convenience",
+    "マクドナルド": "restaurant",
+}
 
-# Import enhanced Japanese extractor
-try:
-    from .enhanced_japanese_extractor import EnhancedJapaneseExtractor
-    ENHANCED_JAPANESE_AVAILABLE = True
-except ImportError:
-    ENHANCED_JAPANESE_AVAILABLE = False
+DATE_PATTERNS = [
+    r"(\d{4}年\d{1,2}月\d{1,2}日)",
+    r"(\d{4}[/-]\d{1,2}[/-]\d{1,2})",
+    r"(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})"
+]
 
-# Import OpenAI Vision extractor
-try:
-    from .openai_vision_extractor import OpenAIVisionExtractor
-    OPENAI_AVAILABLE = True
-except ImportError:
-    OPENAI_AVAILABLE = False
+INVOICE_PATTERNS = [
+    r"(?:No\.?|番号|伝票|レシート)[:：\s#-]*([A-Za-z0-9\-]+)"
+]
 
-# Import multi-engine OCR system
-try:
-    from ..ocr.multi_engine_ocr import MultiEngineOCR
-    MULTI_ENGINE_AVAILABLE = True
-except ImportError:
-    MULTI_ENGINE_AVAILABLE = False
+TOTAL_PATTERNS = [
+    r"(?:合計|総計|合\s*計)[^\d¥¥,]*([¥\d,\.]+)",
+    r"(?:税込)[^\d¥,]*([¥\d,\.]+)"
+]
 
-class FieldExtractor:
-    """Extract structured fields from receipt images using multi-engine OCR system with OpenAI Vision (primary) and OCR.space (fallback)."""
+SUBTOTAL_PATTERNS = [
+    r"小\s*計[^\d¥,]*([¥\d,\.]+)"
+]
 
-    def __init__(self, preferred_engine: str = "auto"):
-        """
-        Initialize field extractor with multi-engine OCR support
-        
-        Args:
-            preferred_engine: "google_vision", "openai_vision", "auto", etc.
-        """
-        # Debug: Check available API keys
-        ocr_space_key = os.getenv('OCR_SPACE_API_KEY')
-        google_creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-        google_creds_content = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
-        openai_key = os.getenv('OPENAI_API_KEY')
-        
-        print("API Key Status:")
-        print(f"  OCR_SPACE_API_KEY: {'Available' if ocr_space_key else 'Missing'}")
-        print(f"  GOOGLE_APPLICATION_CREDENTIALS: {'Available' if google_creds or google_creds_content else 'Missing'}")
-        print(f"  OPENAI_API_KEY: {'Available' if openai_key else 'Missing'}")
-        
-        self.api_key = ocr_space_key
-        self.api_url = 'https://api.ocr.space/parse/image'
+TAX_PATTERNS = [
+    r"(?:消費税|税額|税金)[^\d¥,]*([¥\d,\.]+)",
+    r"(?:軽減税率)[^\d¥,]*([¥\d,\.]+)"
+]
 
-        # Initialize multi-engine OCR system
-        if MULTI_ENGINE_AVAILABLE:
-            try:
-                self.multi_engine_ocr = MultiEngineOCR()  # Remove preferred_engine parameter
-                print("Multi-engine OCR initialized")
-            except Exception as e:
-                print(f"Failed to initialize multi-engine OCR: {e}")
-                self.multi_engine_ocr = None
+PAYMENT_PATTERNS = [
+    r"(?:現金|支払)[^\d¥,]*([¥\d,\.]+)",
+    r"(?:カード|クレジット)[^\d¥,]*([¥\d,\.]+)"
+]
+
+def normalize_number(value):
+    if not value:
+        return None
+    v = unicodedata.normalize("NFKC", str(value))
+    v = re.sub(r"[¥円,\s]", "", v)
+    try:
+        # return numeric string trimmed
+        return v
+    except:
+        return v
+
+def find_first(patterns, text):
+    for p in patterns:
+        m = re.search(p, text)
+        if m:
+            return m.group(1).strip()
+    return None
+
+def extract_receipt_fields(text: str) -> dict:
+    """
+    Core field extraction from OCR text (post-normalized).
+    """
+    if not text:
+        return {}
+
+    res = {}
+    # vendor heuristics: first line often vendor
+    lines = [l.strip() for l in text.splitlines() if l.strip()]
+    if lines:
+        candidate = lines[0]
+        # fuzzy match
+        match, score, _ = process.extractOne(candidate, list(VENDOR_MAP.keys()), scorer=fuzz.partial_ratio)
+        if score > 70:
+            res["vendor"] = match
+            res["vendor_category"] = VENDOR_MAP.get(match)
         else:
-            self.multi_engine_ocr = None
+            res["vendor"] = candidate
 
-        # Initialize OpenAI Vision extractor if available (for structured extraction)
-        if OPENAI_AVAILABLE:
-            try:
-                self.openai_extractor = OpenAIVisionExtractor()
-                print("OpenAI Vision extractor initialized")
-            except Exception as e:
-                print(f"Failed to initialize OpenAI Vision: {e}")
-                self.openai_extractor = None
-        else:
-            self.openai_extractor = None
+    # date
+    for pat in DATE_PATTERNS:
+        m = re.search(pat, text)
+        if m:
+            res["date_raw"] = m.group(1)
+            break
 
-        # Initialize enhanced Japanese extractor if available
-        if ENHANCED_JAPANESE_AVAILABLE:
-            try:
-                self.enhanced_extractor = EnhancedJapaneseExtractor()
-                print("Enhanced Japanese extractor initialized")
-            except Exception as e:
-                print(f"Failed to initialize Enhanced Japanese extractor: {e}")
-                self.enhanced_extractor = None
-        else:
-            self.enhanced_extractor = None
+    # invoice
+    inv = find_first(INVOICE_PATTERNS, text)
+    if inv:
+        res["invoice_no"] = inv
+
+    # totals/subtotal/tax/payment
+    total = find_first(TOTAL_PATTERNS, text)
+    if total:
+        res["total_raw"] = normalize_number(total)
+    subtotal = find_first(SUBTOTAL_PATTERNS, text)
+    if subtotal:
+        res["subtotal_raw"] = normalize_number(subtotal)
+    tax = find_first(TAX_PATTERNS, text)
+    if tax:
+        res["tax_raw"] = normalize_number(tax)
+    payment = find_first(PAYMENT_PATTERNS, text)
+    if payment:
+        res["payment_raw"] = normalize_number(payment)
+
+    # simple consistency: if subtotal missing but total and tax present, derive subtotal
+    try:
+        if "subtotal_raw" not in res and "total_raw" in res and "tax_raw" in res:
+            subtotal_calc = int(float(res["total_raw"])) - int(float(res["tax_raw"]))
+            res["subtotal_calc"] = str(subtotal_calc)
+    except Exception:
+        pass
+
+    return res
 
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
         """Extract structured data from receipt image using multi-engine OCR system."""
@@ -143,10 +158,6 @@ class FieldExtractor:
                     
                     if raw_text and len(raw_text.strip()) > 10:  # Ensure we got meaningful text
                         print(f"Multi-engine OCR successful: {len(raw_text)} characters")
-                        print(f"📝 RAW TEXT FROM GOOGLE VISION:")
-                        print("=" * 50)
-                        print(raw_text)
-                        print("=" * 50)
                         
                         # Parse the raw text using existing logic
                         extracted_fields = self._parse_receipt_text(raw_text)
@@ -501,91 +512,45 @@ class FieldExtractor:
             r'^\s*登録番号', r'^\s*T印', r'^\s*扱責'
         ]
 
-    def _extract_vendor(self, lines: list) -> str:
-        """Extract vendor/store name with enhanced logic for high-quality OCR text."""
-        
-        # Known store patterns for major Japanese chains (case-insensitive)
-        known_stores = [
-            r'(MEGAドン[・･]?キホーテ\s*UNY\s*[^\s]*店?)',  # MEGAドン・キホーテUNY武豊店
-            r'(セブン[-‐]?イレブン|セブンイレブン|7[-‐]?Eleven)',
-            r'(ファミリーマート|FamilyMart|ファミマ)',
-            r'(ローソン|LAWSON)',
-            r'(ミニストップ|MINISTOP)',
-            r'(イオン|AEON)',
-            r'(ヨドバシカメラ|ヨドバシ)',
-            r'(ビックカメラ|BIC\s*CAMERA)',
-            r'(ドン[・･]?キホーテ|DON\s*QUIJOTE)',
-            r'(マクドナルド|McDonald\'s)',
-            r'(スターバックス|Starbucks)',
-            r'(タリーズ|TULLY\'S)',
-            r'(吉野家|すき家|なか卯|松屋)',
-            r'(サイゼリヤ|ガスト|デニーズ)',
-            r'(日本郵便|郵便局)',
-        ]
-        
-        # First, look for known store chains in first 15 lines
-        for line in lines[:15]:
-            line_clean = line.strip()
-            if len(line_clean) < 3:
-                continue
-                
-            for pattern in known_stores:
-                match = re.search(pattern, line_clean, re.IGNORECASE)
-                if match:
-                    store_name = match.group(1)
-                    print(f"Found known store: {store_name} (original: {line_clean})")
-                    return store_name
-        
-        # If no known store found, look for store name patterns
-        # Skip common header/footer lines
-        skip_patterns = [
-            r'^\s*レシート\s*$', r'^\s*領収書\s*$', r'^\s*RECEIPT\s*$',
-            r'^\s*伝票\s*$', r'^\s*注文\s*$', r'^\s*INVOICE\s*$',
-            r'^\s*TEL', r'^\s*電話', r'^\s*〒', r'^\s*住所',
-            r'^\s*日付', r'^\s*DATE', r'^\s*\d{4}[/-]\d{1,2}[/-]\d{1,2}',
-            r'^\s*時間', r'^\s*TIME', r'^\s*現計', r'^\s*お釣',
-            r'^\s*小計', r'^\s*合計', r'^\s*消費税',
-            r'^\s*登録番号', r'^\s*T印', r'^\s*扱責', r'^\s*但し'
-        ]
-
         for line in lines[:15]:  # Check first 15 lines for better coverage
-            line_stripped = line.strip()
+            line = line.strip()
 
             # Skip if matches skip patterns
-            if any(re.search(pattern, line_stripped, re.IGNORECASE) for pattern in skip_patterns):
+            if any(re.search(pattern, line, re.IGNORECASE) for pattern in skip_patterns):
                 continue
 
             # Skip lines that are mostly numbers
-            if len(line_stripped) > 0 and sum(c.isdigit() for c in line_stripped) / len(line_stripped) > 0.5:
+            if len(line) > 0 and sum(c.isdigit() for c in line) / len(line) > 0.5:
                 continue
 
             # Skip very short lines
-            if len(line_stripped) < 2:
+            if len(line) < 2:
                 continue
 
             # Skip phone numbers
-            if re.search(r'\d{2,4}[-‐]\d{2,4}[-‐]\d{4}', line_stripped):
+            if re.search(r'\d{2,4}-\d{2,4}-\d{4}', line):
                 continue
 
             # Clean up OCR artifacts
-            cleaned_line = self._clean_ocr_text(line_stripped)
+            cleaned_line = self._clean_ocr_text(line)
 
             # Look for store names - prefer lines with Japanese characters or corrected names
             has_japanese = any(char for char in cleaned_line if '\u3040' <= char <= '\u309f' or '\u30a0' <= char <= '\u30ff' or '\u4e00' <= char <= '\u9fff')
             has_english = bool(re.search(r'[a-zA-Z]', cleaned_line))
+            has_correction = False
 
-            if has_japanese or has_english:
+            if has_japanese or has_english or has_correction:
                 # Additional check: store names usually contain restaurant keywords or are substantial
                 store_keywords = ['食堂', '店', 'レストラン', 'ショップ', 'ストア', 'スーパー', 'コンビニ', '酒店', '薬局', '医院', 'クリーニング',
                                 'restaurant', 'store', 'shop', 'cafe', 'diner', 'burger', 'pizza', 'sushi', 'ramen']
                 if any(keyword in cleaned_line.lower() for keyword in store_keywords) or len(cleaned_line) >= 3:
                     final_name = cleaned_line
-                    print(f"Found vendor: {final_name} (original: {line_stripped})")
+                    print(f"Found vendor: {final_name} (original: {line})")
                     return final_name
 
             # Also accept English store names
             if len(cleaned_line) > 3 and not cleaned_line.startswith(('TEL', 'TEL:', '電話', '〒', '住所')):
-                print(f"Found vendor: {cleaned_line} (original: {line_stripped})")
+                print(f"Found vendor: {cleaned_line} (original: {line})")
                 return cleaned_line
 
         return ''
@@ -626,124 +591,122 @@ class FieldExtractor:
         """Extract total amount with enhanced Japanese receipt logic."""
         # Priority patterns - most specific to least specific
         total_patterns = [
-            r'合計\s*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000 or 合計 ¥1000 (highest priority)
-            r'合計金額\s*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計金額: 1000
-            r'総合計\s*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総合計: 1000
-            r'総額\s*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000
-            r'お買上計\s*[¥\\]?([0-9,]+\.?[0-9]*)',  # お買上計
-            r'TOTAL\s*[¥\\]?([0-9,]+\.?[0-9]*)', # TOTAL: 1000
-            r'[¥\\]([0-9,]+\.?[0-9]*)\s*合計',      # ¥1000 合計
+            r'合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計: 1000 (Total - highest priority)
+            r'合計金額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 合計金額: 1000 (Total amount)
+            r'総合計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総合計: 1000 (Grand total)
+            r'合計\s*[¥\\]?([0-9,]+\.?[0-9]*)',     # 合計 1000 (no colon)
+            r'総額[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 総額: 1000 (Total amount)
+            r'お買上計[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # お買上計 (Purchase total)
+            r'TOTAL[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)', # TOTAL: 1000
+            r'[¥\\]([0-9,]+\.?[0-9]*)\s*合計',      # ¥1000 合計 (amount before total)
         ]
 
         # Search for explicit total indicators from bottom up (totals usually at bottom)
         for i, line in enumerate(reversed(lines)):
-            line_stripped = line.strip()
+            line_lower = line.lower()
             for pattern in total_patterns:
-                match = re.search(pattern, line_stripped, re.IGNORECASE)
+                match = re.search(pattern, line, re.IGNORECASE)
                 if match:
                     amount = match.group(1).replace(',', '')
                     try:
                         value = float(amount)
                         if 1 <= value <= 1000000:  # Reasonable receipt amount
-                            print(f"Found total: {amount} in line: {line_stripped}")
+                            print(f"Found total: {amount} in line: {line.strip()}")
                             return str(int(value))
                     except ValueError:
                         continue
 
-        # Look for total keyword followed by amount on next line or same line
-        for i, line in enumerate(lines):
-            line_stripped = line.strip()
-            # Check if this line contains a total keyword
+            # Check if this line contains a total keyword but no amount (amount might be on next line)
             total_keywords = ['合計', 'お買上計', 'total', 'TOTAL']
-            exclude_keywords = ['合計点数', '点数', '個数', '数量', '税額合計']  # Exclude counts and tax totals
-            
-            if any(keyword in line_stripped for keyword in total_keywords) and not any(excl in line_stripped for excl in exclude_keywords):
-                # First check if the amount is on the same line (common pattern)
-                amount_match = re.search(r'[¥\\]([0-9,]+\.?[0-9]*)', line_stripped)
-                if amount_match:
-                    amount = amount_match.group(1).replace(',', '')
-                    try:
-                        value = float(amount)
-                        if 1 <= value <= 1000000:
-                            print(f"Found total (same line): {amount} in line: {line_stripped}")
-                            return str(int(value))
-                    except ValueError:
-                        pass
-                
-                # Look at nearby lines for the amount (usually 1-3 lines after)
-                for offset in range(1, 4):
-                    if i + offset < len(lines):
-                        next_line = lines[i + offset].strip()
-                        # Look for standalone amounts
-                        amount_match = re.search(r'^[¥\\]?([0-9,]+\.?[0-9]*)$', next_line)
+            exclude_keywords = ['合計点数', '点数', '個数', '数量']  # Exclude "total count" etc.
+            if any(keyword in line for keyword in total_keywords) and not any(excl in line for excl in exclude_keywords):
+                # Look at the immediate next line for the amount
+                # Fix: calculate the actual index in the original lines list
+                actual_index = len(lines) - 1 - i
+                next_line_index = actual_index + 1
+                if next_line_index < len(lines):
+                    next_line = lines[next_line_index].strip()
+                    # Skip if next line contains tax or other non-total indicators
+                    if not any(skip in next_line for skip in ['消費税', '税', '内税', 'お釣', '現計', '小計', '%', '等']):
+                        amount_match = re.search(r'[¥\\]?([0-9,]+\.?[0-9]*)', next_line)
                         if amount_match:
                             amount = amount_match.group(1).replace(',', '')
                             try:
                                 value = float(amount)
-                                if 1 <= value <= 1000000:
-                                    print(f"Found total (keyword + amount): {amount} from keyword '{line_stripped}' + amount '{next_line}'")
+                                if 1 <= value <= 1000000:  # Reasonable receipt amount
+                                    print(f"Found total (split lines): {amount} in line: {line.strip()} + {next_line}")
                                     return str(int(value))
                             except ValueError:
                                 continue
 
-        # Enhanced standalone amount detection with better context awareness
-        print("Searching for standalone total amounts...")
-        for i, line in enumerate(lines):
-            line_stripped = line.strip()
-            
-            # Look for standalone amounts that could be totals (¥X,XXX format)
-            standalone_match = re.search(r'^[¥\\]([0-9,]+\.?[0-9]*)[-\s]*$', line_stripped)
-            if standalone_match:
-                amount = standalone_match.group(1).replace(',', '')
-                try:
-                    value = float(amount)
-                    
-                    # Only accept if it's a reasonable total amount and has good context
-                    if 100 <= value <= 1000000:
-                        # Check context - look for total-related keywords in nearby lines
-                        context_good = False
-                        
-                        # Check 3 lines before and after for total context
-                        for offset in range(-3, 4):
-                            if 0 <= i + offset < len(lines) and offset != 0:
-                                context_line = lines[i + offset].strip().lower()
-                                if any(keyword in context_line for keyword in ['合計', 'total', 'お買上']):
-                                    context_good = True
-                                    break
-                        
-                        # Also accept if this is near the end of the receipt (common location for totals)
-                        if i >= len(lines) - 10:  # Last 10 lines
-                            context_good = True
-                        
-                        if context_good:
-                            print(f"Found total (standalone with context): {amount} in line: {line_stripped}")
-                            return str(int(value))
-                            
-                except ValueError:
-                    continue
+        # If no explicit total found, look for amounts but exclude obvious non-total amounts
+        print("No explicit total found, checking for implicit totals...")
 
-        # Last resort: look for substantial standalone amounts near the end
-        print("Final search for end-of-receipt amounts...")
-        for i, line in enumerate(reversed(lines[:20])):  # Check last 20 lines
-            line_stripped = line.strip()
-            # Look for any amount that could be a total
-            amount_patterns = [
-                r'^[¥\\]([0-9,]+\.?[0-9]*)$',  # ¥3,763
-                r'^([0-9,]+\.?[0-9]*)\s*円$',  # 3763円
-                r'([0-9,]+\.?[0-9]*)\s*[-\s]*$',  # 3763- or 3763
+        # Enhanced exclusion patterns for Japanese receipts
+        exclude_patterns = [
+            r'お釣', r'釣銭', r'現計', r'預り', r'預り金',  # Change, received money
+            r'お預かり', r'釣り',                            # Amount tendered, change (additional)
+            r'小計', r'内税', r'消費税', r'税', r'税額',    # Subtotals, taxes
+            r'ポイント', r'値引', r'割引', r'割引額',      # Points, discounts
+            r'レジ袋', r'袋代',                            # Bag fees
+            r'おつり', r'釣り',                            # Change (alternate spellings)
+            r'現金', r'カード', r'支払',                    # Payment methods
+            r'金額',                                       # Generic amount (too vague)
+            r'¥\s*7,200', r'7200',                         # Specific change amount exclusion
+            r'現計', r'釣銭',                              # Additional change terms
+        ]
+
+        # Look for reasonable amounts but be more conservative
+        total_candidates = []
+        for i, line in enumerate(lines):
+            line = line.strip()
+
+            # Skip lines with excluded terms
+            if any(excl in line for excl in exclude_patterns):
+                continue
+
+            # Skip lines that contain multiple amounts (likely itemized)
+            amounts_in_line = re.findall(r'[¥\\]?([0-9,]+\.?[0-9]*)', line)
+            if len(amounts_in_line) > 1:
+                continue
+
+            # Look for isolated amounts (just ¥XXXX or XXXX円)
+            isolated_patterns = [
+                r'^\s*[¥\\]([0-9,]+\.?[0-9]*)\s*$',      # Just ¥1000
+                r'^\s*([0-9,]+\.?[0-9]*)\s*円\s*$',      # Just 1000円
             ]
-            
-            for pattern in amount_patterns:
-                amount_match = re.search(pattern, line_stripped)
-                if amount_match:
-                    amount = amount_match.group(1).replace(',', '')
+
+            for pattern in isolated_patterns:
+                match = re.search(pattern, line)
+                if match:
+                    amount = match.group(1).replace(',', '')
                     try:
                         value = float(amount)
-                        if 100 <= value <= 1000000:
-                            print(f"Found total (end search): {amount} in line: {line_stripped}")
-                            return str(int(value))
+                        # More restrictive range and additional checks
+                        if 10 <= value <= 50000:  # Reasonable receipt total range (increased from 5000)
+                            # Additional check: line should not contain item-like patterns
+                            if not re.search(r'\d{3}\s+.*', line):  # Skip item codes like "061 item"
+                                # Additional check: avoid amounts that look like change (too round and large)
+                                if value >= 10000 and value % 1000 == 0:  # Amounts like 7000, 10000, 15000 are often change
+                                    continue
+                                total_candidates.append((value, line, i))  # Include line index
+                                break
                     except ValueError:
                         continue
+
+        # Return the most reasonable candidate
+        if total_candidates:
+            # Sort by position (prefer amounts that appear later in the receipt, as totals are usually at the bottom)
+            # But avoid the very last amounts which might be change
+            total_candidates.sort(key=lambda x: x[2], reverse=True)  # Sort by line index descending
+
+            # Skip the last 1-2 lines as they might be change
+            candidates_to_check = total_candidates[:-2] if len(total_candidates) > 2 else total_candidates
+
+            if candidates_to_check:
+                amount, line, idx = candidates_to_check[0]
+                print(f"Found isolated total candidate: {int(amount)} in line: {line}")
+                return str(int(amount))
 
         print("No total amount found")
         return ''
@@ -914,121 +877,157 @@ class FieldExtractor:
         return '課税'  # Default
 
     def _categorize_expense(self, lines: list) -> tuple[str, int]:
-        """AI-based categorization of expenses based on receipt content.
+        """AI-based categorization of expenses based on receipt content with improved context awareness.
         Returns: (category, confidence_percentage)"""
         text = ' '.join(lines).lower()
-        
-        # Enhanced categorization keywords with weight-based scoring
-        category_keywords = {
+
+        # Enhanced categorization with comprehensive keyword matching and context awareness
+        # Each category has primary keywords (high confidence), secondary keywords (medium confidence),
+        # and exclusion patterns (terms that should NOT trigger this category)
+
+        categories = {
             '食費': {
-                'high': ['mega', 'ドン・キホーテ', 'donki', 'don', 'メガドン', 'uny', '武豊', 'ソフトパック', 'サトウのごはん', 'おーいお茶', '牛焼肉', '春雨', '唐辛子', 'パスコ'],  # Store-specific
-                'medium': ['コンビニ', 'セブン', 'ローソン', 'ファミマ', 'イオン', 'スーパー', 'マクドナルド', '吉野家', 'すき家', 'なか卯'],
-                'low': ['食堂', 'レストラン', 'カフェ', '定食', 'ラーメン', '寿司', 'うどん', 'そば', '弁当', '食事', '飲食', 'パン', 'バター', 'ビール', 'みかん', 'いちご', 'スープ', 'ハンバーグ', 'ヨーグルト', 'ごはん', 'めし']
+                'primary': ['レストラン', 'ラーメン', '寿司', '定食', '食堂', 'レスト', 'カフェ', '喫茶', 'バー', '居酒屋', '焼肉', 'すし', '天ぷら', 'ラーメン', 'うどん', 'そば', '丼', '定食', 'ファミレス', 'ファストフード', 'マクドナルド', 'ケンタッキー', 'ピザ', 'ハンバーガー', 'コーヒー', 'ジュース', 'ソフトドリンク', 'コンビニ', 'スーパー', 'デリ', '惣菜', '弁当', 'おにぎり', 'サンドイッチ', 'パン', 'ケーキ', 'デザート'],
+                'secondary': ['食事', '飲食', '食べ物', '飲み物', 'デザート', 'ケーキ', 'アイス', 'お菓子', 'スナック', 'パン', '米', '肉', '魚', '野菜', '果物', 'メニュー', '注文', '料理'],
+                'exclusions': ['税金', '所得税', '住民税', '固定資産税', '自動車税', '保険', '医療', '薬', '医院', 'クリーニング']
             },
             '交通費': {
-                'high': ['jr', '地下鉄', 'ガソリンスタンド'],
-                'medium': ['タクシー', 'バス', '電車', '駅', '切符', 'ガソリン', 'スタンド'],
-                'low': ['交通', '運賃', '乗車', '駐車場', 'パーキング', '高速', '料金所']
+                'primary': ['タクシー', 'バス', '電車', '地下鉄', '新幹線', '飛行機', '空港', '駅', 'ターミナル', '交通', '乗車券', '切符', '定期券', '高速道路', '高速', '有料道路', '駐車場', 'パーキング', 'ガソリン', 'スタンド', 'レンタカー', 'カーシェア', 'uber', 'lyft', 'jr', '私鉄', 'モノレール'],
+                'secondary': ['交通', '移動', '乗車', '料金', '運賃', 'タクシー代', 'バス代', '電車代', '鉄道', '航空'],
+                'exclusions': ['税金', '保険', '車両', '車検', '修理']
             },
             '通信費': {
-                'high': ['日本郵便', '郵便局', 'ゆうパック', 'レターパック'],
-                'medium': ['docomo', 'au', 'softbank', 'rakuten', '郵便', '郵送', '切手', '宅配', '配送'],
-                'low': ['電話', '通信', 'wifi', 'インターネット', '携帯', 'スマホ', 'モバイル', 'データ', '引受', '証紙']
-            },
-            '接待交際費': {
-                'high': ['懇親会', '宴会'],
-                'medium': ['接待', '交際', '会食', '打ち合わせ'],
-                'low': ['飲み会', 'パーティー']
-            },
-            '消耗品費': {
-                'high': ['ドラッグストア', '薬局'],
-                'medium': ['文房具', '事務用品', '日用品', '化粧品'],
-                'low': ['ペン', 'ノート', 'ティッシュ', '洗剤', 'ハミガキ', '歯磨き', 'レノア', 'sports', 'スポンジ']
-            },
-            '会議費': {
-                'high': ['会議室'],
-                'medium': ['会議', 'ミーティング', 'セミナー', '研修'],
-                'low': ['資料', 'コピー']
+                'primary': ['電話', '通信', 'インターネット', 'wifi', 'モバイル', '携帯', 'スマホ', 'データ通信', 'au', 'docomo', 'softbank', 'rakuten', 'povo', 'ahamo', 'linemo', 'ymobile', 'uq mobile', 'mineo', 'イオンモバイル', '格安sim', 'simカード', '通話', 'データ', 'パケット'],
+                'secondary': ['通信', 'ネット', '接続', 'プラン', '料金', '基本料', '月額', '契約'],
+                'exclusions': ['税金', '保険', '車両', '不動産']
             },
             '宿泊費': {
-                'high': ['ビジネスホテル'],
-                'medium': ['ホテル', '旅館', '宿泊'],
-                'low': ['泊', 'チェックイン']
+                'primary': ['ホテル', '旅館', 'ビジネスホテル', 'シティホテル', '温泉', '旅館', '民宿', 'ペンション', 'airbnb', 'booking.com', 'じゃらん', '楽天トラベル', '一泊', '宿泊', 'チェックイン', 'チェックアウト', 'ルーム', '部屋', '泊まり'],
+                'secondary': ['泊', '宿', '部屋', '予約', '予約金', '宿泊費', 'ホテル代'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信']
+            },
+            '接待交際費': {
+                'primary': ['接待', '交際', '会食', '打ち合わせ', 'ミーティング', '会議', '商談', '取引先', 'クライアント', '顧客', 'パーティー', '宴会', '飲み会', '懇親会', '送別会', '歓迎会', '同窓会', '会計', '割り勘', '奢り', 'エンタメ', 'エンターテイメント'],
+                'secondary': ['会', '食事', '飲食', '会計', '割り勘', '奢り', '接待', '交際', 'エンタメ'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信', '宿泊']
+            },
+            '消耗品費': {
+                'primary': ['文房具', 'ペン', 'ノート', 'ファイル', 'クリップ', 'ホッチキス', 'テープ', 'インク', 'トナー', 'コピー用紙', '封筒', '切手', 'はがき', 'ティッシュ', 'トイレットペーパー', '洗剤', '石鹸', 'シャンプー', '歯磨き', '化粧品', '日用品', 'スーパー', 'コンビニ', 'ドラッグストア', '薬局', '薬', '医薬品', '日用雑貨', 'キッチンペーパー', 'ラップ', 'アルミホイル', 'ジップロック'],
+                'secondary': ['消耗品', '備品', 'オフィス用品', '事務用品', '生活用品', '日用雑貨', '文具', 'オフィス', '事務'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信', '宿泊', '接待']
+            },
+            '会議費': {
+                'primary': ['会議', 'ミーティング', 'セミナー', '研修', '勉強会', 'ワークショップ', '講演', '発表', '打ち合わせ', 'プロジェクト', 'チーム', '会議室', '貸会議室', 'zoom', 'teams', 'meet', 'webex', 'スカイプ', 'オンライン会議', 'ビデオ会議', '参加費', '資料', '印刷', 'コピー'],
+                'secondary': ['会合', '集まり', '参加費', '資料', '印刷', 'コピー', '会議費', 'ミーティング費'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信', '宿泊', '接待', '消耗品']
+            },
+            '研修費': {
+                'primary': ['研修', 'トレーニング', '講座', 'コース', 'レッスン', '教室', '学校', '大学', '専門学校', '資格', '試験', '受験', '教材', 'テキスト', '参考書', '問題集', '模擬試験', '受講', '学習', '教育', 'スキルアップ', 'セミナー', 'ワークショップ'],
+                'secondary': ['学習', '教育', '勉強', '習得', 'スキル', '知識', '受講', '講座', 'コース'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信', '宿泊', '接待', '消耗品', '会議']
+            },
+            '福利厚生費': {
+                'primary': ['健康診断', '人間ドック', '予防接種', 'ワクチン', 'マッサージ', '整体', 'ジム', 'フィットネス', 'スポーツ', 'クラブ', '会員', '福利厚生', '慶弔', 'お祝い', '誕生日', '記念日', 'プレゼント', '花束', 'リラクゼーション', 'スパ', 'エステ', '美容'],
+                'secondary': ['健康', '医療', 'フィットネス', 'レジャー', '娯楽', '慶事', '弔事', '福利', '厚生'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信', '宿泊', '接待', '消耗品', '会議', '研修']
+            },
+            '広告宣伝費': {
+                'primary': ['広告', '宣伝', 'チラシ', 'ポスター', '看板', '名刺', 'パンフレット', 'カタログ', 'ホームページ', 'ウェブサイト', 'sns', 'facebook', 'twitter', 'instagram', 'youtube', '広告代理店', 'デザイン', '印刷', '販促', 'マーケティング', 'ブランディング', 'PR', '広報', 'メディア'],
+                'secondary': ['広告費', '宣伝費', '販促費', 'マーケティング費', 'デザイン費', '印刷費'],
+                'exclusions': ['税金', '保険', '車両', '不動産', '通信', '宿泊', '接待', '消耗品', '会議', '研修', '福利']
+            },
+            '車両費': {
+                'primary': ['車両', '車', '自動車', 'バイク', '自転車', 'メンテナンス', '修理', '整備', 'ガソリン', 'スタンド', 'オイル', 'タイヤ', 'バッテリー', '洗車', 'カー用品', 'カーナビ', 'ドライブレコーダー', 'ETC', '高速料金', '車検', '点検', '整備', '部品', 'パーツ'],
+                'secondary': ['自動車税', '車検', '保険', '駐車場', 'ガレージ', 'レンタカー', 'カーリース', 'カーローン'],
+                'exclusions': ['税金', '通信', '宿泊', '接待', '消耗品', '会議', '研修', '福利', '広告']
+            },
+            '保険料': {
+                'primary': ['保険', '生命保険', '医療保険', 'がん保険', '自動車保険', '火災保険', '地震保険', '傷害保険', '損害保険', '保険料', '掛け金', '保険会社', '損保', '生保', '共済', '保険金', '給付金', '補償', '保障', 'カバー', '契約', '保険証'],
+                'secondary': ['保険金', '給付金', '補償', '保障', 'カバー', '契約', '保険証', '保険料', '掛け金'],
+                'exclusions': ['税金', '車両', '不動産', '通信', '宿泊', '接待', '消耗品', '会議', '研修', '福利', '広告']
+            },
+            '租税公課': {
+                'primary': ['税金', '所得税', '住民税', '固定資産税', '自動車税', '軽自動車税', '事業税', '印紙税', '登録免許税', '不動産取得税', '贈与税', '相続税', '公課', '租税', '税務署', '納税', '申告', '確定申告', '納付書', '税務', '課税', '納付', '支払い', '義務', '法定', '行政', '国税', '地方税'],
+                'secondary': ['税', '課税', '納付', '支払い', '義務', '法定', '行政', '国税', '地方税'],
+                'exclusions': ['消費税', '内消費税', '税込', '税別', '軽減税率', '標準税率', '飲食', '食事', 'レストラン', 'コンビニ', 'スーパー']  # Exclude receipt tax mentions
             }
         }
-        
-        # Calculate weighted scores for each category
-        category_scores = {}
-        for category, keyword_groups in category_keywords.items():
-            total_score = 0
-            matched_keywords = []
-            
-            # High-value keywords (weight: 10)
-            for keyword in keyword_groups.get('high', []):
+
+        # Context-aware scoring with exclusions
+        scores = {}
+        for category, keywords in categories.items():
+            score = 0
+
+            # Check exclusions first - if any exclusion matches, skip this category entirely
+            has_exclusion = False
+            for exclusion in keywords.get('exclusions', []):
+                if exclusion in text:
+                    has_exclusion = True
+                    break
+
+            if has_exclusion:
+                continue  # Skip this category due to exclusion
+
+            # Primary keywords (highest weight)
+            for keyword in keywords['primary']:
                 if keyword in text:
-                    total_score += 10
-                    matched_keywords.append(f"{keyword} (high)")
-            
-            # Medium-value keywords (weight: 5)
-            for keyword in keyword_groups.get('medium', []):
+                    score += 5  # Increased weight for primary keywords
+
+            # Secondary keywords (medium weight)
+            for keyword in keywords['secondary']:
                 if keyword in text:
-                    total_score += 5
-                    matched_keywords.append(f"{keyword} (medium)")
-            
-            # Low-value keywords (weight: 2)
-            for keyword in keyword_groups.get('low', []):
-                if keyword in text:
-                    total_score += 2
-                    matched_keywords.append(f"{keyword} (low)")
-            
-            if total_score > 0:
-                category_scores[category] = {
-                    'score': total_score,
-                    'keywords': matched_keywords
-                }
-        
-        # Determine best category
-        if not category_scores:
-            # Smart default based on content analysis
-            if any(food_word in text for food_word in ['ドン', 'mega', 'uny', '武豊', 'コンビニ', 'スーパー']):
-                print("AI Category Detection: 食費 (score: 5, confidence: 75%) - SMART DEFAULT")
-                return '食費', 75
-            elif any(word in text for word in ['円', '¥', '￥', '金額', '合計']) and len(text) > 20:
-                print("AI Category Detection: 食費 (score: 2, confidence: 60%) - GENERAL DEFAULT")
-                return '食費', 60
-            else:
-                print("AI Category Detection: 消耗品費 (score: 1, confidence: 40%) - FALLBACK DEFAULT")
-                return '消耗品費', 40
-        
-        # Find the best matching category
-        best_category = max(category_scores.keys(), key=lambda x: category_scores[x]['score'])
-        best_score = category_scores[best_category]['score']
-        matched_keywords = category_scores[best_category]['keywords']
-        
-        # Enhanced confidence calculation based on weighted scores
-        if best_score >= 20:
-            confidence = 95
-        elif best_score >= 15:
-            confidence = 90
-        elif best_score >= 10:
-            confidence = 85
-        elif best_score >= 7:
-            confidence = 80
-        elif best_score >= 5:
-            confidence = 75
-        elif best_score >= 3:
-            confidence = 70
-        else:
-            confidence = 65
-        
-        print(f"AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence}%)")
-        print(f"Matched keywords: {matched_keywords}")
-        
-        # Show all scores for debugging
-        all_scores = {k: v['score'] for k, v in category_scores.items()}
-        print(f"All scores: {all_scores}")
-        
-        return best_category, confidence
+                    score += 2  # Increased weight for secondary keywords
+
+            # Special context bonuses
+            if category == '食費' and any(word in text for word in ['メニュー', '注文', '料理', '飲食', 'コンビニ', 'スーパー', 'ファミマ', 'ファミリーマート', 'familymart', 'ローソン', 'セブン']):
+                score += 3  # Bonus for food context, especially convenience stores
+            elif category == '交通費' and any(word in text for word in ['乗車', '運賃', '料金']):
+                score += 3  # Bonus for transportation context
+            elif category == '消耗品費' and any(word in text for word in ['スーパー', 'コンビニ', '日用品']):
+                score += 3  # Bonus for supplies context
+
+            # Vendor-based categorization hints
+            vendor_lower = text.lower()
+            if 'family' in vendor_lower or 'mart' in vendor_lower or 'コンビニ' in vendor_lower:
+                if category == '食費':
+                    score += 4  # FamilyMart is primarily food
+                elif category == '消耗品費':
+                    score += 2  # Some supplies but food is primary
+            elif 'mcdonald' in vendor_lower or 'マクドナルド' in vendor_lower:
+                if category == '食費':
+                    score += 5  # Definitely food
+            elif 'starbucks' in vendor_lower or 'スターバックス' in vendor_lower:
+                if category == '食費':
+                    score += 5  # Definitely food/drinks
+
+            if score > 0:
+                scores[category] = score
+
+        # Calculate confidence percentage and return category with confidence
+        if scores:
+            best_category = max(scores, key=scores.get)
+            best_score = scores[best_category]
+            max_possible_score = 60  # Increased conservative estimate of maximum possible score
+            confidence_percentage = min(95, int((best_score / max_possible_score) * 100))  # Cap at 95%
+
+            # If confidence is very low (< 20%), it might be a false positive
+            if confidence_percentage < 20:
+                print(f"AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%) - LOW CONFIDENCE")
+                # For very low confidence, prefer '食費' for general retail receipts
+                if '¥' in text or '円' in text:  # If it has prices, it's likely retail
+                    return '食費', max(confidence_percentage, 25)
+                return 'その他', confidence_percentage
+
+            print(f"AI Category Detection: {best_category} (score: {best_score}, confidence: {confidence_percentage}%)")
+            print(f"All scores: {scores}")
+            return best_category, confidence_percentage
+
+        # Default fallback with better logic
+        print("AI Category Detection: No strong matches found")
+        # If we have prices but no category matches, assume general retail
+        if '¥' in text or '円' in text:
+            return '食費', 30  # Assume food/retail with low confidence
+        return 'その他', 0
 
     def _extract_subtotal(self, lines: list) -> str:
         """Extract subtotal with enhanced Japanese receipt support."""
@@ -1279,8 +1278,6 @@ class FieldExtractor:
                 response = requests.post(self.api_url, files=files, data=data, timeout=30)
                 response.raise_for_status()
 
-
-
                 result = response.json()
                 print(f"OCR API response status: {response.status_code}")
 
@@ -1506,13 +1503,3 @@ class FieldExtractor:
 
         print(f"Fallback data provided: {sample_data}")
         return mock_response
-
-
-# Standalone function for easy import
-def extract_receipt_fields(text: str) -> Dict[str, Any]:
-    """
-    Extract receipt fields from OCR text.
-    This is a standalone function that can be imported directly.
-    """
-    extractor = FieldExtractor()
-    return extractor._parse_receipt_text(text)

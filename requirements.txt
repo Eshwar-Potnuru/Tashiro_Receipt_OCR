@@ -10,18 +10,21 @@ aiofiles==23.2.1
 
 # OCR and image processing (lightweight)
 pytesseract==0.3.10
-opencv-python==4.6.0.66
+opencv-python==4.8.1.78
 pillow==10.1.0
 requests==2.31.0
 
 # Data processing and Excel export
 pandas==2.1.3
 openpyxl==3.1.2
-numpy==1.24.3
+numpy==1.26.2
 
 # Configuration
 python-dotenv==1.0.0
 pydantic==2.5.0
+
+# OpenAI integration (compatible version)
+openai==0.28.1
 
 # Optional: EasyOCR (can be heavy, comment out if needed)
 # easyocr==1.7.1
@@ -31,8 +34,8 @@ pydantic==2.5.0
 # torchvision==0.16.0
 
 # Optional: PaddleOCR (recommended for container deployment - free and good accuracy)
-paddlepaddle==2.6.1
-paddleocr==2.8.1
+# paddlepaddle==2.6.1
+# paddleocr==2.8.1
 
 # Testing and development (optional for production)
 # pytest==7.4.3

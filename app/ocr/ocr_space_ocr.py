@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
@@ -14,10 +14,17 @@ from PIL import Image
 import io
 import base64
 import os
-
-from .ocr_engine import OCRBox
+from dataclasses import dataclass
 
 logger = logging.getLogger(__name__)
+
+# Simple OCRBox implementation (independent of ocr_engine.py)
+@dataclass
+class OCRBox:
+    """Simple OCRBox implementation for OCR.space results"""
+    text: str
+    confidence: float
+    bbox: tuple
 
 class OCRSpaceOCR:
     """
@@ -38,6 +45,10 @@ class OCRSpaceOCR:
         if not self.api_key:
             logger.warning("⚠️ OCR.space API key not found. Set OCR_SPACE_API_KEY environment variable.")
             logger.info("💡 Get your free API key at: https://ocr.space/ocrapi")
+
+    def is_available(self) -> bool:
+        """Check if OCR.space API is available (has valid API key)"""
+        return bool(self.api_key)
 
     def _compress_for_api(self, image: Image.Image, max_size_kb: int = 900) -> Image.Image:
         """
@@ -240,16 +251,14 @@ class OCRSpaceOCR:
     def extract(self, image: Image.Image) -> Tuple[str, List[OCRBox]]:
         """
         Extract text from image (compatible with existing OCR interface)
-        Includes advanced preprocessing for better OCR quality
+        Includes basic preprocessing for better OCR quality
 
         Returns:
             Tuple of (raw_text, ocr_boxes)
         """
-        # Apply OCR.space-optimized preprocessing
-        from .preprocess import preprocess_for_ocr_space
-        
+        # Use the built-in preprocessing instead of importing
         logger.info("🔄 Preprocessing image for OCR.space...")
-        preprocessed_image = preprocess_for_ocr_space(image)
+        preprocessed_image = self._compress_for_api(image)
         logger.info("✅ Preprocessing complete")
         
         raw_text, annotations = self.extract_text(preprocessed_image)

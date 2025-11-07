@@ -8,6 +8,7 @@ Integrates the Tashiro expense categorization engine with the existing pipeline
 
 from typing import Dict, Any, List, Optional
 import logging
+import json
 
 from app.categorization.expense_engine import (
     ExpenseCategorizationEngine, 
@@ -251,3 +252,40 @@ def add_tashiro_categorization(result_dict: Dict[str, Any], raw_text: str,
     except Exception as e:
         logger.exception(f"Failed to add Tashiro categorization: {e}")
         return result_dict
+
+
+def normalize_result(engine: str, result: dict) -> dict:
+    """
+    Normalize different OCR engine outputs into a common schema:
+    {
+      "engine": "<engine>",
+      "status": "ok"|"error",
+      "text": "<full_text>",
+      "regions": [{"text": "...", "box":[x1,y1,x2,y2], "confidence": 0.9}, ...],
+      "meta": {...}
+    }
+    """
+    if not isinstance(result, dict):
+        return {"engine": engine, "status": "error", "text": "", "regions": [], "meta": {"raw": result}}
+
+    try:
+        if engine == "google_vision":
+            # accept either our structured object or raw Vision response
+            text = result.get("text") or result.get("full_text_annotation", {}).get("text", "") or ""
+            regions = result.get("regions") or []
+            return {"engine": "google_vision", "status": "ok", "text": text, "regions": regions, "meta": result.get("meta", {})}
+        if engine == "openai":
+            text = result.get("text") or ""
+            regions = []
+            return {"engine": "openai", "status": "ok", "text": text, "regions": regions, "meta": result.get("meta", {})}
+        if engine == "ocr_space":
+            parsed = result.get("ParsedResults")
+            text = ""
+            regions = []
+            if parsed and len(parsed) > 0:
+                text = parsed[0].get("ParsedText", "")
+                # Some OCR.space returns word-level; keep meta
+            return {"engine": "ocr_space", "status": "ok", "text": text, "regions": regions, "meta": result}
+    except Exception as e:
+        return {"engine": engine, "status": "error", "text": "", "regions": [], "meta": {"error": str(e), "raw": result}}
+    return {"engine": engine, "status": "unknown", "text": json.dumps(result, ensure_ascii=False), "regions": [], "meta": {}}

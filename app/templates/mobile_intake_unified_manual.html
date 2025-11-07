@@ -1161,7 +1161,7 @@
                     </ul>
                 </div>
                 
-                <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
             </div>
 
             <!-- OCR Review Card -->
@@ -2483,6 +2483,25 @@ function updateFieldLabels() {
 
         // Handle file upload
         function handleFileUpload(file) {
+            // Debug file information
+            console.log('File upload debug:', {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified
+            });
+            
+            // Validate file
+            if (!file || file.size === 0) {
+                showToast('Error: No file selected or file is empty', 'error');
+                return;
+            }
+            
+            if (file.size < 100) {
+                showToast('Error: File too small (' + file.size + ' bytes). Please select a valid image.', 'error');
+                return;
+            }
+            
             showToast(t('processingReceipt'), 'info');
             
             // Create a preview of the image
@@ -2503,8 +2522,14 @@ function updateFieldLabels() {
                 method: 'POST',
                 body: formData
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
             .then(data => {
+                console.log('OCR API response:', data);
                 if (data.fields) {
                     // Populate fields with extracted data
                     document.getElementById('fieldDate').value = data.fields.date || '';
