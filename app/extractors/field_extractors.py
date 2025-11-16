@@ -6,6 +6,7 @@ from typing import Dict, Any
 from datetime import datetime
 from PIL import Image, ImageEnhance, ImageFilter
 import io
+from pathlib import Path
 
 # Load environment variables from .env file at module level
 try:
@@ -98,6 +99,8 @@ class FieldExtractor:
                 self.enhanced_extractor = None
         else:
             self.enhanced_extractor = None
+
+        self.vendor_category_hints = self._load_vendor_category_hints()
 
     def extract_fields(self, image_data: bytes, filename: str) -> Dict[str, Any]:
         """Extract structured data from receipt image using multi-engine OCR system."""
@@ -913,6 +916,25 @@ class FieldExtractor:
 
         return '課税'  # Default
 
+    def _load_vendor_category_hints(self) -> Dict[str, str]:
+        config_path = Path(__file__).resolve().parents[2] / 'config' / 'vendor_overrides.json'
+        hints: Dict[str, str] = {}
+        if not config_path.exists():
+            return hints
+        try:
+            with open(config_path, 'r', encoding='utf-8') as handle:
+                data = json.load(handle)
+                for entry in data:
+                    category = entry.get('default_account_title')
+                    if not category:
+                        continue
+                    aliases = entry.get('aliases', [])
+                    for alias in aliases:
+                        hints[alias.lower()] = category
+        except Exception as exc:
+            print(f"Failed to load vendor category hints: {exc}")
+        return hints
+
     def _categorize_expense(self, lines: list) -> tuple[str, int]:
         """AI-based categorization of expenses based on receipt content.
         Returns: (category, confidence_percentage)"""
@@ -956,6 +978,13 @@ class FieldExtractor:
                 'low': ['泊', 'チェックイン']
             }
         }
+
+        negative_keywords = {
+            '食費': ['ホテル', '旅館', 'ガソリン', '切符'],
+            '交通費': ['レストラン', 'カフェ'],
+            '通信費': ['レストラン'],
+            '宿泊費': ['スーパー']
+        }
         
         # Calculate weighted scores for each category
         category_scores = {}
@@ -986,6 +1015,25 @@ class FieldExtractor:
                     'score': total_score,
                     'keywords': matched_keywords
                 }
+
+        # Vendor hints provide immediate boosts
+        for alias, hint_category in self.vendor_category_hints.items():
+            if alias in text:
+                entry = category_scores.setdefault(hint_category, {'score': 0, 'keywords': []})
+                entry['score'] += 12
+                entry['keywords'].append(f"{alias} (vendor_hint)")
+
+        # Apply negative keyword penalties
+        for category, penalties in negative_keywords.items():
+            if category not in category_scores:
+                continue
+            penalty = sum(3 for word in penalties if word in text)
+            if penalty:
+                category_scores[category]['score'] -= penalty
+                category_scores[category]['keywords'].append(f"penalty:-{penalty}")
+
+        # Remove categories that fell below zero after penalties
+        category_scores = {k: v for k, v in category_scores.items() if v['score'] > 0}
         
         # Determine best category
         if not category_scores:

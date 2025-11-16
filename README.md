@@ -9,8 +9,11 @@ Professional receipt processing system for field operations with AI-powered OCR 
 # Install dependencies
 pip install -r requirements.txt
 
-# Run the application
-python run.py
+# Run the application (no auto-reload)
+python server.py
+
+# Run with auto-reload for local dev
+python server.py --reload
 ```
 
 Access the application at:
@@ -89,6 +92,18 @@ receipt-ocr/
 - Dependencies properly configured
 - Environment variables set
 - HTTPS-ready for camera functionality
+
+## ✅ Testing & Diagnostics
+
+```bash
+# Run the lightweight unit tests
+pytest tests/test_image_processing.py tests/test_submission_history.py
+
+# Exercise the live OCR pipeline (requires server running)
+python scripts/manual_async_probe.py "Sample reciepts/sample1.jpg" --mode async
+```
+
+The manual probe uploads a receipt to `/api/mobile/analyze`, polls `/api/mobile/analyze/status/{queue_id}`, and prints the resulting JSON. Use it to validate async queueing, caching, and vendor normalization end-to-end.
 
 ## 📞 Support
 

@@ -3,10 +3,13 @@ Enhanced Field Extractor with Document AI Support
 Combines Document AI structured extraction with pattern-based fallback
 """
 
+import json
 import logging
 import re
-from typing import Dict, Optional, Any, List
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
 from app.extractors.field_extractors import FieldExtractor
 
 logger = logging.getLogger(__name__)
@@ -18,6 +21,8 @@ class EnhancedFieldExtractor:
         # Initialize base field extractor for fallback
         self.base_extractor = FieldExtractor()
         logger.info("Enhanced field extractor with Document AI support initialized")
+        self.vendor_overrides = self._load_vendor_overrides()
+        self.vendor_lookup = self._build_vendor_lookup(self.vendor_overrides)
     
     def extract_fields_with_document_ai(self, structured_data: Dict[str, Any], raw_text: str = None) -> Dict[str, Any]:
         """
@@ -46,13 +51,16 @@ class EnhancedFieldExtractor:
             'currency': 'JPY'
         }
         
+        field_confidence: Dict[str, Dict[str, Any]] = {}
+
         # Use Document AI entities first
         entities = structured_data.get('entities', {})
         confidence_scores = structured_data.get('confidence_scores', {})
-        
+
         # Extract fields from Document AI
-        doc_ai_fields = self._extract_from_document_ai(entities, confidence_scores)
+        doc_ai_fields, doc_ai_confidence = self._extract_from_document_ai(entities, confidence_scores)
         result.update(doc_ai_fields)
+        field_confidence.update(doc_ai_confidence)
         
         # Calculate overall confidence from Document AI
         if confidence_scores:
@@ -68,26 +76,53 @@ class EnhancedFieldExtractor:
             for key, value in pattern_fields.items():
                 if not result.get(key) and value:
                     result[key] = value
+                    field_confidence[key] = {
+                        'source': 'pattern_fallback',
+                        'confidence': 0.45
+                    }
                     logger.info(f"Used pattern fallback for {key}: {value}")
         
         # Enhanced total extraction with multiple strategies
         if not result.get('total') or result['total'] in ['', '0']:
-            result['total'] = self._extract_total_enhanced(structured_data, raw_text)
+            total_value, total_source = self._extract_total_enhanced(structured_data, raw_text)
+            if total_value:
+                result['total'] = total_value
+                field_confidence['total'] = {
+                    'source': total_source,
+                    'confidence': 0.65 if 'document_ai' in total_source else 0.5
+                }
         
         # Enhanced vendor extraction
         if not result.get('vendor'):
-            result['vendor'] = self._extract_vendor_enhanced(structured_data, raw_text)
+            vendor_value, vendor_source = self._extract_vendor_enhanced(structured_data, raw_text)
+            if vendor_value:
+                result['vendor'] = vendor_value
+                field_confidence['vendor'] = {
+                    'source': vendor_source,
+                    'confidence': 0.6
+                }
         
         # Enhanced date extraction
         if not result.get('date'):
-            result['date'] = self._extract_date_enhanced(structured_data, raw_text)
+            date_value, date_source = self._extract_date_enhanced(structured_data, raw_text)
+            if date_value:
+                result['date'] = date_value
+                field_confidence['date'] = {
+                    'source': date_source,
+                    'confidence': 0.6
+                }
+
+        self._apply_vendor_overrides(result, field_confidence)
+
+        result['field_confidence'] = field_confidence
         
         logger.info(f"Final extracted fields: {result}")
         return result
     
-    def _extract_from_document_ai(self, entities: Dict[str, Any], confidence_scores: Dict[str, float]) -> Dict[str, Any]:
+    def _extract_from_document_ai(self, entities: Dict[str, Any], confidence_scores: Dict[str, float]) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
         """Extract fields from Document AI entities"""
         result = {}
+        confidence_details: Dict[str, Dict[str, Any]] = {}
         
         # Map Document AI entity types to our field names
         entity_mapping = {
@@ -120,9 +155,13 @@ class EnhancedFieldExtractor:
                 cleaned_value = self._clean_field_value(field_name, text_value)
                 if cleaned_value:
                     result[field_name] = cleaned_value
+                    confidence_details[field_name] = {
+                        'source': 'document_ai',
+                        'confidence': confidence_scores.get(entity_type, 0.8)
+                    }
                     logger.info(f"Document AI extracted {field_name}: {cleaned_value}")
         
-        return result
+        return result, confidence_details
     
     def _clean_field_value(self, field_name: str, value: str) -> str:
         """Clean and format field values"""
@@ -186,7 +225,7 @@ class EnhancedFieldExtractor:
         
         return date_str.strip()
     
-    def _extract_total_enhanced(self, structured_data: Dict[str, Any], raw_text: str = None) -> str:
+    def _extract_total_enhanced(self, structured_data: Dict[str, Any], raw_text: str = None) -> Tuple[str, str]:
         """Enhanced total extraction with multiple strategies"""
         
         # Strategy 1: Document AI totals
@@ -195,7 +234,7 @@ class EnhancedFieldExtractor:
             amount = self._clean_amount(str(totals['total']))
             if amount and amount != '0':
                 logger.info(f"Found total from Document AI totals: {amount}")
-                return amount
+                return amount, 'document_ai_totals'
         
         # Strategy 2: Look for highest confidence total in entities
         entities = structured_data.get('entities', {})
@@ -214,7 +253,7 @@ class EnhancedFieldExtractor:
             # Sort by confidence and take the best
             best_total = max(total_candidates, key=lambda x: x[1])
             logger.info(f"Found total from Document AI entities: {best_total[0]} (confidence: {best_total[1]})")
-            return best_total[0]
+            return best_total[0], 'document_ai_entities'
         
         # Strategy 2: Pattern-based fallback
         if raw_text:
@@ -243,12 +282,12 @@ class EnhancedFieldExtractor:
                     if amounts:
                         best_total = str(max(amounts))
                         logger.info(f"Found total from pattern matching: {best_total}")
-                        return best_total
+                        return best_total, 'pattern_total'
         
         logger.warning("No total found with any strategy")
-        return ''
+        return '', ''
     
-    def _extract_vendor_enhanced(self, structured_data: Dict[str, Any], raw_text: str = None) -> str:
+    def _extract_vendor_enhanced(self, structured_data: Dict[str, Any], raw_text: str = None) -> Tuple[str, str]:
         """Enhanced vendor extraction"""
         
         # Strategy 1: Document AI entities
@@ -261,7 +300,7 @@ class EnhancedFieldExtractor:
                 vendor = entity.get('text', '') if isinstance(entity, dict) else str(entity)
                 if vendor and vendor.strip():
                     logger.info(f"Found vendor from Document AI: {vendor}")
-                    return vendor.strip()
+                    return vendor.strip(), 'document_ai_vendor'
         
         # Strategy 2: Pattern-based fallback
         if raw_text:
@@ -281,11 +320,11 @@ class EnhancedFieldExtractor:
                     vendor = match.group(1).strip()
                     if vendor and len(vendor) > 1:
                         logger.info(f"Found vendor from pattern matching: {vendor}")
-                        return vendor
+                        return vendor, 'pattern_vendor'
         
-        return ''
+        return '', ''
     
-    def _extract_date_enhanced(self, structured_data: Dict[str, Any], raw_text: str = None) -> str:
+    def _extract_date_enhanced(self, structured_data: Dict[str, Any], raw_text: str = None) -> Tuple[str, str]:
         """Enhanced date extraction"""
         
         # Strategy 1: Document AI entities
@@ -300,7 +339,7 @@ class EnhancedFieldExtractor:
                     formatted_date = self._format_date(date_str)
                     if formatted_date:
                         logger.info(f"Found date from Document AI: {formatted_date}")
-                        return formatted_date
+                        return formatted_date, 'document_ai_date'
         
         # Strategy 2: Pattern-based fallback
         if raw_text:
@@ -322,8 +361,64 @@ class EnhancedFieldExtractor:
                         
                         formatted_date = f"{year}-{month.zfill(2)}-{day.zfill(2)}"
                         logger.info(f"Found date from pattern matching: {formatted_date}")
-                        return formatted_date
+                        return formatted_date, 'pattern_date'
                     except:
                         continue
         
-        return ''
+        return '', ''
+
+    def _load_vendor_overrides(self) -> List[Dict[str, Any]]:
+        config_path = Path(__file__).resolve().parents[2] / 'config' / 'vendor_overrides.json'
+        if not config_path.exists():
+            return []
+        try:
+            with open(config_path, 'r', encoding='utf-8') as handle:
+                return json.load(handle)
+        except Exception as exc:
+            logger.warning(f"Failed to load vendor overrides: {exc}")
+            return []
+
+    def _build_vendor_lookup(self, overrides: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+        lookup: Dict[str, Dict[str, Any]] = {}
+        for entry in overrides:
+            aliases = entry.get('aliases', [])
+            canonical = entry.get('canonical_name')
+            for alias in aliases:
+                key = self._normalize_vendor_key(alias)
+                if key:
+                    lookup[key] = {
+                        'canonical_name': canonical,
+                        'default_account_title': entry.get('default_account_title')
+                    }
+        return lookup
+
+    def _normalize_vendor_key(self, vendor_name: Optional[str]) -> Optional[str]:
+        if not vendor_name:
+            return None
+        normalized = vendor_name.replace(' ', '').replace('-', '').lower()
+        return normalized
+
+    def _apply_vendor_overrides(self, result: Dict[str, Any], field_confidence: Dict[str, Dict[str, Any]]):
+        vendor = result.get('vendor')
+        key = self._normalize_vendor_key(vendor)
+        if not key:
+            return
+        override = self.vendor_lookup.get(key)
+        if not override:
+            return
+
+        canonical_name = override.get('canonical_name')
+        if canonical_name:
+            result['vendor'] = canonical_name
+            field_confidence['vendor'] = {
+                'source': 'vendor_override',
+                'confidence': 0.8
+            }
+
+        default_account = override.get('default_account_title')
+        if default_account and not result.get('account_title'):
+            result['account_title'] = default_account
+            field_confidence['account_title'] = {
+                'source': 'vendor_override',
+                'confidence': 0.7
+            }

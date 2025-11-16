@@ -529,6 +529,70 @@
             margin-bottom: 4px;
         }
 
+        /* Global loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1100;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-card {
+            background: white;
+            padding: 24px 32px;
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+            width: min(90%, 360px);
+        }
+
+        .loading-spinner {
+            width: 64px;
+            height: 64px;
+            border: 6px solid var(--light-gray);
+            border-top-color: var(--primary-blue);
+            border-radius: 50%;
+            margin: 0 auto 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-message {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .loading-subtext {
+            font-size: 14px;
+            color: var(--dark-gray);
+        }
+
+        .loading-steps {
+            margin-top: 16px;
+            text-align: left;
+            font-size: 13px;
+            color: var(--dark-gray);
+        }
+
+        .loading-steps li {
+            margin-bottom: 6px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         .field-mapping-header p {
             font-size: 14px;
             opacity: 0.9;
@@ -989,6 +1053,20 @@
                     <i class="fas fa-rocket"></i> Launch OCR System
                 </button>
             </form>
+        </div>
+    </div>
+
+    <!-- Global Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" aria-live="polite">
+        <div class="loading-card">
+            <div class="loading-spinner" role="status" aria-label="Processing receipt"></div>
+            <div class="loading-message" id="loadingMessage">Processing receipt…</div>
+            <div class="loading-subtext" id="loadingSubtext">Running OCR engines…</div>
+            <ul class="loading-steps">
+                <li id="loadingStepUpload">1. Uploading image…</li>
+                <li id="loadingStepQueue">2. Waiting for OCR engines…</li>
+                <li id="loadingStepExtraction">3. Extracting fields…</li>
+            </ul>
         </div>
     </div>
 
@@ -2062,11 +2140,20 @@ function updateFieldLabels() {
         const cancelSettings = document.getElementById('cancelSettings');
         const ocrDebugPanel = document.getElementById('ocrDebugPanel');
         const ocrDebugContent = document.getElementById('ocrDebugContent');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loadingMessage = document.getElementById('loadingMessage');
+        const loadingSubtext = document.getElementById('loadingSubtext');
+        const loadingStepUpload = document.getElementById('loadingStepUpload');
+        const loadingStepQueue = document.getElementById('loadingStepQueue');
+        const loadingStepExtraction = document.getElementById('loadingStepExtraction');
 
         // Global variables
         let currentQueueId = null;
         let accountClassifications = []; // Store loaded account classifications
         const LATEST_ANALYSIS_KEY = 'tashiro_latest_analysis_v1';
+        let pollTimeoutHandle = null;
+        const POLL_INTERVAL_MS = 3000;
+        const MAX_POLL_ATTEMPTS = 40;
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2183,6 +2270,40 @@ function updateFieldLabels() {
             showToast(t('settingsSaved'), 'success');
         });
 
+        function updateLoadingSteps(activeStep) {
+            const steps = [loadingStepUpload, loadingStepQueue, loadingStepExtraction];
+            steps.forEach((step, index) => {
+                if (!step) return;
+                if (index <= activeStep) {
+                    step.style.fontWeight = '700';
+                    step.style.color = 'var(--primary-blue)';
+                } else {
+                    step.style.fontWeight = '400';
+                    step.style.color = 'var(--dark-gray)';
+                }
+            });
+        }
+
+        function showLoadingOverlay({ message, subtext, stepIndex }) {
+            if (!loadingOverlay) {
+                return;
+            }
+            loadingOverlay.classList.add('active');
+            if (loadingMessage && message) {
+                loadingMessage.textContent = message;
+            }
+            if (loadingSubtext && subtext) {
+                loadingSubtext.textContent = subtext;
+            }
+            updateLoadingSteps(stepIndex ?? 0);
+        }
+
+        function hideLoadingOverlay() {
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('active');
+            }
+        }
+
         profileForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
@@ -2261,8 +2382,80 @@ function updateFieldLabels() {
             }
         });
 
+        function resetPollingTimer() {
+            if (pollTimeoutHandle) {
+                clearTimeout(pollTimeoutHandle);
+                pollTimeoutHandle = null;
+            }
+        }
+
+        function handleQueuedAnalysis(queueId) {
+            currentQueueId = queueId;
+            showToast('Receipt added to OCR queue. Monitoring progress…', 'info');
+            showLoadingOverlay({
+                message: 'OCR in progress…',
+                subtext: 'Both Google Vision and OpenAI engines are working.',
+                stepIndex: 1
+            });
+            pollAnalysisStatus(queueId, 0);
+        }
+
+        function pollAnalysisStatus(queueId, attempt = 0) {
+            if (!queueId) {
+                return;
+            }
+            if (attempt > MAX_POLL_ATTEMPTS) {
+                resetPollingTimer();
+                showToast('OCR analysis timed out. Please try again.', 'error');
+                return;
+            }
+
+            const fetchStatus = () => {
+                fetch(`/api/mobile/analyze/status/${queueId}`)
+                    .then(resp => {
+                        if (!resp.ok) {
+                            throw new Error('Status endpoint failed');
+                        }
+                        return resp.json();
+                    })
+                    .then(statusPayload => {
+                        const status = statusPayload.status;
+                        if (status === 'completed' && statusPayload.fields) {
+                            resetPollingTimer();
+                            applyOcrResultsToForm(statusPayload.fields);
+                            reviewDataBtn.disabled = false;
+                            showResultsTable();
+                            showToast(t('receiptAnalyzed'), 'success');
+                            showLoadingOverlay({
+                                message: 'Extracting fields…',
+                                subtext: 'Applying enhanced field extractor.',
+                                stepIndex: 2
+                            });
+                            hideLoadingOverlay();
+                        } else if (status === 'failed') {
+                            resetPollingTimer();
+                            showToast('OCR job failed. Please retry.', 'error');
+                            hideLoadingOverlay();
+                        } else {
+                            pollAnalysisStatus(queueId, attempt + 1);
+                        }
+                    })
+                    .catch(err => {
+                        console.warn('Status polling error', err);
+                        pollAnalysisStatus(queueId, attempt + 1);
+                    });
+            };
+
+            if (attempt === 0) {
+                fetchStatus();
+            } else {
+                pollTimeoutHandle = setTimeout(fetchStatus, POLL_INTERVAL_MS);
+            }
+        }
+
         // Handle file upload
         function handleFileUpload(file) {
+            resetPollingTimer();
             // Debug file information
             console.log('File upload debug:', {
                 name: file.name,
@@ -2283,6 +2476,11 @@ function updateFieldLabels() {
             }
             
             showToast(t('processingReceipt'), 'info');
+            showLoadingOverlay({
+                message: t('processingReceipt') || 'Processing receipt…',
+                subtext: 'Optimizing image and preparing upload…',
+                stepIndex: 0
+            });
             
             // Create a preview of the image
             const reader = new FileReader();
@@ -2296,6 +2494,7 @@ function updateFieldLabels() {
             // Prepare form data for API call
             const formData = new FormData();
             formData.append('file', file);
+            formData.append('processing_mode', 'async');
             
             // Call OCR API
             fetch('/api/mobile/analyze', {
@@ -2310,19 +2509,39 @@ function updateFieldLabels() {
             })
             .then(data => {
                 console.log('OCR API response:', data);
+                if (data.status === 'queued') {
+                    showLoadingOverlay({
+                        message: 'Running OCR engines…',
+                        subtext: 'We will notify you when it is ready.',
+                        stepIndex: 1
+                    });
+                    handleQueuedAnalysis(data.queue_id);
+                    return;
+                }
+                if (data.status === 'completed' && data.fields) {
+                    currentQueueId = data.queue_id;
+                    applyOcrResultsToForm(data.fields);
+                    reviewDataBtn.disabled = false;
+                    showResultsTable();
+                    showToast(t('receiptAnalyzed'), 'success');
+                    hideLoadingOverlay();
+                    return;
+                }
                 if (data.fields) {
                     currentQueueId = data.queue_id;
                     applyOcrResultsToForm(data.fields);
                     reviewDataBtn.disabled = false;
                     showResultsTable();
                     showToast(t('receiptAnalyzed'), 'success');
-                } else {
-                    throw new Error('No fields extracted');
+                    hideLoadingOverlay();
+                    return;
                 }
+                throw new Error('No fields extracted');
             })
             .catch(error => {
                 console.error('OCR Error:', error);
                 showToast(t('failedToAnalyze'), 'error');
+                hideLoadingOverlay();
                 
                 // Fallback to sample data for testing
                 document.getElementById('fieldDate').value = '2025-07-02';

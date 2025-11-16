@@ -58,6 +58,10 @@ class MultiEngineOCR:
         # Engine toggles / configuration
         self.document_ai_enabled = os.getenv('DOCUMENT_AI_ENABLED', 'false').lower() == 'true'
 
+        # Shared executor for parallel OCR calls
+        max_workers = int(os.getenv('OCR_PARALLELISM', '4'))
+        self.parallel_executor = ThreadPoolExecutor(max_workers=max_workers)
+
         # Initialize engines
         self.document_ai = None
         self.google_vision = None
@@ -253,24 +257,23 @@ class MultiEngineOCR:
         texts: Dict[str, str] = {}
         attempted: List[str] = []
 
-        with ThreadPoolExecutor(max_workers=len(engines)) as executor:
-            future_map = {}
-            for engine_name, engine_func in engines:
-                attempted.append(engine_name)
-                future = executor.submit(engine_func, image_data)
-                future_map[future] = engine_name
+        future_map = {}
+        for engine_name, engine_func in engines:
+            attempted.append(engine_name)
+            future = self.parallel_executor.submit(engine_func, image_data)
+            future_map[future] = engine_name
 
-            for future in as_completed(future_map):
-                engine_name = future_map[future]
-                try:
-                    engine_text = future.result()
-                    if engine_text and len(engine_text.strip()) > 10:
-                        texts[engine_name] = engine_text
-                        logger.info(f"{engine_name} produced raw text length {len(engine_text)}")
-                    else:
-                        logger.info(f"{engine_name} returned insufficient text")
-                except Exception as exc:
-                    logger.error(f"{engine_name} failed: {exc}")
+        for future in as_completed(future_map):
+            engine_name = future_map[future]
+            try:
+                engine_text = future.result()
+                if engine_text and len(engine_text.strip()) > 10:
+                    texts[engine_name] = engine_text
+                    logger.info(f"{engine_name} produced raw text length {len(engine_text)}")
+                else:
+                    logger.info(f"{engine_name} returned insufficient text")
+            except Exception as exc:
+                logger.error(f"{engine_name} failed: {exc}")
 
         return texts, attempted
 

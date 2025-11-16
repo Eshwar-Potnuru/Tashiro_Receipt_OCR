@@ -1,0 +1,27 @@
+[
+  {
+    "aliases": ["セブンイレブン", "セブン-イレブン", "7-eleven", "7/11"],
+    "canonical_name": "セブン-イレブン",
+    "default_account_title": "食費"
+  },
+  {
+    "aliases": ["ローソン", "lawson"],
+    "canonical_name": "ローソン",
+    "default_account_title": "食費"
+  },
+  {
+    "aliases": ["ファミリーマート", "ファミマ", "familymart"],
+    "canonical_name": "ファミリーマート",
+    "default_account_title": "食費"
+  },
+  {
+    "aliases": ["セブン", "seven"],
+    "canonical_name": "セブン-イレブン",
+    "default_account_title": "食費"
+  },
+  {
+    "aliases": ["ドン・キホーテ", "ドンキ", "don quijote"],
+    "canonical_name": "ドン・キホーテ",
+    "default_account_title": "消耗品費"
+  }
+]

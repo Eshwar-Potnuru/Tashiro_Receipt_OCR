@@ -1,4 +1,5 @@
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request
+import time
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request, BackgroundTasks
 from fastapi.responses import JSONResponse
 from typing import Optional, Dict, Any
 import os
@@ -7,6 +8,8 @@ from pathlib import Path
 import base64
 from PIL import Image
 import io
+
+from app.utils.image_processing import optimize_image_for_ocr
 
 from app.extractors.enhanced_field_extractor import EnhancedFieldExtractor
 from app.ocr.multi_engine_ocr import MultiEngineOCR
@@ -61,14 +64,70 @@ except Exception as e:
     print(f"SubmissionHistory initialization failed: {e}")
     submission_history = None
 
+def _process_analysis_job(queue_id: str, image_bytes: bytes, metadata: Optional[str], payload_hash: Optional[str],
+                          source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any]):
+    try:
+        submission_history.mark_analysis_processing(queue_id)
+        analysis_data, timings = _run_analysis_pipeline(
+            queue_id,
+            image_bytes,
+            metadata,
+            payload_hash,
+            source_image_b64,
+            thumbnail_b64,
+            preprocess_stats
+        )
+        submission_history.store_analysis(queue_id, analysis_data, metadata, payload_hash, timings)
+    except Exception as exc:
+        submission_history.mark_analysis_failed(queue_id, str(exc))
+
+
+def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional[str], payload_hash: Optional[str],
+                           source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any]):
+    timings: Dict[str, Any] = {'preprocess': preprocess_stats}
+
+    stage_start = time.perf_counter()
+    ocr_result = multi_engine_ocr.extract_structured(image_bytes)
+    timings['ocr'] = round(time.perf_counter() - stage_start, 3)
+
+    if not ocr_result.get('success'):
+        raise RuntimeError("OCR extraction failed")
+
+    raw_text = ocr_result.get('raw_text', '')
+    engine_used = ocr_result.get('engine_used', 'unknown')
+    structured_data = ocr_result.get('structured_data', {})
+
+    stage_start = time.perf_counter()
+    extracted_data = enhanced_extractor.extract_fields_with_document_ai(
+        structured_data=structured_data,
+        raw_text=raw_text
+    )
+    timings['field_extractor'] = round(time.perf_counter() - stage_start, 3)
+
+    extracted_data['ocr_engine'] = engine_used
+    extracted_data['source_image'] = source_image_b64
+    extracted_data['thumbnail'] = thumbnail_b64
+    extracted_data.setdefault('diagnostics', {})
+    extracted_data['diagnostics'].update({
+        'queue_id': queue_id,
+        'engines_attempted': ocr_result.get('engines_attempted', []),
+        'payload_hash': payload_hash,
+        'timings': timings
+    })
+
+    return extracted_data, timings
+
+
 @router.post("/mobile/analyze")
 async def analyze_receipt(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    metadata: Optional[str] = Form(None)
+    metadata: Optional[str] = Form(None),
+    processing_mode: str = Form('sync')
 ):
     """Analyze a receipt image and extract structured data using Document AI + enhanced extraction."""
     try:
-        if multi_engine_ocr is None or enhanced_extractor is None:
+        if multi_engine_ocr is None or enhanced_extractor is None or submission_history is None:
             raise HTTPException(status_code=500, detail="OCR service not available")
 
         # Generate unique queue ID
@@ -115,63 +174,78 @@ async def analyze_receipt(
         # Generate thumbnail for history
         thumbnail_b64 = None
         try:
-            # Reopen image with PIL for thumbnail generation
             image = Image.open(io.BytesIO(file_content))
-
-            # Convert to RGB if necessary (handles RGBA, P, etc.)
             if image.mode not in ('RGB', 'L'):
                 image = image.convert('RGB')
-
-            # Create thumbnail (max 200px width/height, maintain aspect ratio)
             image.thumbnail((200, 200), Image.Resampling.LANCZOS)
-
-            # Convert to base64
             thumb_buffer = io.BytesIO()
             image.save(thumb_buffer, format='JPEG', quality=70)
             thumbnail_b64 = base64.b64encode(thumb_buffer.getvalue()).decode('utf-8')
-
-        except Exception as e:
-            # Continue without thumbnail
+        except Exception:
             pass
 
-        # Debug: Check file_content size before OCR
-        print(f"  - File content size before OCR: {len(file_content)} bytes")
-        
-        # Extract structured data using multi-engine OCR
-        ocr_result = multi_engine_ocr.extract_structured(file_content)
-        
-        if not ocr_result.get('success'):
-            raise HTTPException(status_code=500, detail="OCR extraction failed")
-        
-        # Print raw OCR output for debugging
-        raw_text = ocr_result.get('raw_text', '')
-        engine_used = ocr_result.get('engine_used', 'unknown')
-        structured_data = ocr_result.get('structured_data', {})
-        
-        # Extract fields using enhanced Document AI + pattern-based extractor
-        extracted_data = enhanced_extractor.extract_fields_with_document_ai(
-            structured_data=structured_data,
-            raw_text=raw_text
+        optimized_bytes, preprocess_stats = optimize_image_for_ocr(file_content)
+        payload_hash = preprocess_stats.get('optimized_hash')
+
+        cached_analysis = submission_history.get_cached_analysis(payload_hash) if payload_hash else None
+        if cached_analysis:
+            cached_analysis['source_image'] = source_image_b64
+            cached_analysis['thumbnail'] = thumbnail_b64
+            cached_analysis.setdefault('diagnostics', {})
+            cached_analysis['diagnostics'].update({
+                'queue_id': queue_id,
+                'payload_hash': payload_hash,
+                'cache_hit': True
+            })
+            submission_history.store_analysis(queue_id, cached_analysis, metadata, payload_hash, {'cache_hit': True})
+            return {
+                "queue_id": queue_id,
+                "status": "completed",
+                "fields": cached_analysis,
+                "verification": {
+                    "verified": True,
+                    "issues": []
+                }
+            }
+
+        processing_mode = (processing_mode or 'sync').lower()
+
+        if processing_mode == 'async':
+            submission_history.create_pending_analysis(queue_id, metadata, payload_hash, preprocess_stats)
+            background_tasks.add_task(
+                _process_analysis_job,
+                queue_id,
+                optimized_bytes,
+                metadata,
+                payload_hash,
+                source_image_b64,
+                thumbnail_b64,
+                preprocess_stats
+            )
+            return {
+                "queue_id": queue_id,
+                "status": "queued",
+                "preprocess": preprocess_stats
+            }
+
+        submission_history.mark_analysis_processing(queue_id)
+        analysis_data, timings = _run_analysis_pipeline(
+            queue_id,
+            optimized_bytes,
+            metadata,
+            payload_hash,
+            source_image_b64,
+            thumbnail_b64,
+            preprocess_stats
         )
-        
-        # Add metadata
-        extracted_data['ocr_engine'] = engine_used
-        extracted_data['source_image'] = source_image_b64
-        extracted_data['thumbnail'] = thumbnail_b64
-        
-        # Print final extracted fields for debugging (without base64 data)
-        debug_data = {k: v for k, v in extracted_data.items() if k not in ['source_image', 'thumbnail']}
-        print(f"Parsed fields from multi-engine OCR: {debug_data}")
+        submission_history.store_analysis(queue_id, analysis_data, metadata, payload_hash, timings)
 
-        # Store in history for later submission
-        submission_history.store_analysis(queue_id, extracted_data, metadata)
-
-        # Return analysis result
         return {
             "queue_id": queue_id,
-            "fields": extracted_data,
+            "status": "completed",
+            "fields": analysis_data,
             "verification": {
-                "verified": True,  # Basic verification
+                "verified": True,
                 "issues": []
             }
         }
@@ -216,6 +290,27 @@ async def submit_receipt(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Submission failed: {str(e)}")
+
+
+@router.get("/mobile/analyze/status/{queue_id}")
+async def get_analysis_status_route(queue_id: str):
+    status_payload = submission_history.get_analysis_status(queue_id)
+    if not status_payload:
+        raise HTTPException(status_code=404, detail="Analysis not found")
+
+    response = {
+        "queue_id": queue_id,
+        "status": status_payload.get('status'),
+        "error": status_payload.get('error'),
+        "timings": status_payload.get('timings'),
+        "metadata": status_payload.get('metadata'),
+        "preprocess": status_payload.get('preprocess')
+    }
+
+    if status_payload.get('status') == 'completed' and status_payload.get('analysis_data'):
+        response['fields'] = status_payload['analysis_data']
+
+    return response
 
 @router.get("/history")
 async def get_history(limit: int = 50):

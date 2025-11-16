@@ -21,27 +21,42 @@ except ImportError:
 except Exception as e:
     print(f"✗ Error loading .env file: {e}")
 
-try:
-    import uvicorn
-    from app.main import app
-    
-    if __name__ == "__main__":
+def main():
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Launch the Tashiro Receipt OCR FastAPI server")
+    parser.add_argument("--host", default="0.0.0.0", help="Host interface to bind to")
+    parser.add_argument("--port", type=int, default=8000, help="Port to expose")
+    parser.add_argument("--reload", action="store_true", help="Enable auto-reload for local development")
+    parser.add_argument("--log-level", default="info", help="Uvicorn log level")
+    args = parser.parse_args()
+
+    try:
+        import uvicorn
+        from app.main import app
+
         print("Starting Tashiro Ironworks Receipt OCR Server...")
         print("Unified Mobile/Desktop Interface")
-        print("Server will be available at: http://localhost:8000")
-        
+        print(f"Server available at: http://{args.host}:{args.port}")
+        if args.reload:
+            print("Auto-reload enabled (development mode)")
+
         uvicorn.run(
             "app.main:app",
-            host="0.0.0.0", 
-            port=8000,
-            reload=True,
+            host=args.host,
+            port=args.port,
+            reload=args.reload,
             reload_dirs=[str(project_root)],
-            log_level="info"
+            log_level=args.log_level
         )
-        
-except ImportError as e:
-    print(f"Missing dependencies: {e}")
-    print("Please install requirements: pip install -r requirements.txt")
-    
-except Exception as e:
-    print(f"Server startup failed: {e}")
+
+    except ImportError as e:
+        print(f"Missing dependencies: {e}")
+        print("Please install requirements: pip install -r requirements.txt")
+
+    except Exception as e:
+        print(f"Server startup failed: {e}")
+
+
+if __name__ == "__main__":
+    main()

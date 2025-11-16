@@ -1,27 +1,82 @@
-import json
+import copy
 from datetime import datetime
-from typing import Dict, Any, List, Optional
 from pathlib import Path
+from threading import Lock
+from typing import Any, Dict, List, Optional
 
 class SubmissionHistory:
     """Manage receipt submission history and analysis queue."""
 
     def __init__(self):
-        self.analysis_queue = {}  # queue_id -> analysis_data
-        self.submissions = []     # List of completed submissions
+        self.analysis_queue: Dict[str, Dict[str, Any]] = {}
+        self.submissions: List[Dict[str, Any]] = []
+        self.analysis_cache: Dict[str, Dict[str, Any]] = {}
+        self.lock = Lock()
 
-    def store_analysis(self, queue_id: str, analysis_data: Dict[str, Any], metadata: Optional[str] = None):
+    def create_pending_analysis(self, queue_id: str, metadata: Optional[str], payload_hash: Optional[str], preprocess_stats: Optional[Dict[str, Any]] = None):
+        """Add a placeholder entry so clients can poll for status."""
+        with self.lock:
+            self.analysis_queue[queue_id] = {
+                'analysis_data': None,
+                'metadata': metadata,
+                'payload_hash': payload_hash,
+                'timestamp': datetime.now().isoformat(),
+                'status': 'queued',
+                'preprocess': preprocess_stats or {},
+                'error': None
+            }
+
+    def mark_analysis_processing(self, queue_id: str):
+        with self.lock:
+            if queue_id in self.analysis_queue:
+                self.analysis_queue[queue_id]['status'] = 'processing'
+                self.analysis_queue[queue_id]['started_at'] = datetime.now().isoformat()
+
+    def mark_analysis_failed(self, queue_id: str, error_message: str):
+        with self.lock:
+            if queue_id in self.analysis_queue:
+                self.analysis_queue[queue_id]['status'] = 'failed'
+                self.analysis_queue[queue_id]['error'] = error_message
+                self.analysis_queue[queue_id]['completed_at'] = datetime.now().isoformat()
+
+    def store_analysis(self, queue_id: str, analysis_data: Dict[str, Any], metadata: Optional[str] = None,
+                       payload_hash: Optional[str] = None, timings: Optional[Dict[str, Any]] = None):
         """Store OCR analysis results for later submission."""
-        self.analysis_queue[queue_id] = {
+        record = {
             'analysis_data': analysis_data,
             'metadata': metadata,
+            'payload_hash': payload_hash,
             'timestamp': datetime.now().isoformat(),
-            'status': 'analyzed'
+            'status': 'completed',
+            'timings': timings or {}
         }
+
+        with self.lock:
+            self.analysis_queue[queue_id] = record
+            if payload_hash:
+                self.analysis_cache[payload_hash] = copy.deepcopy(analysis_data)
 
     def get_analysis(self, queue_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve stored analysis by queue ID."""
-        return self.analysis_queue.get(queue_id, {}).get('analysis_data')
+        with self.lock:
+            entry = self.analysis_queue.get(queue_id)
+            if not entry:
+                return None
+            return entry.get('analysis_data')
+
+    def get_analysis_status(self, queue_id: str) -> Optional[Dict[str, Any]]:
+        with self.lock:
+            entry = self.analysis_queue.get(queue_id)
+            if not entry:
+                return None
+            # Return a copy to avoid accidental mutation
+            status_copy = copy.deepcopy(entry)
+            return status_copy
+
+    def get_cached_analysis(self, payload_hash: str) -> Optional[Dict[str, Any]]:
+        with self.lock:
+            cached = self.analysis_cache.get(payload_hash)
+            return copy.deepcopy(cached) if cached else None
 
     def store_submission(self, queue_id: str, verified_data: Dict[str, Any],
                         user_data: Dict[str, Any], excel_path: str):
@@ -37,20 +92,20 @@ class SubmissionHistory:
             'status': 'submitted'
         }
 
-        self.submissions.append(submission)
-
-        # Remove from analysis queue
-        if queue_id in self.analysis_queue:
-            del self.analysis_queue[queue_id]
+        with self.lock:
+            self.submissions.append(submission)
+            if queue_id in self.analysis_queue:
+                del self.analysis_queue[queue_id]
 
     def get_recent_submissions(self, limit: int = 50) -> List[Dict[str, Any]]:
         """Get recent submissions for history display."""
         # Sort by timestamp (newest first) and limit results
-        sorted_submissions = sorted(
-            self.submissions,
-            key=lambda x: x['timestamp'],
-            reverse=True
-        )[:limit]
+        with self.lock:
+            sorted_submissions = sorted(
+                self.submissions,
+                key=lambda x: x['timestamp'],
+                reverse=True
+            )[:limit]
 
         # Format for frontend display
         history_items = []
@@ -77,7 +132,8 @@ class SubmissionHistory:
 
     def get_submission_count(self) -> int:
         """Get total number of submissions."""
-        return len(self.submissions)
+        with self.lock:
+            return len(self.submissions)
 
     def clear_old_analyses(self, hours: int = 24):
         """Clear old unprocessed analyses (optional cleanup)."""
