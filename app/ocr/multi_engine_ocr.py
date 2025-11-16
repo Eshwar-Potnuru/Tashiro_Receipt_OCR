@@ -8,6 +8,8 @@ Combines multiple OCR engines for optimal text extraction
 
 import logging
 import io
+import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, Optional, Any, Tuple, List
 from PIL import Image
 
@@ -53,6 +55,9 @@ class MultiEngineOCR:
         """Initialize available OCR engines with graceful fallback"""
         logger.info("Initializing Multi-Engine OCR system...")
         
+        # Engine toggles / configuration
+        self.document_ai_enabled = os.getenv('DOCUMENT_AI_ENABLED', 'false').lower() == 'true'
+
         # Initialize engines
         self.document_ai = None
         self.google_vision = None
@@ -137,7 +142,7 @@ class MultiEngineOCR:
         engines_attempted = []
 
         # Document AI (structured data)
-        if self.engines_available.get('document_ai', False):
+        if self.document_ai_enabled and self.engines_available.get('document_ai', False):
             try:
                 logger.info("Running document_ai extraction...")
                 doc_data = self.document_ai.extract_structured_data(image_data)
@@ -151,33 +156,16 @@ class MultiEngineOCR:
             except Exception as e:
                 logger.error(f"document_ai failed: {e}")
 
-        # Google Vision (always run if available)
+        # Google Vision + OpenAI Vision in parallel
+        parallel_engines = []
         if self.engines_available.get('google_vision', False):
-            try:
-                logger.info("Running google_vision extraction...")
-                google_text = self.google_vision.extract_text(image_data)
-                engines_attempted.append('google_vision')
-                if google_text and len(google_text.strip()) > 10:
-                    raw_text_sources['google_vision'] = google_text
-                    logger.info(f"google_vision produced raw text length {len(google_text)}")
-                else:
-                    logger.info("google_vision returned insufficient text")
-            except Exception as e:
-                logger.error(f"google_vision failed: {e}")
-
-        # OpenAI Vision (always run if available)
+            parallel_engines.append(('google_vision', self.google_vision.extract_text))
         if self.engines_available.get('openai', False):
-            try:
-                logger.info("Running openai extraction...")
-                openai_text = self.openai_vision.extract_text(image_data)
-                engines_attempted.append('openai')
-                if openai_text and len(openai_text.strip()) > 10:
-                    raw_text_sources['openai'] = openai_text
-                    logger.info(f"openai produced raw text length {len(openai_text)}")
-                else:
-                    logger.info("openai returned insufficient text")
-            except Exception as e:
-                logger.error(f"openai failed: {e}")
+            parallel_engines.append(('openai', self.openai_vision.extract_text))
+
+        parallel_texts, parallel_attempts = self._run_parallel_text_engines(image_data, parallel_engines)
+        raw_text_sources.update(parallel_texts)
+        engines_attempted.extend(parallel_attempts)
 
         combined_text, contributing_engines = self._combine_texts(raw_text_sources)
 
@@ -256,6 +244,35 @@ class MultiEngineOCR:
             contributing.append(engine_name)
 
         return combined, contributing
+
+    def _run_parallel_text_engines(self, image_data: bytes, engines: List[Tuple[str, Any]]) -> Tuple[Dict[str, str], List[str]]:
+        """Execute multiple OCR engines concurrently to minimize end-to-end latency."""
+        if not engines:
+            return {}, []
+
+        texts: Dict[str, str] = {}
+        attempted: List[str] = []
+
+        with ThreadPoolExecutor(max_workers=len(engines)) as executor:
+            future_map = {}
+            for engine_name, engine_func in engines:
+                attempted.append(engine_name)
+                future = executor.submit(engine_func, image_data)
+                future_map[future] = engine_name
+
+            for future in as_completed(future_map):
+                engine_name = future_map[future]
+                try:
+                    engine_text = future.result()
+                    if engine_text and len(engine_text.strip()) > 10:
+                        texts[engine_name] = engine_text
+                        logger.info(f"{engine_name} produced raw text length {len(engine_text)}")
+                    else:
+                        logger.info(f"{engine_name} returned insufficient text")
+                except Exception as exc:
+                    logger.error(f"{engine_name} failed: {exc}")
+
+        return texts, attempted
 
 def create_enhanced_ocr() -> MultiEngineOCR:
     """Factory function to create OCR instance"""
