@@ -1305,6 +1305,11 @@
                             </button>
                         </div>
 
+                        <div class="additional-info" id="ocrDebugPanel" style="display: none; margin-top: 16px;">
+                            <h4>Latest OCR Payload (Debug)</h4>
+                            <pre id="ocrDebugContent" style="white-space: pre-wrap; background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--medium-gray); max-height: 240px; overflow: auto;"></pre>
+                        </div>
+
                         <!-- Editable Data Table Container -->
                         <div id="dataTableContainer" style="display: none; margin-top: 20px;">
                             <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
@@ -2055,10 +2060,13 @@ function updateFieldLabels() {
         const settingsModal = document.getElementById('settingsModal');
         const saveSettings = document.getElementById('saveSettings');
         const cancelSettings = document.getElementById('cancelSettings');
+        const ocrDebugPanel = document.getElementById('ocrDebugPanel');
+        const ocrDebugContent = document.getElementById('ocrDebugContent');
 
         // Global variables
         let currentQueueId = null;
         let accountClassifications = []; // Store loaded account classifications
+        const LATEST_ANALYSIS_KEY = 'tashiro_latest_analysis_v1';
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2108,6 +2116,42 @@ function updateFieldLabels() {
             // Show welcome toast
             showToast(t('welcomeMessage', {name: userData.name}), 'success');
         });
+
+        function saveLatestAnalysis(queueId, fields) {
+            try {
+                const fieldWhitelist = ['date','vendor','total','invoice_number','tax_category','account_title','subtotal','tax','currency'];
+                const sanitized = {};
+                fieldWhitelist.forEach(key => sanitized[key] = fields[key] || '');
+                localStorage.setItem(LATEST_ANALYSIS_KEY, JSON.stringify({
+                    queue_id: queueId,
+                    fields: sanitized,
+                    timestamp: new Date().toISOString()
+                }));
+            } catch (err) {
+                console.warn('Failed to persist latest analysis', err);
+            }
+        }
+
+        function restoreLatestAnalysis() {
+            try {
+                const cached = localStorage.getItem(LATEST_ANALYSIS_KEY);
+                if (!cached) {
+                    return;
+                }
+                const parsed = JSON.parse(cached);
+                if (!parsed.fields) {
+                    return;
+                }
+                currentQueueId = parsed.queue_id || null;
+                applyOcrResultsToForm(parsed.fields);
+                reviewDataBtn.disabled = false;
+                showResultsTable();
+                renderOcrDebugPanel(parsed.fields, parsed.queue_id);
+                showToast('Restored latest analysis', 'info');
+            } catch (err) {
+                console.warn('Failed to restore cached analysis', err);
+            }
+        }
 
         // Handle profile update
         profileButton.addEventListener('click', function() {
@@ -2267,8 +2311,8 @@ function updateFieldLabels() {
             .then(data => {
                 console.log('OCR API response:', data);
                 if (data.fields) {
-                    applyOcrResultsToForm(data.fields);
                     currentQueueId = data.queue_id;
+                    applyOcrResultsToForm(data.fields);
                     reviewDataBtn.disabled = false;
                     showResultsTable();
                     showToast(t('receiptAnalyzed'), 'success');
@@ -2292,6 +2336,17 @@ function updateFieldLabels() {
                 document.getElementById('fieldCurrency').value = 'JPY';
                 
                 verificationStatus.style.display = 'flex';
+                renderOcrDebugPanel({
+                    date: '2025-07-02',
+                    vendor: 'Sample Store',
+                    total: '1000',
+                    invoice_number: '12345',
+                    tax_category: '標準税率',
+                    account_title: '交通費',
+                    subtotal: '909',
+                    tax: '91',
+                    currency: 'JPY'
+                });
             });
         }
 
@@ -2325,6 +2380,20 @@ function updateFieldLabels() {
 
             updateFieldLabels();
             verificationStatus.style.display = 'flex';
+            renderOcrDebugPanel(fields, currentQueueId);
+            saveLatestAnalysis(currentQueueId, fields);
+        }
+
+        function renderOcrDebugPanel(fields, queueId) {
+            if (!ocrDebugPanel || !ocrDebugContent) {
+                return;
+            }
+            const payload = {
+                queue_id: queueId || currentQueueId,
+                ...fields
+            };
+            ocrDebugContent.textContent = JSON.stringify(payload, null, 2);
+            ocrDebugPanel.style.display = 'block';
         }
 
         function showResultsTable() {
@@ -2633,6 +2702,13 @@ function updateFieldLabels() {
             imagePlaceholder.style.display = 'flex';
             receiptImage.style.display = 'none';
             verificationStatus.style.display = 'none';
+            if (ocrDebugPanel) {
+                ocrDebugPanel.style.display = 'none';
+            }
+            if (ocrDebugContent) {
+                ocrDebugContent.textContent = '';
+            }
+            localStorage.removeItem(LATEST_ANALYSIS_KEY);
             
             // Hide AI confidence indicator
             const aiIndicator = document.getElementById('aiConfidenceIndicator');
@@ -2918,6 +2994,7 @@ function updateFieldLabels() {
             applyLanguage(settings.language || 'en');
             
             updateHistoryDisplay();
+            restoreLatestAnalysis();
 
             // Force reapply language after DOM is fully loaded
             setTimeout(() => {
