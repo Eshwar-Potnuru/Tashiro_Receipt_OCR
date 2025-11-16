@@ -2267,43 +2267,10 @@ function updateFieldLabels() {
             .then(data => {
                 console.log('OCR API response:', data);
                 if (data.fields) {
-                    // Populate fields with extracted data
-                    document.getElementById('fieldDate').value = data.fields.date || '';
-                    document.getElementById('fieldVendor').value = data.fields.vendor || '';
-                    document.getElementById('fieldTotal').value = data.fields.total || '';
-                    document.getElementById('fieldInvoiceNumber').value = data.fields.invoice_number || '';
-                    
-                    // Map tax category from OCR result to dropdown value
-                    let taxCategoryValue = data.fields.tax_category || '';
-                    if (taxCategoryValue === '課税') {
-                        taxCategoryValue = '標準税率'; // Map '課税' to standard tax rate
-                    }
-                    document.getElementById('fieldTaxCategory').value = taxCategoryValue;
-                    
-                    document.getElementById('fieldAccountTitle').value = data.fields.account_title || '';
-                    
-                    // Show AI confidence indicator if account title was AI-detected
-                    const aiIndicator = document.getElementById('aiConfidenceIndicator');
-                    if (aiIndicator && data.fields.account_title) {
-                        aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
-                        aiIndicator.style.display = 'inline-flex';
-                    }
-                    document.getElementById('fieldSubtotal').value = data.fields.subtotal || '';
-                    document.getElementById('fieldTax').value = data.fields.tax || '';
-                    document.getElementById('fieldCurrency').value = data.fields.currency || 'JPY';
-                    
-                    // Store queue ID for submission
+                    applyOcrResultsToForm(data.fields);
                     currentQueueId = data.queue_id;
-                    
-                    // Update field labels based on extracted data
-                    updateFieldLabels();
-                    
-                    // Show verification status
-                    verificationStatus.style.display = 'flex';
-                    
-                    // Enable buttons
                     reviewDataBtn.disabled = false;
-                    
+                    showResultsTable();
                     showToast(t('receiptAnalyzed'), 'success');
                 } else {
                     throw new Error('No fields extracted');
@@ -2325,16 +2292,50 @@ function updateFieldLabels() {
                 document.getElementById('fieldCurrency').value = 'JPY';
                 
                 verificationStatus.style.display = 'flex';
-                submitButton.disabled = false;
             });
         }
 
-        // Handle review data button
-        reviewDataBtn.addEventListener('click', function() {
+        function applyOcrResultsToForm(fields) {
+            document.getElementById('fieldDate').value = fields.date || '';
+            document.getElementById('fieldVendor').value = fields.vendor || '';
+            document.getElementById('fieldTotal').value = fields.total || '';
+            document.getElementById('fieldInvoiceNumber').value = fields.invoice_number || '';
+
+            let taxCategoryValue = fields.tax_category || '';
+            if (taxCategoryValue === '課税') {
+                taxCategoryValue = '標準税率';
+            }
+            document.getElementById('fieldTaxCategory').value = taxCategoryValue;
+
+            document.getElementById('fieldAccountTitle').value = fields.account_title || '';
+
+            const aiIndicator = document.getElementById('aiConfidenceIndicator');
+            if (aiIndicator) {
+                if (fields.account_title) {
+                    aiIndicator.innerHTML = '<i class="fas fa-robot"></i> ' + t('aiSelected');
+                    aiIndicator.style.display = 'inline-flex';
+                } else {
+                    aiIndicator.style.display = 'none';
+                }
+            }
+
+            document.getElementById('fieldSubtotal').value = fields.subtotal || '';
+            document.getElementById('fieldTax').value = fields.tax || '';
+            document.getElementById('fieldCurrency').value = fields.currency || 'JPY';
+
+            updateFieldLabels();
+            verificationStatus.style.display = 'flex';
+        }
+
+        function showResultsTable() {
             populateEditableTable();
-            document.getElementById('dataTableContainer').style.display = 'block';
-            reviewDataBtn.style.display = 'none'; // Hide review button when table is shown
-        });
+            const tableContainer = document.getElementById('dataTableContainer');
+            tableContainer.style.display = 'block';
+            reviewDataBtn.style.display = 'none';
+        }
+
+        // Handle review data button
+        reviewDataBtn.addEventListener('click', showResultsTable);
 
         // Populate editable table with OCR data
         function populateEditableTable() {
