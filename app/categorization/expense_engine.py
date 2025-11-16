@@ -365,10 +365,3 @@ if __name__ == "__main__":
                   f"({match.confidence:.1%} confidence)")
             print(f"     Tax: {match.tax_classification.value}")
             print(f"     Keywords: {', '.join(match.matched_keywords)}")
-
-
-def calculate_taxed_total(subtotal, tax):
-    try:
-        return round(float(subtotal) + float(tax), 2)
-    except:
-        return None
