@@ -19,6 +19,7 @@ from validators import (
 BASE_DIR = Path(__file__).resolve().parent
 DATA_DIR = BASE_DIR / "app" / "Data"
 ACCUM_DIR = DATA_DIR / "accumulation"
+BACKUP_DIR = ACCUM_DIR / "backups"
 LOG_DIR = DATA_DIR / "submission_logs"
 LOG_FILE = LOG_DIR / "submission_log.csv"
 CANONICAL_HEADERS = [
@@ -59,6 +60,7 @@ LOG_HEADERS = [
 def _ensure_directories() -> None:
     DATA_DIR.mkdir(exist_ok=True)
     ACCUM_DIR.mkdir(exist_ok=True)
+    BACKUP_DIR.mkdir(exist_ok=True)
     LOG_DIR.mkdir(exist_ok=True)
 
 
@@ -181,8 +183,18 @@ def append_to_location(
     backup_path = None
     if filepath.exists():
         timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
-        backup_path = filepath.with_name(f"{filepath.stem}_backup_{timestamp}.xlsx")
+        backup_name = f"{filepath.stem}_backup_{timestamp}{filepath.suffix}"
+        backup_path = BACKUP_DIR / normalized_location / backup_name
+        backup_path.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(filepath, backup_path)
+
+        backups = sorted((BACKUP_DIR / normalized_location).glob(f"{filepath.stem}_backup_*{filepath.suffix}"))
+        while len(backups) > 3:
+            old_backup = backups.pop(0)
+            try:
+                old_backup.unlink()
+            except OSError:
+                pass
 
     with pd.ExcelWriter(temp_path, engine="openpyxl") as writer:
         updated_df.to_excel(writer, index=False)

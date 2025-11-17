@@ -57,6 +57,10 @@ backup_important/config/google_vision_key.json
 # Artifacts and exports
 ../artifacts/
 *.xlsx
+!app/Data/
+!app/Data/accumulation/
+!app/Data/accumulation/*.xlsx
+app/Data/accumulation/backups/
 *.pdf
 
 # SSL certificates
