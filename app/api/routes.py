@@ -1,6 +1,7 @@
 import time
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request, BackgroundTasks
-from fastapi.responses import JSONResponse
+import threading
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request, BackgroundTasks, Body
+from fastapi.responses import JSONResponse, FileResponse
 from typing import Optional, Dict, Any
 import os
 import uuid
@@ -15,8 +16,26 @@ from app.extractors.enhanced_field_extractor import EnhancedFieldExtractor
 from app.ocr.multi_engine_ocr import MultiEngineOCR
 from app.exporters.excel_exporter import ExcelExporter
 from app.history.submission_history import SubmissionHistory
+from accumulator import append_to_location, ACCUM_DIR
+from validators import (
+    get_available_locations,
+    normalize_location,
+    validate_required_fields,
+)
 
 router = APIRouter()
+_locations_cache: Dict[str, Any] = get_available_locations()
+_ocr_max_concurrent = max(1, int(os.getenv("OCR_MAX_CONCURRENT", "2")))
+_ocr_concurrency_guard = threading.Semaphore(_ocr_max_concurrent)
+
+
+def _refresh_locations_cache() -> Dict[str, Any]:
+    global _locations_cache
+    try:
+        _locations_cache = get_available_locations()
+    except Exception:
+        pass
+    return _locations_cache
 
 @router.post("/mobile/test-upload")
 async def test_upload(file: UploadFile = File(...)):
@@ -86,23 +105,31 @@ def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional
                            source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any]):
     timings: Dict[str, Any] = {'preprocess': preprocess_stats}
 
-    stage_start = time.perf_counter()
-    ocr_result = multi_engine_ocr.extract_structured(image_bytes)
-    timings['ocr'] = round(time.perf_counter() - stage_start, 3)
+    wait_start = time.perf_counter()
+    _ocr_concurrency_guard.acquire()
+    timings['queue_wait'] = round(time.perf_counter() - wait_start, 3)
 
-    if not ocr_result.get('success'):
-        raise RuntimeError("OCR extraction failed")
+    try:
+        stage_start = time.perf_counter()
+        ocr_result = multi_engine_ocr.extract_structured(image_bytes)
+        timings['ocr'] = round(time.perf_counter() - stage_start, 3)
 
-    raw_text = ocr_result.get('raw_text', '')
-    engine_used = ocr_result.get('engine_used', 'unknown')
-    structured_data = ocr_result.get('structured_data', {})
+        if not ocr_result.get('success'):
+            raise RuntimeError("OCR extraction failed")
 
-    stage_start = time.perf_counter()
-    extracted_data = enhanced_extractor.extract_fields_with_document_ai(
-        structured_data=structured_data,
-        raw_text=raw_text
-    )
-    timings['field_extractor'] = round(time.perf_counter() - stage_start, 3)
+        raw_text = ocr_result.get('raw_text', '')
+        engine_used = ocr_result.get('engine_used', 'unknown')
+        structured_data = ocr_result.get('structured_data', {})
+
+        stage_start = time.perf_counter()
+        extracted_data = enhanced_extractor.extract_fields_with_document_ai(
+            structured_data=structured_data,
+            raw_text=raw_text
+        )
+        timings['field_extractor'] = round(time.perf_counter() - stage_start, 3)
+
+    finally:
+        _ocr_concurrency_guard.release()
 
     extracted_data['ocr_engine'] = engine_used
     extracted_data['source_image'] = source_image_b64
@@ -320,3 +347,86 @@ async def get_history(limit: int = 50):
         return history
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch history: {str(e)}")
+
+
+@router.get("/locations")
+async def list_locations():
+    cfg = _refresh_locations_cache()
+    return cfg
+
+
+@router.get("/accumulation/file")
+async def download_accumulation(location: str):
+    cfg = _refresh_locations_cache()
+    canonical = normalize_location(location, cfg)
+    if not canonical:
+        raise HTTPException(status_code=400, detail="Unknown business location")
+    filepath = ACCUM_DIR / f"{canonical}_Accumulated.xlsx"
+    if not filepath.exists():
+        raise HTTPException(status_code=404, detail="Accumulation file not found")
+    return FileResponse(
+        path=str(filepath),
+        filename=filepath.name,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+
+
+@router.post("/accumulate_receipt")
+async def accumulate_receipt(payload: Dict[str, Any] = Body(...)):
+    try:
+        receipt_fields = payload.get("receipt_data") or payload.get("fields") or {}
+        operator_payload = payload.get("operator") or {}
+        if not receipt_fields:
+            raise HTTPException(status_code=400, detail="Missing receipt data")
+        if not operator_payload:
+            raise HTTPException(status_code=400, detail="Missing operator information")
+        raw_location = (
+            payload.get("business_location")
+            or payload.get("location")
+            or receipt_fields.get("business_office")
+        )
+        validate_required_fields(
+            {
+                "business_location": raw_location,
+                "order_number": receipt_fields.get("order_number") or payload.get("order_number"),
+                "invoice_number": receipt_fields.get("invoice_number") or payload.get("invoice_number"),
+            }
+        )
+
+        cfg = _refresh_locations_cache()
+        canonical = normalize_location(raw_location, cfg)
+        if not canonical:
+            raise HTTPException(status_code=400, detail="Invalid business location")
+
+        fields = dict(receipt_fields)
+        fields["business_location"] = canonical
+        operator = {
+            "name": operator_payload.get("full_name") or operator_payload.get("name"),
+            "email": operator_payload.get("email"),
+            "employee_id": operator_payload.get("employee_id") or operator_payload.get("id"),
+        }
+        force = bool(payload.get("force"))
+
+        # include queue/source metadata for traceability
+        if payload.get("queue_id"):
+            fields.setdefault("queue_id", payload["queue_id"])
+        if payload.get("source_file"):
+            fields.setdefault("source_file", payload["source_file"])
+
+        result = append_to_location(fields, canonical, operator, force=force)
+        status_code = 200
+        if result.get("status") == "duplicate":
+            status_code = 409
+
+        if result.get("filepath"):
+            rel_download = f"/api/accumulation/file?location={canonical}"
+            result["download_url"] = rel_download
+        result["duplicate"] = result.get("status") == "duplicate"
+
+        return JSONResponse(status_code=status_code, content=result)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Accumulation failed: {exc}")

@@ -717,6 +717,16 @@
             color: var(--text-dark);
         }
 
+        .save-result {
+            margin-top: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(0, 123, 255, 0.08);
+            color: var(--text-dark);
+            font-size: 14px;
+            display: none;
+        }
+
         /* Form Actions */
         .form-actions {
             display: flex;
@@ -986,7 +996,7 @@
                 margin: 0 !important;
             }
 
-            #exportExcelBtn {
+            #saveAccumulationBtn {
                 align-self: flex-start !important;
                 padding: 10px 16px !important;
                 font-size: 14px !important;
@@ -1013,7 +1023,7 @@
                 font-size: 14px !important;
             }
 
-            #exportExcelBtn {
+            #saveAccumulationBtn {
                 width: 100% !important;
                 padding: 12px !important;
                 font-size: 14px !important;
@@ -1371,6 +1381,12 @@
                                     <label>Currency</label>
                                     <input type="text" id="fieldCurrency" placeholder="JPY" value="JPY">
                                 </div>
+                                <div class="form-field">
+                                    <label for="businessLocationSelect">Business Location <span class="required">*</span></label>
+                                    <select id="businessLocationSelect">
+                                        <option value="">Select location</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                         
@@ -1396,8 +1412,8 @@
                                     <button class="secondary-button" id="saveChangesBtn" style="padding: 8px 16px; font-size: 14px;">
                                         <i class="fas fa-save"></i> Save Changes
                                     </button>
-                                    <button class="primary-button" id="exportExcelBtn" style="padding: 8px 16px; font-size: 14px;">
-                                        <i class="fas fa-file-excel"></i> Export to Excel
+                                    <button class="primary-button" id="saveAccumulationBtn" style="padding: 8px 16px; font-size: 14px;">
+                                        <i class="fas fa-database"></i> Save to HQ Ledger
                                     </button>
                                 </div>
                             </div>
@@ -1415,6 +1431,7 @@
                                     </tbody>
                                 </table>
                             </div>
+                            <div id="saveResultMessage" class="save-result"></div>
                         </div>
                     </div>
                 </div>
@@ -1610,7 +1627,21 @@
                 field: "Field",
                 value: "Value",
                 status: "Status",
-                ready: "✓ Ready"
+                ready: "✓ Ready",
+                changesSaved: "Changes saved locally.",
+                saveToHQ: "Save to HQ Ledger",
+                saveReceiptToLocation: "Save Receipt to {location}",
+                businessLocationLabel: "Business Location",
+                selectLocation: "Select location",
+                readyForHqSave: "Ready for HQ save",
+                locationRequired: "Select a business location before saving.",
+                operatorMissing: "Operator details missing. Please complete your profile.",
+                savingReceipt: "Saving receipt to HQ...",
+                duplicateWarning: "Potential duplicate detected.",
+                forceSavePrompt: "Duplicate found. Force save anyway?",
+                savedReceipt: "Receipt saved to HQ ledger!",
+                downloadWorkbook: "Download workbook",
+                savedToPath: "Saved to {path}."
             },
             ja: {
                 // Welcome Modal
@@ -1768,7 +1799,21 @@
                 field: "フィールド",
                 value: "値",
                 status: "ステータス",
-                ready: "✓ 準備完了"
+                ready: "✓ 準備完了",
+                changesSaved: "変更を保存しました。",
+                saveToHQ: "HQ台帳に保存",
+                saveReceiptToLocation: "{location} に保存",
+                businessLocationLabel: "事業所",
+                selectLocation: "事業所を選択",
+                readyForHqSave: "HQ保存の準備完了",
+                locationRequired: "保存前に事業所を選択してください。",
+                operatorMissing: "オペレーター情報が不足しています。プロフィールを入力してください。",
+                savingReceipt: "HQへ保存中...",
+                duplicateWarning: "重複の可能性があります。",
+                forceSavePrompt: "重複が検出されました。強制保存しますか？",
+                savedReceipt: "HQ台帳に保存しました！",
+                downloadWorkbook: "台帳をダウンロード",
+                savedToPath: "{path} に保存されました。"
             }
         };
 
@@ -2005,6 +2050,13 @@ function updateFieldLabels() {
                 console.log('Additional labels updated (regular):', additionalLabels[2].textContent);
             }
 
+            if (businessLocationLabel) {
+                businessLocationLabel.innerHTML = `${t('businessLocationLabel')} <span class="required">*</span>`;
+            }
+            if (businessLocationSelect) {
+                populateLocationSelect();
+            }
+
             // Form action buttons
             const submitBtn = document.getElementById('submitButton');
             const reviewBtn = document.getElementById('reviewDataBtn');
@@ -2081,9 +2133,9 @@ function updateFieldLabels() {
                 saveChangesBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveChanges')}`;
             }
 
-            const exportExcelBtn = document.getElementById('exportExcelBtn');
-            if (exportExcelBtn) {
-                exportExcelBtn.innerHTML = `<i class="fas fa-file-excel"></i> ${t('exportToExcel')}`;
+            const saveAccumulationBtn = document.getElementById('saveAccumulationBtn');
+            if (saveAccumulationBtn) {
+                updateSaveButtonLabel();
             }
 
             // Update table headers
@@ -2140,12 +2192,20 @@ function updateFieldLabels() {
         const cancelSettings = document.getElementById('cancelSettings');
         const ocrDebugPanel = document.getElementById('ocrDebugPanel');
         const ocrDebugContent = document.getElementById('ocrDebugContent');
+        const businessLocationSelect = document.getElementById('businessLocationSelect');
+        const businessLocationLabel = document.querySelector('label[for="businessLocationSelect"]');
+        const saveAccumulationBtn = document.getElementById('saveAccumulationBtn');
+        const saveResultMessage = document.getElementById('saveResultMessage');
         const loadingOverlay = document.getElementById('loadingOverlay');
         const loadingMessage = document.getElementById('loadingMessage');
         const loadingSubtext = document.getElementById('loadingSubtext');
         const loadingStepUpload = document.getElementById('loadingStepUpload');
         const loadingStepQueue = document.getElementById('loadingStepQueue');
         const loadingStepExtraction = document.getElementById('loadingStepExtraction');
+
+        if (businessLocationSelect) {
+            businessLocationSelect.addEventListener('change', updateSaveButtonLabel);
+        }
 
         // Global variables
         let currentQueueId = null;
@@ -2154,6 +2214,8 @@ function updateFieldLabels() {
         let pollTimeoutHandle = null;
         const POLL_INTERVAL_MS = 3000;
         const MAX_POLL_ATTEMPTS = 40;
+        let availableLocations = [];
+        let locationSynonymMap = {};
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2238,6 +2300,75 @@ function updateFieldLabels() {
             } catch (err) {
                 console.warn('Failed to restore cached analysis', err);
             }
+        }
+
+        function loadLocationsFromServer() {
+            fetch('/api/locations')
+                .then(resp => resp.json())
+                .then(data => {
+                    availableLocations = data.locations || [];
+                    locationSynonymMap = data.synonyms || {};
+                    populateLocationSelect();
+                })
+                .catch(err => {
+                    console.warn('Failed to load locations', err);
+                });
+        }
+
+        function populateLocationSelect(locations = availableLocations, selectedValue = null) {
+            if (!businessLocationSelect) {
+                return;
+            }
+            const normalizedLocations = Array.isArray(locations) ? locations : [];
+            const desiredValue = selectedValue ?? businessLocationSelect.value;
+            businessLocationSelect.innerHTML = `<option value="">${t('selectLocation')}</option>`;
+            normalizedLocations.forEach(loc => {
+                const option = document.createElement('option');
+                option.value = loc;
+                option.textContent = loc;
+                businessLocationSelect.appendChild(option);
+            });
+            if (desiredValue && normalizedLocations.includes(desiredValue)) {
+                businessLocationSelect.value = desiredValue;
+            }
+            updateSaveButtonLabel();
+        }
+
+        function updateSaveButtonLabel() {
+            if (!saveAccumulationBtn) {
+                return;
+            }
+            let label = t('saveToHQ');
+            if (businessLocationSelect && businessLocationSelect.value) {
+                const index = businessLocationSelect.selectedIndex;
+                const readable = businessLocationSelect.options[index]?.textContent || businessLocationSelect.value;
+                label = t('saveReceiptToLocation', { location: readable });
+            }
+            saveAccumulationBtn.innerHTML = `<i class="fas fa-database"></i> ${label}`;
+        }
+
+        function guessLocationFromFields(fields) {
+            if (!fields) {
+                return null;
+            }
+            const possibleSources = [fields.business_office, fields.location, fields.vendor, fields.store_name];
+            const candidates = possibleSources.filter(Boolean).map(text => text.toString().toLowerCase());
+            if (!candidates.length) {
+                return null;
+            }
+            for (const candidate of candidates) {
+                for (const loc of availableLocations) {
+                    if (candidate.includes(loc.toLowerCase())) {
+                        return loc;
+                    }
+                }
+                for (const [synonym, canonical] of Object.entries(locationSynonymMap)) {
+                    if (candidate.includes(synonym.toLowerCase())) {
+                        return canonical;
+                    }
+                }
+            }
+            return null;
         }
 
         // Handle profile update
@@ -2601,6 +2732,13 @@ function updateFieldLabels() {
             verificationStatus.style.display = 'flex';
             renderOcrDebugPanel(fields, currentQueueId);
             saveLatestAnalysis(currentQueueId, fields);
+
+            if (businessLocationSelect) {
+                const inferredLocation = guessLocationFromFields(fields);
+                if (inferredLocation) {
+                    businessLocationSelect.value = inferredLocation;
+                }
+            }
         }
 
         function renderOcrDebugPanel(fields, queueId) {
@@ -2620,6 +2758,9 @@ function updateFieldLabels() {
             const tableContainer = document.getElementById('dataTableContainer');
             tableContainer.style.display = 'block';
             reviewDataBtn.style.display = 'none';
+            if (saveAccumulationBtn) {
+                saveAccumulationBtn.disabled = false;
+            }
         }
 
         // Handle review data button
@@ -2776,9 +2917,9 @@ function updateFieldLabels() {
             });
         }
 
-        // Handle Excel export button
-        document.getElementById('exportExcelBtn').addEventListener('click', function() {
-            exportToExcel();
+        // Handle save to HQ button
+        document.getElementById('saveAccumulationBtn').addEventListener('click', function() {
+            saveToHeadquarters();
         });
 
         // Handle save changes button
@@ -2791,24 +2932,40 @@ function updateFieldLabels() {
             resetForm();
         });
 
-        // Export corrected data to Excel
-        function exportToExcel() {
-            showToast(t('preparingDownload'), 'info');
-
-            // Collect data from editable table
+        function collectEditableFields() {
             const editableFields = document.querySelectorAll('.editable-field');
             const correctedData = {};
-
             editableFields.forEach(field => {
                 const fieldName = field.dataset.field;
-                if (field.tagName === 'SELECT') {
-                    correctedData[fieldName] = field.value;
-                } else {
-                    correctedData[fieldName] = field.value;
-                }
+                correctedData[fieldName] = field.value;
             });
+            return correctedData;
+        }
 
-            // Update the original form fields with corrected data
+        function saveToHeadquarters(forceSave = false) {
+            if (!currentQueueId) {
+                showToast(t('noReceiptData'), 'error');
+                return;
+            }
+            if (!businessLocationSelect || !businessLocationSelect.value) {
+                showToast(t('locationRequired'), 'warning');
+                businessLocationSelect.focus();
+                return;
+            }
+
+            const operator = JSON.parse(localStorage.getItem('tashiro_user') || '{}');
+            if (!operator.name || !operator.email) {
+                showToast(t('operatorMissing'), 'error');
+                return;
+            }
+            const operatorPayload = {
+                full_name: operator.name,
+                name: operator.name,
+                email: operator.email,
+                employee_id: operator.employeeId || operator.employee_id || ''
+            };
+
+            const correctedData = collectEditableFields();
             Object.keys(correctedData).forEach(fieldName => {
                 const elementId = 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
                 const element = document.getElementById(elementId);
@@ -2817,69 +2974,76 @@ function updateFieldLabels() {
                 }
             });
 
-            // Prepare data for submission
+            const locationValue = businessLocationSelect.value;
             const receiptData = {
-                queue_id: currentQueueId,
-                fields: correctedData,
-                user: JSON.parse(localStorage.getItem('tashiro_user') || '{}')
+                ...correctedData,
+                business_location: locationValue
             };
 
-            // Submit to API to generate Excel
-            fetch('/api/mobile/submit', {
+            const payload = {
+                queue_id: currentQueueId,
+                receipt_data: receiptData,
+                fields: receiptData,
+                business_location: locationValue,
+                location: locationValue,
+                operator: operatorPayload,
+                force: forceSave
+            };
+
+            showToast(t('savingReceipt'), 'info');
+            fetch('/api/accumulate_receipt', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(receiptData)
+                body: JSON.stringify(payload)
             })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success' && data.excel_url) {
-                    // Create download link
-                    const link = document.createElement('a');
-                    link.href = data.excel_url;
-                    link.download = `receipt_${currentQueueId}_corrected.xlsx`;
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-
-                    // Save to history
-                    saveToHistory({
-                        ...correctedData,
-                        id: currentQueueId,
-                        excel_url: data.excel_url,
-                        timestamp: new Date().toISOString()
-                    });
-
-                    // Hide table and show success
-                    document.getElementById('dataTableContainer').style.display = 'none';
-                    document.getElementById('reviewDataBtn').style.display = 'inline-block';
-
-                    showToast(t('excelDownloaded'), 'success');
-                } else {
-                    throw new Error(data.detail || 'Export failed');
+            .then(async response => {
+                const data = await response.json();
+                if (response.status === 409 && data.status === 'duplicate') {
+                    handleDuplicateResponse(data);
+                    throw new Error('duplicate');
                 }
+                if (!response.ok) {
+                    throw new Error(data.detail || 'Save failed');
+                }
+                handleSuccessfulSave(data, correctedData);
             })
             .catch(error => {
-                console.error('Export Error:', error);
-                showToast(t('failedDownload'), 'error');
+                if (error.message !== 'duplicate') {
+                    console.error('Save error:', error);
+                    showToast(error.message || t('failedToSubmit'), 'error');
+                }
+            });
+        }
+
+        function handleDuplicateResponse(duplicatePayload) {
+            showToast(t('duplicateWarning'), 'warning');
+            const userConfirmed = confirm(t('forceSavePrompt'));
+            if (userConfirmed) {
+                saveToHeadquarters(true);
+            }
+        }
+
+        function handleSuccessfulSave(apiResult, correctedData) {
+            showToast(t('savedReceipt'), 'success');
+            if (saveResultMessage) {
+                const linkPart = apiResult.download_url ? `<a href="${apiResult.download_url}" target="_blank">${t('downloadWorkbook')}</a>` : '';
+                saveResultMessage.innerHTML = `${t('savedToPath', {path: apiResult.filepath || ''})} ${linkPart}`;
+                saveResultMessage.style.display = 'block';
+            }
+
+            saveToHistory({
+                ...correctedData,
+                id: currentQueueId,
+                timestamp: new Date().toISOString(),
+                business_location: businessLocationSelect ? businessLocationSelect.value : ''
             });
         }
 
         // Save changes from editable table back to form fields
         function saveChanges() {
-            // Collect data from editable table
-            const editableFields = document.querySelectorAll('.editable-field');
-            const correctedData = {};
-
-            editableFields.forEach(field => {
-                const fieldName = field.dataset.field;
-                if (field.tagName === 'SELECT') {
-                    correctedData[fieldName] = field.value;
-                } else {
-                    correctedData[fieldName] = field.value;
-                }
-            });
+            const correctedData = collectEditableFields();
 
             // Update the original form fields with corrected data
             Object.keys(correctedData).forEach(fieldName => {
@@ -2891,7 +3055,7 @@ function updateFieldLabels() {
             });
 
             // Show success message
-            showToast('Changes saved successfully! You can now export to Excel.', 'success');
+            showToast(t('changesSaved'), 'success');
 
             // Update verification status to show changes were saved
             const verificationStatus = document.getElementById('verificationStatus');
@@ -2899,8 +3063,8 @@ function updateFieldLabels() {
                 verificationStatus.innerHTML = `
                     <div class="status-icon">💾</div>
                     <div class="status-content">
-                        <div class="status-title">Changes saved successfully!</div>
-                        <div class="confidence-badge">Ready for Export</div>
+                        <div class="status-title">${t('changesSaved')}</div>
+                        <div class="confidence-badge">${t('readyForHqSave')}</div>
                     </div>
                 `;
             }
@@ -2941,6 +3105,17 @@ function updateFieldLabels() {
             // Hide table and show review button
             document.getElementById('dataTableContainer').style.display = 'none';
             reviewDataBtn.style.display = 'inline-block';
+            if (businessLocationSelect) {
+                businessLocationSelect.value = '';
+            }
+            if (saveResultMessage) {
+                saveResultMessage.style.display = 'none';
+                saveResultMessage.textContent = '';
+            }
+            if (saveAccumulationBtn) {
+                saveAccumulationBtn.disabled = true;
+            }
+            updateSaveButtonLabel();
         }
 
         // Save receipt to history
@@ -3205,6 +3380,7 @@ function updateFieldLabels() {
             
             // Load account classifications
             loadAccountClassifications();
+            loadLocationsFromServer();
             
             // Load and apply saved settings
             loadSettings();

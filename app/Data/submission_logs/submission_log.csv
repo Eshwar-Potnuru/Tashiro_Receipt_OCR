@@ -1,0 +1,21 @@
+timestamp,location,order_number,invoice_number,operator_name,status,file_path,message
+2025-11-17T17:39:00,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T17:39:00,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T17:39:00,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T17:50:18,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T17:50:18,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T17:50:18,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T17:56:42,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T17:56:42,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T17:56:42,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T18:02:34,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T18:02:34,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T18:02:34,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T18:14:42,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T18:14:42,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T18:14:42,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T18:30:21,Sagami,T6810161574620,T6810161574620,eshwarpotnuru35@gmail.com,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Sagami_Accumulated.xlsx,Row appended
+2025-11-17T18:53:26,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T18:53:26,Tokyo,ORD123,INV123,Test User,duplicate,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Duplicate detected
+2025-11-17T18:53:26,Tokyo,ORD123,INV123,Test User,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Tokyo_Accumulated.xlsx,Row appended
+2025-11-17T19:20:06,Kashima,T010100112577,T010100112577,eshwarpotnuru35@gmail.com,ok,C:\Users\eshwa\Downloads\Desktop\Tashiro_receiptORC\Receipt-ocr-v1-git\app\Data\accumulation\Kashima_Accumulated.xlsx,Row appended

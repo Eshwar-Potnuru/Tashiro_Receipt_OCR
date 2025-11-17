@@ -9,7 +9,8 @@ Combines multiple OCR engines for optimal text extraction
 import logging
 import io
 import os
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor, wait, ALL_COMPLETED
+import time
 from typing import Dict, Optional, Any, Tuple, List
 from PIL import Image
 
@@ -67,6 +68,7 @@ class MultiEngineOCR:
         self.google_vision = None
         self.openai_vision = None
         self.ocr_space = None
+        self.parallel_timeout = float(os.getenv('OCR_ENGINE_TIMEOUT_SECONDS', '12'))
         
         # Safe initialization with try-catch for each engine
         if DOCUMENT_AI_AVAILABLE:
@@ -258,12 +260,15 @@ class MultiEngineOCR:
         attempted: List[str] = []
 
         future_map = {}
+        start_time = time.perf_counter()
         for engine_name, engine_func in engines:
             attempted.append(engine_name)
             future = self.parallel_executor.submit(engine_func, image_data)
             future_map[future] = engine_name
 
-        for future in as_completed(future_map):
+        completed, pending = wait(set(future_map.keys()), timeout=self.parallel_timeout, return_when=ALL_COMPLETED)
+
+        for future in completed:
             engine_name = future_map[future]
             try:
                 engine_text = future.result()
@@ -274,6 +279,15 @@ class MultiEngineOCR:
                     logger.info(f"{engine_name} returned insufficient text")
             except Exception as exc:
                 logger.error(f"{engine_name} failed: {exc}")
+
+        if pending:
+            elapsed = round(time.perf_counter() - start_time, 2)
+            for future in pending:
+                engine_name = future_map[future]
+                cancelled = future.cancel()
+                logger.warning(
+                    f"{engine_name} timed out after {elapsed}s (timeout {self.parallel_timeout}s). Cancelled={cancelled}"
+                )
 
         return texts, attempted
 

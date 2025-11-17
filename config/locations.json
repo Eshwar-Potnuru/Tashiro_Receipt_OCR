@@ -1,0 +1,20 @@
+{
+  "locations": [
+    "Tokyo",
+    "Osaka",
+    "Sagami",
+    "Aichi",
+    "Keihin",
+    "Kashima",
+    "Takasago"
+  ],
+  "synonyms": {
+    "東京": "Tokyo",
+    "大阪": "Osaka",
+    "相模": "Sagami",
+    "愛知": "Aichi",
+    "京浜": "Keihin",
+    "鹿島": "Kashima",
+    "高砂": "Takasago"
+  }
+}
