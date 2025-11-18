@@ -24,8 +24,8 @@ class OpenAIVisionOCR:
         self.api_key = None
         self.max_image_dim = int(os.getenv('OPENAI_IMAGE_MAX_DIM', '1600'))
         self.retry_attempts = int(os.getenv('OPENAI_RETRY_ATTEMPTS', '3'))
-        self.connect_timeout = int(os.getenv('OPENAI_CONNECT_TIMEOUT', '10'))
-        self.read_timeout = int(os.getenv('OPENAI_READ_TIMEOUT', '45'))
+        self.connect_timeout = int(os.getenv('OPENAI_CONNECT_TIMEOUT', '5'))
+        self.read_timeout = int(os.getenv('OPENAI_READ_TIMEOUT', '10'))
         
         # Check for OpenAI API key
         api_key = os.getenv('OPENAI_API_KEY')

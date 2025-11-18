@@ -166,29 +166,27 @@ class MultiEngineOCR:
         structured_data: Dict[str, Any] = {}
         engines_attempted = []
 
-        # Document AI (structured data)
-        if self.document_ai_enabled and self.engines_available.get('document_ai', False):
-            try:
-                logger.info("Running document_ai extraction...")
-                doc_data = self.document_ai.extract_structured_data(image_data)
-                engines_attempted.append('document_ai')
-                if doc_data:
-                    structured_data = dict(doc_data)
-                    doc_raw = doc_data.get('raw_text') or ''
-                    if doc_raw.strip():
-                        raw_text_sources['document_ai'] = doc_raw
-                        logger.info(f"document_ai produced raw text length {len(doc_raw)}")
-            except Exception as e:
-                logger.error(f"document_ai failed: {e}")
-
-        # Google Vision + OpenAI Vision in parallel
+        # Run ALL engines in parallel for maximum speed (including Document AI)
         parallel_engines = []
         if self.engines_available.get('google_vision', False):
             parallel_engines.append(('google_vision', self.google_vision.extract_text))
         if self.engines_available.get('openai', False):
             parallel_engines.append(('openai', self.openai_vision.extract_text))
+        if self.document_ai_enabled and self.engines_available.get('document_ai', False):
+            # Wrap Document AI to return just text for parallel processing
+            def document_ai_text_only(image_data):
+                try:
+                    doc_data = self.document_ai.extract_structured_data(image_data)
+                    if doc_data:
+                        nonlocal structured_data
+                        structured_data = dict(doc_data)
+                        return doc_data.get('raw_text', '')
+                except Exception as e:
+                    logger.error(f"Document AI failed: {e}")
+                return ''
+            parallel_engines.append(('document_ai', document_ai_text_only))
 
-        parallel_texts, parallel_attempts = self._run_parallel_text_engines(image_data, parallel_engines)
+        parallel_texts, parallel_attempts = self._run_parallel_text_engines_fast(image_data, parallel_engines)
         raw_text_sources.update(parallel_texts)
         engines_attempted.extend(parallel_attempts)
 
@@ -203,23 +201,8 @@ class MultiEngineOCR:
 
         success = bool(combined_text.strip())
 
-        # Fallback to OCR.space if we still have insufficient text
-        if (not success or len(combined_text.strip()) < 30) and self.engines_available.get('ocr_space', False):
-            try:
-                logger.info("Running ocr_space extraction as fallback...")
-                engines_attempted.append('ocr_space')
-                image = Image.open(io.BytesIO(image_data))
-                text, _ = self.ocr_space.extract_text(image)
-                if text and len(text.strip()) > 10:
-                    raw_text_sources['ocr_space'] = text
-                    combined_text, contributing_engines = self._combine_texts(raw_text_sources)
-                    structured_data['raw_text'] = combined_text
-                    success = bool(combined_text.strip())
-                    logger.info(f"ocr_space produced raw text length {len(text)}")
-                else:
-                    logger.info("ocr_space returned insufficient text")
-            except Exception as e:
-                logger.error(f"ocr_space failed: {e}")
+        # Skip OCR.space fallback for speed - primary engines should be sufficient
+        # OCR.space can be manually triggered if needed
 
         engine_used = '+'.join(contributing_engines)
 
@@ -269,6 +252,50 @@ class MultiEngineOCR:
             contributing.append(engine_name)
 
         return combined, contributing
+
+    def _run_parallel_text_engines_fast(self, image_data: bytes, engines: List[Tuple[str, Any]]) -> Tuple[Dict[str, str], List[str]]:
+        """Execute multiple OCR engines concurrently with early termination for speed."""
+        if not engines:
+            return {}, []
+
+        texts: Dict[str, str] = {}
+        attempted: List[str] = []
+
+        future_map = {}
+        start_time = time.perf_counter()
+        
+        logger.info(f"Starting {len(engines)} OCR engines in parallel with {self.parallel_timeout}s timeout")
+        
+        for engine_name, engine_func in engines:
+            attempted.append(engine_name)
+            future = self.parallel_executor.submit(engine_func, image_data)
+            future_map[future] = engine_name
+
+        # Wait for completion with reduced timeout for speed
+        completed, pending = wait(set(future_map.keys()), timeout=self.parallel_timeout, return_when=ALL_COMPLETED)
+
+        for future in completed:
+            engine_name = future_map[future]
+            try:
+                engine_text = future.result()
+                if engine_text and len(engine_text.strip()) > 10:
+                    texts[engine_name] = engine_text
+                    logger.info(f"{engine_name} produced text ({len(engine_text)} chars)")
+                else:
+                    logger.info(f"{engine_name} returned insufficient text")
+            except Exception as exc:
+                logger.error(f"{engine_name} failed: {exc}")
+
+        # Cancel pending futures to save resources
+        for future in pending:
+            engine_name = future_map[future]
+            future.cancel()
+            logger.warning(f"{engine_name} timed out after {self.parallel_timeout}s")
+
+        elapsed = time.perf_counter() - start_time
+        logger.info(f"Parallel OCR completed in {elapsed:.2f}s, {len(texts)} engines succeeded")
+
+        return texts, attempted
 
     def _run_parallel_text_engines(self, image_data: bytes, engines: List[Tuple[str, Any]]) -> Tuple[Dict[str, str], List[str]]:
         """Execute multiple OCR engines concurrently to minimize end-to-end latency."""
