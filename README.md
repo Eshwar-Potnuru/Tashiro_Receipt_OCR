@@ -66,6 +66,7 @@ Access the application at:
 - Python 3.8+
 - Valid OCR.space API key
 - HTTPS for camera functionality (automatic on Railway)
+- The Docker image installs the lightweight `requirements.txt` (FastAPI + OpenAI/Google Vision). If you need PaddleOCR, swap the Dockerfile `COPY requirements.txt` back to `requirements_production.txt` or install the optional packages manually.
 
 ## 🔧 Configuration
 

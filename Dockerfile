@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install -y \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements_production.txt ./requirements.txt
+# Copy requirements first for better caching (lightweight runtime set)
+COPY requirements.txt ./requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r requirements.txt
