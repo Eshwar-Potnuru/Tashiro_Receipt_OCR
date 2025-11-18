@@ -8,14 +8,16 @@ Provides GPT-like accuracy for receipt processing
 """
 
 import base64
+import io
+import json
 import logging
+import os
 from typing import List, Tuple, Optional
 from PIL import Image
-import io
-import os
 
 try:
     from google.cloud import vision
+    from google.oauth2 import service_account
     GOOGLE_VISION_AVAILABLE = True
 except ImportError:
     GOOGLE_VISION_AVAILABLE = False
@@ -29,18 +31,63 @@ class GoogleVisionOCR:
         if not GOOGLE_VISION_AVAILABLE:
             raise ImportError("Google Cloud Vision not installed. Run: pip install google-cloud-vision")
         
-        # Set credentials if provided
-        if credentials_path and os.path.exists(credentials_path):
-            os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = credentials_path
-        
+        self._client_available = False
+        self.client = None
+        self._credential_source = None
+        credentials = self._load_credentials(credentials_path)
+
         # Try to initialize client, but handle missing credentials gracefully
         try:
-            self.client = vision.ImageAnnotatorClient()
+            if credentials is not None:
+                self.client = vision.ImageAnnotatorClient(credentials=credentials)
+            else:
+                self.client = vision.ImageAnnotatorClient()
             self._client_available = True
+            if self._credential_source:
+                logger.info(f"Google Vision client initialized using {self._credential_source}")
         except Exception as e:
             logger.warning(f"Google Vision client initialization failed: {e}")
             self.client = None
             self._client_available = False
+
+    def _load_credentials(self, explicit_path: Optional[str]) -> Optional['service_account.Credentials']:
+        """Load service account credentials from file or environment."""
+        credential_scopes = ['https://www.googleapis.com/auth/cloud-platform']
+
+        candidate_path = explicit_path or os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        if candidate_path and os.path.exists(candidate_path):
+            try:
+                creds = service_account.Credentials.from_service_account_file(candidate_path, scopes=credential_scopes)
+                self._credential_source = candidate_path
+                return creds
+            except Exception as exc:
+                logger.warning(f"Failed to load Google Vision credentials from {candidate_path}: {exc}")
+
+        inline_payload = (
+            os.getenv('GOOGLE_VISION_CREDENTIALS_JSON')
+            or os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+            or os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+        )
+        if not inline_payload:
+            inline_b64 = os.getenv('GOOGLE_VISION_CREDENTIALS_B64')
+            if inline_b64:
+                try:
+                    inline_payload = base64.b64decode(inline_b64).decode('utf-8')
+                except Exception as exc:
+                    logger.warning(f"Failed to decode GOOGLE_VISION_CREDENTIALS_B64: {exc}")
+
+        if inline_payload:
+            try:
+                creds_info = json.loads(inline_payload)
+                creds = service_account.Credentials.from_service_account_info(creds_info, scopes=credential_scopes)
+                self._credential_source = 'inline-environment'
+                return creds
+            except Exception as exc:
+                logger.warning(f"Invalid Google Vision credentials JSON: {exc}")
+
+        # Fall back to default credentials (ADC)
+        self._credential_source = 'default-application-credentials'
+        return None
     
     def extract_text(self, image_data) -> str:
         """

@@ -421,6 +421,9 @@ async def accumulate_receipt(payload: Dict[str, Any] = Body(...)):
         if result.get("filepath"):
             rel_download = f"/api/accumulation/file?location={canonical}"
             result["download_url"] = rel_download
+        if result.get("artifact_path"):
+            artifact_name = Path(result["artifact_path"]).name
+            result["artifact_url"] = f"/artifacts/accumulation/{artifact_name}"
         result["duplicate"] = result.get("status") == "duplicate"
 
         return JSONResponse(status_code=status_code, content=result)

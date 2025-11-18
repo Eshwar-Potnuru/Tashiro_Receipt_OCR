@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import csv
+import logging
 import shutil
 from datetime import datetime
 from pathlib import Path
@@ -22,6 +23,8 @@ ACCUM_DIR = DATA_DIR / "accumulation"
 BACKUP_DIR = ACCUM_DIR / "backups"
 LOG_DIR = DATA_DIR / "submission_logs"
 LOG_FILE = LOG_DIR / "submission_log.csv"
+ARTIFACTS_ACCUM_DIR = BASE_DIR / "artifacts" / "accumulation"
+logger = logging.getLogger(__name__)
 CANONICAL_HEADERS = [
     "Business Office",
     "Order Number",
@@ -62,6 +65,7 @@ def _ensure_directories() -> None:
     ACCUM_DIR.mkdir(exist_ok=True)
     BACKUP_DIR.mkdir(exist_ok=True)
     LOG_DIR.mkdir(exist_ok=True)
+    ARTIFACTS_ACCUM_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def _prepare_row(data: Dict[str, Any], location: str, operator: Dict[str, Any]) -> Dict[str, Any]:
@@ -200,6 +204,14 @@ def append_to_location(
         updated_df.to_excel(writer, index=False)
 
     temp_path.replace(filepath)
+    artifact_path = None
+    try:
+        ARTIFACTS_ACCUM_DIR.mkdir(parents=True, exist_ok=True)
+        artifact_path = ARTIFACTS_ACCUM_DIR / filepath.name
+        shutil.copy2(filepath, artifact_path)
+    except Exception as exc:
+        logger.warning("Failed to mirror accumulation workbook to artifacts: %s", exc)
+        artifact_path = None
     _log_submission("ok", normalized_location, row, filepath, "Row appended")
 
     return {
@@ -207,6 +219,7 @@ def append_to_location(
         "location": normalized_location,
         "filepath": str(filepath),
         "backup": str(backup_path) if backup_path else None,
+        "artifact_path": str(artifact_path) if artifact_path else None,
         "appended_rows": 1,
         "row": row,
     }

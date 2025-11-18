@@ -30,8 +30,12 @@ Access the application at:
 
 2. **Environment Variables** (set in Railway dashboard):
    ```
-   OCR_SPACE_API_KEY=K88575219088957
+   OCR_SPACE_API_KEY=<your_ocr_space_key>
+   OPENAI_API_KEY=<your_openai_key>
+   GOOGLE_VISION_CREDENTIALS_JSON=<service_account_json>
+   # or provide GOOGLE_VISION_CREDENTIALS_B64 when pasting base64-encoded JSON
    ```
+   The Google Vision credential value can be copied directly from the JSON service-account file. Railway keeps long strings, so you no longer need to commit `config/google_vision_key.json`.
 
 3. **Access Your Deployed App**:
    - Railway will provide a public URL (e.g., `https://your-app.railway.app`)
@@ -66,7 +70,10 @@ Access the application at:
 ## 🔧 Configuration
 
 ### Environment Variables
-- `OCR_SPACE_API_KEY`: Your OCR.space API key
+- `OCR_SPACE_API_KEY`: OCR.space API key (required)
+- `OPENAI_API_KEY`: Enables OpenAI Vision engine
+- `GOOGLE_VISION_CREDENTIALS_JSON` or `GOOGLE_VISION_CREDENTIALS_B64`: Inline Google Vision service-account credentials (useful for Railway)
+- `GOOGLE_APPLICATION_CREDENTIALS`: Optional path to a mounted JSON key if running on your own VM
 
 ### File Structure
 ```
@@ -84,6 +91,10 @@ receipt-ocr/
 ├── railway.json             # Railway deployment config
 └── .env                     # Environment variables
 ```
+
+#### Accumulation Workbooks
+
+Each save to HQ updates `app/Data/accumulation/<LOCATION>_Accumulated.xlsx` and mirrors the workbook to `artifacts/accumulation/`. The artifacts directory is exposed at `/artifacts/...`, so remote testers (Railway) can download the latest Excel by visiting, for example, `https://your-app.railway.app/artifacts/accumulation/Tokyo_Accumulated.xlsx`.
 
 ## 🚀 Deployment Status
 

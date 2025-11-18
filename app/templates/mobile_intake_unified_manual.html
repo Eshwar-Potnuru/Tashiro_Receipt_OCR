@@ -3028,7 +3028,8 @@ function updateFieldLabels() {
         function handleSuccessfulSave(apiResult, correctedData) {
             showToast(t('savedReceipt'), 'success');
             if (saveResultMessage) {
-                const linkPart = apiResult.download_url ? `<a href="${apiResult.download_url}" target="_blank">${t('downloadWorkbook')}</a>` : '';
+                const downloadHref = apiResult.artifact_url || apiResult.download_url;
+                const linkPart = downloadHref ? `<a href="${downloadHref}" target="_blank">${t('downloadWorkbook')}</a>` : '';
                 saveResultMessage.innerHTML = `${t('savedToPath', {path: apiResult.filepath || ''})} ${linkPart}`;
                 saveResultMessage.style.display = 'block';
             }
