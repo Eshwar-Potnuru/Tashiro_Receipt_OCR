@@ -79,7 +79,26 @@ class MultiEngineOCR:
         
         if GOOGLE_VISION_AVAILABLE:
             try:
-                self.google_vision = GoogleVisionOCR()
+                # Try different credential sources with absolute paths
+                google_creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+                if not google_creds_path:
+                    # Use absolute path relative to project root
+                    # Go from app/ocr/multi_engine_ocr.py to project root
+                    script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                    google_creds_path = os.path.join(script_dir, 'config', 'google_vision_key.json')
+                    
+                    # If the above doesn't work, try a more direct approach
+                    if not os.path.exists(google_creds_path):
+                        # Assume we're in the Receipt-ocr-v1-git directory
+                        current_dir = os.getcwd()
+                        if 'Receipt-ocr-v1-git' in current_dir:
+                            base_dir = current_dir.split('Receipt-ocr-v1-git')[0] + 'Receipt-ocr-v1-git'
+                        else:
+                            base_dir = script_dir
+                        google_creds_path = os.path.join(base_dir, 'config', 'google_vision_key.json')
+                
+                logger.info(f"Attempting to load Google Vision credentials from: {google_creds_path}")
+                self.google_vision = GoogleVisionOCR(credentials_path=google_creds_path)
             except Exception as e:
                 logger.warning(f"Google Vision initialization failed: {e}")
         

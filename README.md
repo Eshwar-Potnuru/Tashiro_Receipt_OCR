@@ -73,21 +73,8 @@ Access the application at:
 ### Environment Variables
 - `OCR_SPACE_API_KEY`: OCR.space API key (required)
 - `OPENAI_API_KEY`: Enables OpenAI Vision engine
-- `GOOGLE_VISION_CREDENTIALS_JSON` or `GOOGLE_VISION_CREDENTIALS_B64`: Inline Google Vision service-account credentials (useful for Railway). Values can be copy/pasted directly from the downloaded JSON file; whitespace-only strings are ignored.
-- `GOOGLE_APPLICATION_CREDENTIALS`: Optional path to a mounted JSON key if running on your own VM. Local dev can point this to `config/google_vision_key.json`.
-- `DOCUMENT_AI_ENABLED`: Set to `true` to allow the system to call Google Document AI when credentials + processor are configured (default `false`).
-- `DOCUMENT_AI_CREDENTIALS_PATH`: If Document AI should use a different service-account file than Google Vision.
-- `DOCUMENT_AI_CREDENTIALS_JSON` / `DOCUMENT_AI_CREDENTIALS_B64`: Inline secrets for Document AI (falls back to the Google Vision values when omitted).
-- `DOCUMENT_AI_PROCESSOR_ID`: ID of the Document AI processor (e.g., `1234567890abcdef`), combined with the project ID from the service account.
-- `DOCUMENT_AI_PROCESSOR_NAME`: Full processor resource string (`projects/<project>/locations/<region>/processors/<id>`) if you prefer to pass it directly instead of providing `DOCUMENT_AI_PROCESSOR_ID`.
-- `DOCUMENT_AI_LOCATION`: Region where your processor lives (default `us`). Remember to match the location to the endpoint you created, e.g., `asia-northeast1`.
-
-#### Document AI Setup (optional)
-1. Enable the **Document AI API** inside the same GCP project that hosts your service account.
-2. Create a Processor ("Form Parser" or "Specialized Receipts") and note its ID + region.
-3. Provide credentials via `GOOGLE_APPLICATION_CREDENTIALS` or the inline env vars listed above.
-4. Set `DOCUMENT_AI_ENABLED=true` plus either `DOCUMENT_AI_PROCESSOR_ID` (with matching `project_id` in the key) or `DOCUMENT_AI_PROCESSOR_NAME`.
-5. Restart the container so `app/ocr/document_ai_ocr.py` can build a client using the regional endpoint (e.g., `asia-northeast1-documentai.googleapis.com`).
+- `GOOGLE_VISION_CREDENTIALS_JSON` or `GOOGLE_VISION_CREDENTIALS_B64`: Inline Google Vision service-account credentials (useful for Railway)
+- `GOOGLE_APPLICATION_CREDENTIALS`: Optional path to a mounted JSON key if running on your own VM
 
 ### File Structure
 ```

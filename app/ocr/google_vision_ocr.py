@@ -55,28 +55,24 @@ class GoogleVisionOCR:
         credential_scopes = ['https://www.googleapis.com/auth/cloud-platform']
 
         candidate_path = explicit_path or os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-        if candidate_path:
-            if os.path.exists(candidate_path):
-                try:
-                    creds = service_account.Credentials.from_service_account_file(candidate_path, scopes=credential_scopes)
-                    self._credential_source = candidate_path
-                    return creds
-                except Exception as exc:
-                    logger.warning(f"Failed to load Google Vision credentials from {candidate_path}: {exc}")
-            else:
-                logger.warning(f"Google Vision credential file not found: {candidate_path}")
+        if candidate_path and os.path.exists(candidate_path):
+            try:
+                creds = service_account.Credentials.from_service_account_file(candidate_path, scopes=credential_scopes)
+                self._credential_source = candidate_path
+                return creds
+            except Exception as exc:
+                logger.warning(f"Failed to load Google Vision credentials from {candidate_path}: {exc}")
 
         inline_payload = (
             os.getenv('GOOGLE_VISION_CREDENTIALS_JSON')
             or os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
             or os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
         )
-        inline_payload = inline_payload.strip() if inline_payload else None
         if not inline_payload:
             inline_b64 = os.getenv('GOOGLE_VISION_CREDENTIALS_B64')
             if inline_b64:
                 try:
-                    inline_payload = base64.b64decode(inline_b64).decode('utf-8').strip()
+                    inline_payload = base64.b64decode(inline_b64).decode('utf-8')
                 except Exception as exc:
                     logger.warning(f"Failed to decode GOOGLE_VISION_CREDENTIALS_B64: {exc}")
 
