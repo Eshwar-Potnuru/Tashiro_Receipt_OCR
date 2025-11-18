@@ -3,10 +3,12 @@ Google Document AI OCR Engine for Receipt Processing
 Provides structured document understanding for receipts and invoices
 """
 
+import base64
 import logging
-from typing import Dict, Optional, List, Any
+from typing import Dict, Optional, List, Any, Tuple
 from google.cloud import documentai_v1
 from google.cloud.documentai_v1 import types
+from google.oauth2 import service_account
 import json
 import os
 
@@ -17,42 +19,96 @@ class DocumentAIOCR:
     
     def __init__(self):
         """Initialize Document AI client"""
-        self.client = None
-        self.processor_name = None
-        self.project_id = None
-        self.location = "us"  # Default location
-        
-        # Try to initialize Document AI
+        self.client: Optional[documentai_v1.DocumentProcessorServiceClient] = None
+        self.processor_name: Optional[str] = None
+        self.project_id: Optional[str] = None
+        self.location = os.getenv('DOCUMENT_AI_LOCATION', 'us')
+        self.processor_id = os.getenv('DOCUMENT_AI_PROCESSOR_ID')
+
+        credentials, project_id = self._load_credentials()
+        self.project_id = project_id
+
+        if not credentials:
+            logger.warning(
+                "Document AI credentials not configured. Set DOCUMENT_AI_CREDENTIALS_PATH or GOOGLE_APPLICATION_CREDENTIALS, "
+                "or provide DOCUMENT_AI_CREDENTIALS_JSON/B64."
+            )
+            return
+
         try:
-            # Get credentials from environment or default
-            credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-            if credentials_path and os.path.exists(credentials_path):
-                logger.info(f"Using Google credentials from: {credentials_path}")
-                self.client = documentai_v1.DocumentProcessorServiceClient()
-                
-                # Set up processor (you'll need to create this in Google Cloud Console)
-                self.project_id = self._get_project_id_from_credentials(credentials_path)
-                if self.project_id:
-                    # Document AI processor for receipts/invoices
-                    self.processor_name = f"projects/{self.project_id}/locations/{self.location}/processors/YOUR_PROCESSOR_ID"
-                    logger.info("Document AI client initialized successfully")
-                else:
-                    logger.warning("Could not determine project ID")
-            else:
-                logger.warning("Google credentials not found - Document AI disabled")
+            client_options = {"api_endpoint": f"{self.location}-documentai.googleapis.com"}
+            self.client = documentai_v1.DocumentProcessorServiceClient(
+                credentials=credentials,
+                client_options=client_options
+            )
+            logger.info("Document AI client initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize Document AI: {str(e)}")
             self.client = None
-    
-    def _get_project_id_from_credentials(self, credentials_path: str) -> Optional[str]:
-        """Extract project ID from credentials file"""
-        try:
-            with open(credentials_path, 'r') as f:
-                creds = json.load(f)
-                return creds.get('project_id')
-        except Exception as e:
-            logger.error(f"Failed to read project ID from credentials: {str(e)}")
-            return None
+            return
+
+        processor_name_env = os.getenv('DOCUMENT_AI_PROCESSOR_NAME')
+        if processor_name_env:
+            self.processor_name = processor_name_env
+        elif self.processor_id and self.project_id:
+            self.processor_name = (
+                f"projects/{self.project_id}/locations/{self.location}/processors/{self.processor_id}"
+            )
+        else:
+            logger.warning(
+                "Document AI processor not configured. Set DOCUMENT_AI_PROCESSOR_ID (and ensure credentials include project_id) "
+                "or DOCUMENT_AI_PROCESSOR_NAME."
+            )
+
+    def _load_credentials(self) -> Tuple[Optional['service_account.Credentials'], Optional[str]]:
+        """Load Document AI credentials from file or environment."""
+        credential_scopes = ['https://www.googleapis.com/auth/cloud-platform']
+
+        candidate_path = os.getenv('DOCUMENT_AI_CREDENTIALS_PATH') or os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+        if candidate_path:
+            if os.path.exists(candidate_path):
+                try:
+                    creds = service_account.Credentials.from_service_account_file(
+                        candidate_path,
+                        scopes=credential_scopes
+                    )
+                    return creds, creds.project_id
+                except Exception as exc:
+                    logger.warning(f"Failed to load Document AI credentials from {candidate_path}: {exc}")
+            else:
+                logger.warning(f"Document AI credential file not found: {candidate_path}")
+
+        inline_payload = (
+            os.getenv('DOCUMENT_AI_CREDENTIALS_JSON')
+            or os.getenv('GOOGLE_VISION_CREDENTIALS_JSON')
+            or os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+            or os.getenv('GOOGLE_APPLICATION_CREDENTIALS_CONTENT')
+        )
+        inline_payload = inline_payload.strip() if inline_payload else None
+        if not inline_payload:
+            inline_b64 = (
+                os.getenv('DOCUMENT_AI_CREDENTIALS_B64')
+                or os.getenv('GOOGLE_VISION_CREDENTIALS_B64')
+            )
+            if inline_b64:
+                try:
+                    inline_payload = base64.b64decode(inline_b64).decode('utf-8').strip()
+                except Exception as exc:
+                    logger.warning(f"Failed to decode DOCUMENT_AI_CREDENTIALS_B64: {exc}")
+
+        if inline_payload:
+            try:
+                creds_info = json.loads(inline_payload)
+                creds = service_account.Credentials.from_service_account_info(
+                    creds_info,
+                    scopes=credential_scopes
+                )
+                project_id = creds_info.get('project_id') or creds.project_id
+                return creds, project_id
+            except Exception as exc:
+                logger.warning(f"Invalid Document AI credentials JSON: {exc}")
+
+        return None, None
     
     def is_available(self) -> bool:
         """Check if Document AI is available"""

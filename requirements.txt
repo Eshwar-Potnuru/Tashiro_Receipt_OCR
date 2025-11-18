@@ -57,6 +57,9 @@ openai==0.28.1
 # Google Cloud Vision API
 google-cloud-vision==3.7.2
 
+# Google Document AI API
+google-cloud-documentai==2.26.0
+
 # Visualization (optional for production)
 # matplotlib==3.8.0
 # seaborn==0.12.2
