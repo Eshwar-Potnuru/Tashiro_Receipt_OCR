@@ -1463,8 +1463,8 @@
                                     </tbody>
                                 </table>
                             </div>
-                            <div id="saveResultMessage" class="save-result"></div>
                         </div>
+                        <div id="saveResultMessage" class="save-result"></div>
                     </div>
                 </div>
             </div>
@@ -2267,8 +2267,14 @@ function updateFieldLabels() {
         const loadingStepQueue = document.getElementById('loadingStepQueue');
         const loadingStepExtraction = document.getElementById('loadingStepExtraction');
 
+        if (staffMemberSelect) {
+            staffMemberSelect.disabled = true;
+            staffMemberSelect.innerHTML = `<option value="">${t('selectLocationFirst')}</option>`;
+        }
+
         if (businessLocationSelect) {
             businessLocationSelect.addEventListener('change', () => {
+                userLocationOverride = true;
                 updateSaveButtonLabel();
                 handleLocationChange();
             });
@@ -2284,6 +2290,7 @@ function updateFieldLabels() {
         let availableLocations = [];
         let locationSynonymMap = {};
         let pendingStaffSelection = null;
+        let userLocationOverride = false;
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2336,7 +2343,7 @@ function updateFieldLabels() {
 
         function saveLatestAnalysis(queueId, fields) {
             try {
-                const fieldWhitelist = ['date','vendor','total','invoice_number','tax_category','account_title','subtotal','tax','currency'];
+                const fieldWhitelist = ['date','vendor','total','invoice_number','tax_category','account_title','tax','currency','staff_member'];
                 const sanitized = {};
                 fieldWhitelist.forEach(key => sanitized[key] = fields[key] || '');
                 localStorage.setItem(LATEST_ANALYSIS_KEY, JSON.stringify({
@@ -2380,6 +2387,7 @@ function updateFieldLabels() {
                 })
                 .catch(err => {
                     console.warn('Failed to load locations', err);
+                    resetStaffSelect('staffLoadError');
                 });
         }
 
@@ -2409,6 +2417,7 @@ function updateFieldLabels() {
             }
             staffMemberSelect.disabled = true;
             staffMemberSelect.innerHTML = `<option value="">${t(messageKey)}</option>`;
+            staffMemberSelect.dataset.location = '';
         }
 
         function handleLocationChange() {
@@ -2416,6 +2425,10 @@ function updateFieldLabels() {
                 return;
             }
             const selectedLocation = businessLocationSelect.value;
+            const previousLocation = staffMemberSelect.dataset.location || '';
+            if (previousLocation === selectedLocation && staffMemberSelect.options.length > 1) {
+                return; // Already loaded for this location
+            }
             if (!selectedLocation) {
                 pendingStaffSelection = null;
                 resetStaffSelect('selectLocationFirst');
@@ -2446,6 +2459,7 @@ function updateFieldLabels() {
                         option.textContent = member.name;
                         staffMemberSelect.appendChild(option);
                     });
+                    staffMemberSelect.dataset.location = selectedLocation;
 
                     if (pendingStaffSelection && staffList.some(member => member.name === pendingStaffSelection)) {
                         staffMemberSelect.value = pendingStaffSelection;
@@ -2805,7 +2819,6 @@ function updateFieldLabels() {
                 document.getElementById('fieldInvoiceNumber').value = '12345';
                 document.getElementById('fieldTaxCategory').value = '標準税率';
                 document.getElementById('fieldAccountTitle').value = '交通費';
-                document.getElementById('fieldSubtotal').value = '909';
                 document.getElementById('fieldTax').value = '91';
                 document.getElementById('fieldCurrency').value = 'JPY';
                 
@@ -2848,7 +2861,6 @@ function updateFieldLabels() {
                 }
             }
 
-            document.getElementById('fieldSubtotal').value = fields.subtotal || '';
             document.getElementById('fieldTax').value = fields.tax || '';
             document.getElementById('fieldCurrency').value = fields.currency || 'JPY';
 
@@ -2859,8 +2871,18 @@ function updateFieldLabels() {
 
             if (businessLocationSelect) {
                 const inferredLocation = guessLocationFromFields(fields);
-                if (inferredLocation) {
-                    businessLocationSelect.value = inferredLocation;
+                const hasSelection = Boolean(businessLocationSelect.value);
+                if (inferredLocation && (!userLocationOverride || !hasSelection)) {
+                    if (businessLocationSelect.value !== inferredLocation) {
+                        businessLocationSelect.value = inferredLocation;
+                        updateSaveButtonLabel();
+                    }
+                    userLocationOverride = false;
+                    pendingStaffSelection = fields.staff_member || null;
+                    handleLocationChange();
+                } else if (!hasSelection) {
+                    pendingStaffSelection = null;
+                    resetStaffSelect('selectLocationFirst');
                 }
             }
         }
@@ -2903,7 +2925,6 @@ function updateFieldLabels() {
                 invoice_number: { value: document.getElementById('fieldInvoiceNumber').value, label: t('invoiceNumberLabel'), type: 'text' },
                 tax_category: { value: document.getElementById('fieldTaxCategory').value, label: t('taxCategoryLabel'), type: 'select' },
                 account_title: { value: document.getElementById('fieldAccountTitle').value, label: t('accountTitleLabel'), type: 'select' },
-                subtotal: { value: document.getElementById('fieldSubtotal').value, label: t('subtotalRef'), type: 'number' },
                 tax: { value: document.getElementById('fieldTax').value, label: t('taxAmountRef'), type: 'number' },
                 currency: { value: document.getElementById('fieldCurrency').value, label: t('currency'), type: 'text' }
             };
@@ -3076,6 +3097,13 @@ function updateFieldLabels() {
                 businessLocationSelect.focus();
                 return;
             }
+            if (!staffMemberSelect || !staffMemberSelect.value) {
+                showToast(t('staffRequired'), 'warning');
+                if (staffMemberSelect) {
+                    staffMemberSelect.focus();
+                }
+                return;
+            }
 
             const operator = JSON.parse(localStorage.getItem('tashiro_user') || '{}');
             if (!operator.name || !operator.email) {
@@ -3099,18 +3127,23 @@ function updateFieldLabels() {
             });
 
             const locationValue = businessLocationSelect.value;
-            const receiptData = {
-                ...correctedData,
-                business_location: locationValue
-            };
+            const staffValue = staffMemberSelect.value;
+            const taxValue = parseFloat(document.getElementById('fieldTax').value) || 0;
 
             const payload = {
                 queue_id: currentQueueId,
-                receipt_data: receiptData,
-                fields: receiptData,
-                business_location: locationValue,
                 location: locationValue,
-                operator: operatorPayload,
+                staff_member: staffValue,
+                receipt_date: document.getElementById('fieldDate').value,
+                vendor_name: document.getElementById('fieldVendor').value,
+                total_amount: parseFloat(document.getElementById('fieldTotal').value) || 0,
+                invoice_number: document.getElementById('fieldInvoiceNumber').value,
+                tax_10: taxValue,
+                tax_8: 0,
+                tax_total: taxValue,
+                operator_name: operatorPayload.name,
+                operator_email: operatorPayload.email,
+                operator_id: operatorPayload.employee_id,
                 force: forceSave
             };
 
@@ -3124,14 +3157,14 @@ function updateFieldLabels() {
             })
             .then(async response => {
                 const data = await response.json();
-                if (response.status === 409 && data.status === 'duplicate') {
+                if (response.status === 409) {
                     handleDuplicateResponse(data);
                     throw new Error('duplicate');
                 }
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Save failed');
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.detail || data.error || 'Save failed');
                 }
-                handleSuccessfulSave(data, correctedData);
+                handleSuccessfulSave(data, { ...correctedData, business_location: locationValue, staff_member: staffValue });
             })
             .catch(error => {
                 if (error.message !== 'duplicate') {
@@ -3152,9 +3185,10 @@ function updateFieldLabels() {
         function handleSuccessfulSave(apiResult, correctedData) {
             showToast(t('savedReceipt'), 'success');
             if (saveResultMessage) {
-                const downloadHref = apiResult.artifact_url || apiResult.download_url;
-                const linkPart = downloadHref ? `<a href="${downloadHref}" target="_blank">${t('downloadWorkbook')}</a>` : '';
-                saveResultMessage.innerHTML = `${t('savedToPath', {path: apiResult.filepath || ''})} ${linkPart}`;
+                const workbookPath = apiResult.file_path || apiResult.filepath || '';
+                const inferredDownload = apiResult.download_url || apiResult.artifact_url || (businessLocationSelect && businessLocationSelect.value ? `/api/accumulation/file?location=${encodeURIComponent(businessLocationSelect.value)}` : '');
+                const linkPart = inferredDownload ? `<a href="${inferredDownload}" target="_blank">${t('downloadWorkbook')}</a>` : '';
+                saveResultMessage.innerHTML = `Saved to: ${workbookPath}. ${linkPart}`;
                 saveResultMessage.style.display = 'block';
             }
 
@@ -3162,8 +3196,13 @@ function updateFieldLabels() {
                 ...correctedData,
                 id: currentQueueId,
                 timestamp: new Date().toISOString(),
-                business_location: businessLocationSelect ? businessLocationSelect.value : ''
+                business_location: businessLocationSelect ? businessLocationSelect.value : '',
+                staff_member: staffMemberSelect ? staffMemberSelect.value : '',
+                excel_url: apiResult.download_url || apiResult.artifact_url
             });
+
+            // Reset the form after successful save
+            resetForm();
         }
 
         // Save changes from editable table back to form fields
@@ -3203,7 +3242,6 @@ function updateFieldLabels() {
             document.getElementById('fieldInvoiceNumber').value = '';
             document.getElementById('fieldTaxCategory').value = '';
             document.getElementById('fieldAccountTitle').value = '';
-            document.getElementById('fieldSubtotal').value = '';
             document.getElementById('fieldTax').value = '';
             document.getElementById('fieldCurrency').value = 'JPY';
             
@@ -3233,10 +3271,14 @@ function updateFieldLabels() {
             if (businessLocationSelect) {
                 businessLocationSelect.value = '';
             }
-            if (saveResultMessage) {
-                saveResultMessage.style.display = 'none';
-                saveResultMessage.textContent = '';
-            }
+            userLocationOverride = false;
+            pendingStaffSelection = null;
+            resetStaffSelect('selectLocationFirst');
+            // Keep saveResultMessage visible after reset so user can download
+            // if (saveResultMessage) {
+            //     saveResultMessage.style.display = 'none';
+            //     saveResultMessage.textContent = '';
+            // }
             if (saveAccumulationBtn) {
                 saveAccumulationBtn.disabled = true;
             }

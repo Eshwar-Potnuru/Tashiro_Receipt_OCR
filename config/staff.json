@@ -1,0 +1,48 @@
+{
+  "temporary_staff": [
+    {
+      "id": "temp001",
+      "name": "田中太郎",
+      "email": "tanaka@tashiro.co.jp",
+      "role": "temporary",
+      "locations": ["Tokyo", "Sagami"]
+    },
+    {
+      "id": "temp002", 
+      "name": "佐藤花子",
+      "email": "sato@tashiro.co.jp",
+      "role": "temporary",
+      "locations": ["Osaka", "Aichi"]
+    },
+    {
+      "id": "temp003",
+      "name": "鈴木一郎",
+      "email": "suzuki@tashiro.co.jp", 
+      "role": "temporary",
+      "locations": ["Kashima", "Keihin"]
+    },
+    {
+      "id": "temp004",
+      "name": "高橋美咲",
+      "email": "takahashi@tashiro.co.jp",
+      "role": "temporary", 
+      "locations": ["Takasago"]
+    }
+  ],
+  "permanent_staff": [
+    {
+      "id": "perm001",
+      "name": "山田部長",
+      "email": "yamada@tashiro.co.jp",
+      "role": "manager",
+      "locations": ["Tokyo", "Osaka"]
+    },
+    {
+      "id": "perm002",
+      "name": "伊藤課長", 
+      "email": "ito@tashiro.co.jp",
+      "role": "supervisor",
+      "locations": ["Sagami", "Aichi", "Keihin"]
+    }
+  ]
+}

@@ -16,7 +16,8 @@ from app.extractors.enhanced_field_extractor import EnhancedFieldExtractor
 from app.ocr.multi_engine_ocr import MultiEngineOCR
 from app.exporters.excel_exporter import ExcelExporter
 from app.history.submission_history import SubmissionHistory
-from accumulator import append_to_location, ACCUM_DIR
+from accumulator import append_to_location, ACCUM_DIR, test_template_system, get_staff_for_location, validate_staff_member, append_to_month_sheet
+from template_formatter import append_to_formatted_template
 from validators import (
     get_available_locations,
     normalize_location,
@@ -355,6 +356,21 @@ async def list_locations():
     return cfg
 
 
+@router.get("/staff")
+async def list_staff(location: str):
+    cfg = _refresh_locations_cache()
+    canonical = normalize_location(location, cfg)
+    if not canonical:
+        raise HTTPException(status_code=400, detail="Unknown business location")
+
+    staff = get_staff_for_location(canonical) or []
+    return {
+        "success": True,
+        "location": canonical,
+        "staff": staff,
+    }
+
+
 @router.get("/accumulation/file")
 async def download_accumulation(location: str):
     cfg = _refresh_locations_cache()
@@ -375,7 +391,31 @@ async def download_accumulation(location: str):
 async def accumulate_receipt(payload: Dict[str, Any] = Body(...)):
     try:
         receipt_fields = payload.get("receipt_data") or payload.get("fields") or {}
+
+        if not receipt_fields:
+            fallback_fields = {
+                "receipt_date": payload.get("receipt_date"),
+                "vendor_name": payload.get("vendor_name"),
+                "total_amount": payload.get("total_amount"),
+                "invoice_number": payload.get("invoice_number"),
+                "order_number": payload.get("order_number"),
+                "tax_10": payload.get("tax_10"),
+                "tax_8": payload.get("tax_8"),
+                "tax_total": payload.get("tax_total"),
+                "business_office": payload.get("business_location") or payload.get("location"),
+            }
+            receipt_fields = {k: v for k, v in fallback_fields.items() if v not in (None, "")}
+
         operator_payload = payload.get("operator") or {}
+        if not operator_payload.get("full_name") and payload.get("operator_name"):
+            operator_payload["full_name"] = payload.get("operator_name")
+        if not operator_payload.get("name") and payload.get("operator_name"):
+            operator_payload["name"] = payload.get("operator_name")
+        if not operator_payload.get("email") and payload.get("operator_email"):
+            operator_payload["email"] = payload.get("operator_email")
+        if not operator_payload.get("employee_id") and payload.get("operator_id"):
+            operator_payload["employee_id"] = payload.get("operator_id")
+
         if not receipt_fields:
             raise HTTPException(status_code=400, detail="Missing receipt data")
         if not operator_payload:
@@ -400,6 +440,8 @@ async def accumulate_receipt(payload: Dict[str, Any] = Body(...)):
 
         fields = dict(receipt_fields)
         fields["business_location"] = canonical
+        if payload.get("staff_member"):
+            fields.setdefault("staff_member", payload.get("staff_member"))
         operator = {
             "name": operator_payload.get("full_name") or operator_payload.get("name"),
             "email": operator_payload.get("email"),
