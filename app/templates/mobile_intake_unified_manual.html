@@ -717,6 +717,28 @@
             color: var(--text-dark);
         }
 
+        .assignment-panel {
+            background: var(--pure-white);
+            border: 1px solid var(--light-gray);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 24px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+        }
+
+        .assignment-panel h4 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .assignment-panel .panel-hint {
+            margin-bottom: 16px;
+            color: var(--dark-gray);
+            font-size: 14px;
+        }
+
         .save-result {
             margin-top: 12px;
             padding: 12px 16px;
@@ -1370,10 +1392,6 @@
                             <h4>Additional Information</h4>
                             <div class="form-grid">
                                 <div class="form-field">
-                                    <label>Subtotal (参考)</label>
-                                    <input type="text" id="fieldSubtotal" placeholder="0.00">
-                                </div>
-                                <div class="form-field">
                                     <label>Tax Amount (参考)</label>
                                     <input type="text" id="fieldTax" placeholder="0.00">
                                 </div>
@@ -1381,10 +1399,24 @@
                                     <label>Currency</label>
                                     <input type="text" id="fieldCurrency" placeholder="JPY" value="JPY">
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Location & Staff Assignment -->
+                        <div class="assignment-panel">
+                            <h4>Location & Staff Assignment</h4>
+                            <p class="panel-hint">Select the business office and staff member responsible for this receipt.</p>
+                            <div class="form-grid">
                                 <div class="form-field">
                                     <label for="businessLocationSelect">Business Location <span class="required">*</span></label>
                                     <select id="businessLocationSelect">
                                         <option value="">Select location</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label for="staffMemberSelect">Staff Member <span class="required">*</span></label>
+                                    <select id="staffMemberSelect" disabled>
+                                        <option value="">Select location first</option>
                                     </select>
                                 </div>
                             </div>
@@ -1562,6 +1594,15 @@
                 subtotalRef: "Subtotal (参考)",
                 taxAmountRef: "Tax Amount (参考)",
                 currency: "Currency",
+                locationStaffHeader: "Location & Staff Assignment",
+                locationStaffDescription: "Select the business office and staff member responsible for this receipt.",
+                staffMemberLabel: "Staff Member",
+                selectStaff: "Select staff member",
+                selectLocationFirst: "Select location first",
+                loadingStaff: "Loading staff...",
+                noStaffFound: "No staff configured",
+                staffLoadError: "Unable to load staff",
+                staffRequired: "Select a staff member before saving.",
 
                 // Buttons
                 submitToHq: "Submit to HQ",
@@ -1734,6 +1775,15 @@
                 subtotalRef: "小計（参考）",
                 taxAmountRef: "税額（参考）",
                 currency: "通貨",
+                locationStaffHeader: "事業所と担当者の割り当て",
+                locationStaffDescription: "この領収書を担当する事業所と担当者を選択してください。",
+                staffMemberLabel: "担当者",
+                selectStaff: "担当者を選択",
+                selectLocationFirst: "先に事業所を選択してください",
+                loadingStaff: "担当者を読み込み中...",
+                noStaffFound: "担当者が設定されていません",
+                staffLoadError: "担当者を読み込めませんでした",
+                staffRequired: "保存前に担当者を選択してください。",
 
                 // Buttons
                 submitToHq: "本社に提出",
@@ -2043,15 +2093,28 @@ function updateFieldLabels() {
             // Additional info field labels
             const additionalLabels = document.querySelectorAll('.additional-info label');
             console.log('Additional labels found (regular update):', additionalLabels.length);
-            if (additionalLabels.length >= 3) {
-                additionalLabels[0].textContent = t('subtotalRef');
-                additionalLabels[1].textContent = t('taxAmountRef');
-                additionalLabels[2].textContent = t('currency');
-                console.log('Additional labels updated (regular):', additionalLabels[2].textContent);
+            if (additionalLabels.length >= 2) {
+                additionalLabels[0].textContent = t('taxAmountRef');
+                additionalLabels[1].textContent = t('currency');
+                console.log('Additional labels updated (regular):', additionalLabels[1].textContent);
+            }
+
+            const assignmentHeader = document.querySelector('.assignment-panel h4');
+            if (assignmentHeader) {
+                assignmentHeader.textContent = t('locationStaffHeader');
+            }
+
+            const assignmentHint = document.querySelector('.assignment-panel .panel-hint');
+            if (assignmentHint) {
+                assignmentHint.textContent = t('locationStaffDescription');
             }
 
             if (businessLocationLabel) {
                 businessLocationLabel.innerHTML = `${t('businessLocationLabel')} <span class="required">*</span>`;
+            }
+            const staffMemberLabel = document.querySelector('label[for="staffMemberSelect"]');
+            if (staffMemberLabel) {
+                staffMemberLabel.innerHTML = `${t('staffMemberLabel')} <span class="required">*</span>`;
             }
             if (businessLocationSelect) {
                 populateLocationSelect();
@@ -2193,6 +2256,7 @@ function updateFieldLabels() {
         const ocrDebugPanel = document.getElementById('ocrDebugPanel');
         const ocrDebugContent = document.getElementById('ocrDebugContent');
         const businessLocationSelect = document.getElementById('businessLocationSelect');
+        const staffMemberSelect = document.getElementById('staffMemberSelect');
         const businessLocationLabel = document.querySelector('label[for="businessLocationSelect"]');
         const saveAccumulationBtn = document.getElementById('saveAccumulationBtn');
         const saveResultMessage = document.getElementById('saveResultMessage');
@@ -2204,7 +2268,10 @@ function updateFieldLabels() {
         const loadingStepExtraction = document.getElementById('loadingStepExtraction');
 
         if (businessLocationSelect) {
-            businessLocationSelect.addEventListener('change', updateSaveButtonLabel);
+            businessLocationSelect.addEventListener('change', () => {
+                updateSaveButtonLabel();
+                handleLocationChange();
+            });
         }
 
         // Global variables
@@ -2216,6 +2283,7 @@ function updateFieldLabels() {
         const MAX_POLL_ATTEMPTS = 40;
         let availableLocations = [];
         let locationSynonymMap = {};
+        let pendingStaffSelection = null;
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2332,6 +2400,62 @@ function updateFieldLabels() {
                 businessLocationSelect.value = desiredValue;
             }
             updateSaveButtonLabel();
+            handleLocationChange();
+        }
+
+        function resetStaffSelect(messageKey = 'selectLocationFirst') {
+            if (!staffMemberSelect) {
+                return;
+            }
+            staffMemberSelect.disabled = true;
+            staffMemberSelect.innerHTML = `<option value="">${t(messageKey)}</option>`;
+        }
+
+        function handleLocationChange() {
+            if (!businessLocationSelect || !staffMemberSelect) {
+                return;
+            }
+            const selectedLocation = businessLocationSelect.value;
+            if (!selectedLocation) {
+                pendingStaffSelection = null;
+                resetStaffSelect('selectLocationFirst');
+                return;
+            }
+
+            staffMemberSelect.disabled = true;
+            staffMemberSelect.innerHTML = `<option value="">${t('loadingStaff')}</option>`;
+
+            fetch(`/api/staff?location=${encodeURIComponent(selectedLocation)}`)
+                .then(resp => {
+                    if (!resp.ok) {
+                        throw new Error('staff-fetch-failed');
+                    }
+                    return resp.json();
+                })
+                .then(data => {
+                    const staffList = Array.isArray(data.staff) ? data.staff : [];
+                    if (!staffList.length) {
+                        resetStaffSelect('noStaffFound');
+                        return;
+                    }
+                    staffMemberSelect.disabled = false;
+                    staffMemberSelect.innerHTML = `<option value="">${t('selectStaff')}</option>`;
+                    staffList.forEach(member => {
+                        const option = document.createElement('option');
+                        option.value = member.name;
+                        option.textContent = member.name;
+                        staffMemberSelect.appendChild(option);
+                    });
+
+                    if (pendingStaffSelection && staffList.some(member => member.name === pendingStaffSelection)) {
+                        staffMemberSelect.value = pendingStaffSelection;
+                    }
+                    pendingStaffSelection = null;
+                })
+                .catch(err => {
+                    console.warn('Staff fetch failed', err);
+                    resetStaffSelect('staffLoadError');
+                });
         }
 
         function updateSaveButtonLabel() {
