@@ -25,7 +25,14 @@ class OpenAIVisionOCR:
         self.max_image_dim = int(os.getenv('OPENAI_IMAGE_MAX_DIM', '1600'))
         self.retry_attempts = int(os.getenv('OPENAI_RETRY_ATTEMPTS', '3'))
         self.connect_timeout = int(os.getenv('OPENAI_CONNECT_TIMEOUT', '5'))
-        self.read_timeout = int(os.getenv('OPENAI_READ_TIMEOUT', '10'))
+        self.read_timeout = int(os.getenv('OPENAI_READ_TIMEOUT', '13'))
+        
+        # Detect Railway environment and adjust timeouts for cloud deployment
+        is_railway = os.getenv('RAILWAY_ENVIRONMENT') is not None or os.getenv('RAILWAY_PROJECT_ID') is not None
+        if is_railway:
+            logger.info("Railway environment detected - increasing OpenAI timeouts for cloud deployment")
+            self.read_timeout = max(self.read_timeout, 23)  # Increase to 20s minimum
+            self.retry_attempts = max(self.retry_attempts, 5)  # Increase to 5 retries minimum
         
         # Check for OpenAI API key
         api_key = os.getenv('OPENAI_API_KEY')
