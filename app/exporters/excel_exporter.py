@@ -1,3 +1,8 @@
+"""Excel export bridge for legacy workflows.
+
+TODO: Align this exporter with the new excel writer abstractions once implemented.
+"""
+
 import pandas as pd
 import os
 from datetime import datetime

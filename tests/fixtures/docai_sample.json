@@ -1,0 +1,12 @@
+{
+  "entities": [
+    {"type": "total", "text": "1200", "confidence": 0.98},
+    {"type": "tax", "text": "100", "confidence": 0.95}
+  ],
+  "fields": {
+    "date": "2025-01-10",
+    "vendor": "Sample Store",
+    "memo": "Lunch",
+    "amount": "1200"
+  }
+}

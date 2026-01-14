@@ -1,228 +1,125 @@
-"""
-Google Document AI OCR Engine for Receipt Processing
-Provides structured document understanding for receipts and invoices
-"""
+"""Document AI OCR scaffolding for Full Deployment Phase 1."""
 
-import logging
-from typing import Dict, Optional, List, Any
-from google.cloud import documentai_v1
-from google.cloud.documentai_v1 import types
+from __future__ import annotations
+
 import json
+import logging
+import mimetypes
 import os
+import tempfile
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+from app.ocr.document_ai_wrapper import (
+    DocumentAIUnavailableError,
+    DocumentAIWrapper,
+    call_document_ai,
+)
 
 logger = logging.getLogger(__name__)
 
-class DocumentAIOCR:
-    """Google Document AI OCR engine for structured receipt processing"""
-    
-    def __init__(self):
-        """Initialize Document AI client"""
-        self.client = None
-        self.processor_name = None
-        self.project_id = None
-        self.location = "us"  # Default location
-        
-        # Try to initialize Document AI
-        try:
-            # Get credentials from environment or default
-            credentials_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-            if credentials_path and os.path.exists(credentials_path):
-                logger.info(f"Using Google credentials from: {credentials_path}")
-                self.client = documentai_v1.DocumentProcessorServiceClient()
-                
-                # Set up processor (you'll need to create this in Google Cloud Console)
-                self.project_id = self._get_project_id_from_credentials(credentials_path)
-                if self.project_id:
-                    # Document AI processor for receipts/invoices
-                    self.processor_name = f"projects/{self.project_id}/locations/{self.location}/processors/YOUR_PROCESSOR_ID"
-                    logger.info("Document AI client initialized successfully")
-                else:
-                    logger.warning("Could not determine project ID")
-            else:
-                logger.warning("Google credentials not found - Document AI disabled")
-        except Exception as e:
-            logger.error(f"Failed to initialize Document AI: {str(e)}")
-            self.client = None
-    
-    def _get_project_id_from_credentials(self, credentials_path: str) -> Optional[str]:
-        """Extract project ID from credentials file"""
-        try:
-            with open(credentials_path, 'r') as f:
-                creds = json.load(f)
-                return creds.get('project_id')
-        except Exception as e:
-            logger.error(f"Failed to read project ID from credentials: {str(e)}")
-            return None
-    
+
+class DocumentAIOCREngine:
+    """Template-driven Document AI engine with mock responses."""
+
+    def __init__(
+        self,
+        wrapper: Optional[DocumentAIWrapper] = None,
+        *,
+        enable_mock: bool = False,
+    ) -> None:
+        self.wrapper = wrapper or DocumentAIWrapper()
+        self.enable_mock = enable_mock
+
     def is_available(self) -> bool:
-        """Check if Document AI is available"""
-        return self.client is not None and self.processor_name is not None
-    
+        """Report whether Document AI can be used in the current environment."""
+
+        return self.enable_mock or self.wrapper.has_credentials()
+
+    def process_image(self, image_path: str) -> Dict[str, Any]:
+        """Process an image stored on disk with Document AI (mock for now)."""
+
+        logger.info(
+            "Document AI engine invoked",
+            extra={"engine": "document_ai", "file": Path(image_path).name},
+        )
+
+        if self.enable_mock:
+            return self._build_mock_response(image_path)
+
+        if not self.wrapper.has_credentials():
+            raise DocumentAIUnavailableError(
+                "Document AI credentials not configured. Enable mock mode or"
+                " provide DOCUMENT_AI_* variables before calling process_image."
+            )
+        try:
+            with open(image_path, "rb") as handle:
+                file_bytes = handle.read()
+            mime_type = mimetypes.guess_type(str(image_path))[0] or "application/octet-stream"
+            return call_document_ai(file_bytes, mime_type)
+        except DocumentAIUnavailableError as exc:
+            logger.warning("Document AI unavailable: %s", exc)
+            return {}
+        except Exception as exc:
+            logger.error("Document AI processing failed: %s", exc)
+            return {}
+
     def extract_structured_data(self, image_data: bytes) -> Dict[str, Any]:
-        """
-        Extract structured data from receipt using Document AI
-        
-        Args:
-            image_data: Image bytes
-            
-        Returns:
-            Dict with structured receipt data
-        """
-        if not self.is_available():
-            logger.warning("Document AI not available")
-            return {}
-        
+        """Compatibility helper used by existing code paths."""
+
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".png") as handle:
+            handle.write(image_data)
+            temp_path = handle.name
         try:
-            # Create the document object
-            document = types.Document(
-                content=image_data,
-                mime_type="image/png"  # Adjust based on your image type
-            )
-            
-            # Create the request
-            request = types.ProcessRequest(
-                name=self.processor_name,
-                document=document
-            )
-            
-            # Process the document
-            logger.info("Processing document with Document AI...")
-            result = self.client.process_document(request=request)
-            document = result.document
-            
-            # Extract structured data
-            structured_data = self._parse_document_ai_response(document)
-            
-            logger.info(f"Document AI extracted {len(structured_data)} fields")
-            return structured_data
-            
-        except Exception as e:
-            logger.error(f"Document AI extraction failed: {str(e)}")
+            return self.process_image(temp_path)
+        except DocumentAIUnavailableError as exc:
+            logger.warning("Document AI unavailable: %s", exc)
             return {}
-    
-    def _parse_document_ai_response(self, document) -> Dict[str, Any]:
-        """
-        Parse Document AI response into structured receipt data
-        
-        Args:
-            document: Document AI response document
-            
-        Returns:
-            Dict with extracted receipt fields
-        """
-        result = {
-            'raw_text': document.text,
-            'entities': {},
-            'line_items': [],
-            'totals': {},
-            'confidence_scores': {}
+        except Exception as exc:
+            logger.error("Document AI processing failed: %s", exc)
+            return {}
+        finally:
+            try:
+                os.unlink(temp_path)
+            except OSError:
+                logger.debug("Failed to remove temporary Document AI file", exc_info=True)
+
+    def _build_mock_response(self, image_path: str) -> Dict[str, Any]:
+        """Return a deterministic dummy payload used for unit tests."""
+
+        sample_json_path = Path(__file__).with_suffix(".sample.json")
+        if sample_json_path.exists():
+            try:
+                return json.loads(sample_json_path.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                logger.warning("Invalid JSON in %s", sample_json_path)
+
+        filename = Path(image_path).name
+        logger.info("Using inline mock Document AI payload for %s", filename)
+        return {
+            "processor": "mock-processor",
+            "text": "Sample Store\nTotal: ¥1,280",
+            "entities": {
+                "vendor_name": {"text": "Sample Store", "confidence": 0.94},
+                "total_amount": {"text": "¥1,280", "confidence": 0.91},
+                "receipt_date": {"text": "2024-11-05", "confidence": 0.89},
+            },
+            "fields": {
+                "total": {"value": "1280", "confidence": 0.91},
+                "date": {"value": "2024-11-05", "confidence": 0.89},
+                "vendor": {"value": "Sample Store", "confidence": 0.94},
+            },
+            "line_items": [
+                {"description": "Bento", "amount": "800"},
+                {"description": "Tea", "amount": "480"},
+            ],
+            "confidence_scores": {
+                "vendor_name": 0.94,
+                "total_amount": 0.91,
+                "receipt_date": 0.89,
+            },
+            "debug": {
+                "source_file": filename,
+                "mode": "mock",
+            },
         }
-        
-        # Extract entities (structured fields)
-        for entity in document.entities:
-            entity_type = entity.type_
-            entity_text = self._get_entity_text(document, entity)
-            confidence = entity.confidence
-            
-            result['entities'][entity_type] = {
-                'text': entity_text,
-                'confidence': confidence
-            }
-            result['confidence_scores'][entity_type] = confidence
-            
-            # Map common receipt fields
-            if entity_type in ['total_amount', 'net_amount', 'total']:
-                result['totals']['total'] = entity_text
-            elif entity_type in ['supplier_name', 'vendor_name', 'merchant_name']:
-                result['entities']['vendor'] = entity_text
-            elif entity_type in ['invoice_date', 'receipt_date', 'date']:
-                result['entities']['date'] = entity_text
-            elif entity_type in ['invoice_id', 'receipt_id', 'document_id']:
-                result['entities']['invoice_number'] = entity_text
-        
-        # Extract line items
-        if hasattr(document, 'pages') and document.pages:
-            for page in document.pages:
-                if hasattr(page, 'tables') and page.tables:
-                    for table in page.tables:
-                        line_items = self._extract_line_items_from_table(document, table)
-                        result['line_items'].extend(line_items)
-        
-        logger.info(f"Parsed entities: {list(result['entities'].keys())}")
-        logger.info(f"Found {len(result['line_items'])} line items")
-        
-        return result
-    
-    def _get_entity_text(self, document, entity) -> str:
-        """Extract text from Document AI entity"""
-        try:
-            if hasattr(entity, 'mention_text'):
-                return entity.mention_text
-            elif hasattr(entity, 'text_anchor') and entity.text_anchor.text_segments:
-                text_segment = entity.text_anchor.text_segments[0]
-                start = int(text_segment.start_index) if text_segment.start_index else 0
-                end = int(text_segment.end_index) if text_segment.end_index else len(document.text)
-                return document.text[start:end]
-            else:
-                return str(entity)
-        except Exception as e:
-            logger.error(f"Failed to extract entity text: {str(e)}")
-            return ""
-    
-    def _extract_line_items_from_table(self, document, table) -> List[Dict[str, str]]:
-        """Extract line items from Document AI table"""
-        line_items = []
-        
-        try:
-            headers = []
-            
-            # Extract headers
-            if table.header_rows:
-                header_row = table.header_rows[0]
-                for cell in header_row.cells:
-                    header_text = self._get_cell_text(document, cell)
-                    headers.append(header_text)
-            
-            # Extract data rows
-            for row in table.body_rows:
-                item = {}
-                for i, cell in enumerate(row.cells):
-                    cell_text = self._get_cell_text(document, cell)
-                    header = headers[i] if i < len(headers) else f"column_{i}"
-                    item[header] = cell_text
-                
-                if item:  # Only add non-empty items
-                    line_items.append(item)
-        
-        except Exception as e:
-            logger.error(f"Failed to extract line items: {str(e)}")
-        
-        return line_items
-    
-    def _get_cell_text(self, document, cell) -> str:
-        """Extract text from Document AI table cell"""
-        try:
-            if hasattr(cell, 'layout') and cell.layout.text_anchor:
-                text_segments = cell.layout.text_anchor.text_segments
-                if text_segments:
-                    segment = text_segments[0]
-                    start = int(segment.start_index) if segment.start_index else 0
-                    end = int(segment.end_index) if segment.end_index else len(document.text)
-                    return document.text[start:end].strip()
-            return ""
-        except Exception as e:
-            logger.error(f"Failed to extract cell text: {str(e)}")
-            return ""
-    
-    def extract_text_fallback(self, image_data: bytes) -> str:
-        """
-        Fallback text extraction using Document AI
-        
-        Args:
-            image_data: Image bytes
-            
-        Returns:
-            Extracted text string
-        """
-        structured_data = self.extract_structured_data(image_data)
-        return structured_data.get('raw_text', '')

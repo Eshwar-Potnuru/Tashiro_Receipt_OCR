@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "aim-tashiro-poc",
+  "private_key_id": "f99bcf2001256f3247f8bed45eff367d088f5c38",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQDEx9bgfblNt9wR\nMPShM8+wd0XyoA5fZ1WpjeV+weRJE4b5NILzyLwL1NhkLH0XfMIQcblFdASX7W/x\n+6zq+6cIRdD/fH4Afn+I50/TAuHmlUfBYzpXn82+73ghHIUZJIHawvkpisL8TGF8\nFtz89OLDyr5uP/6ewHv+m0UpfNwvcPILQh6D/YJyfcDLqqCPgFNDgxnTe80ocq2U\n1UWLTVmtYyJGHEb3Wzj5K5xMYGIfYeolu/ri1G8sHru/XDOB6XV1Hc1HtthrXEVH\n+6lCR5e7+5ps/Pxybta6HB6j4pQakaZoO+yqlXknQezUvDMlRirPqNBnNpTlcVOi\nBhArv2BPAgMBAAECggEAEz5bxB5nZbNKQSAhfDY95Er1uzFt1mSbmvY2cDvz4DWZ\nqHs7Jy4FPb713m3/WbGopMUKUkFzRYxBu09abKxpfESfmKyLAe9c931vb/pDLzKA\nDuhuRy1oiHiQreRFG91XGZahmS9pvBSYH/N4bwBfwLfuAYgelVXLim2SyOjd+4GL\nJqKFK4dNn8ZCMe/hO999HA2+hb/omBQbNcwSkTZ5m73Xi00bpUJtMKTu6AcMaKiS\n6Ir/JFgSo6N2IfGQ3ErZ4Uba/FXjJfA9VhHLY7GfKBDfOarULBwh0gJwNpIGx21n\nOXP2mWCkz8ksSxqP/ckWdpumDIJ26faRERlktsDKwQKBgQDrqciDuB7TqUSz4LPz\n8seU+aGo4tbi22hIOoAPqvEBMmZsVUFIjE03v99PDRfbAoJXTc4Li2b4hkYY72t5\n4dsjbveNOwENnbZRmsMlYRnqkPE/WU4QYUYFK1KpmRDWM9RM+txqKYFaiLmvQ5uO\nqyVSz/q67ijuGbr50i6/pVk4oQKBgQDVwxIob2vCHaD8Sxr59AzJK+24iiGQ8nXA\n3jdRYuU9gnqFuRFcCCah1csFgnh7nuQk/keAZ2WD67Q3Yxr+VZJ81rTrR/3pU83Y\nQ0jVdyCKeCu8t89xXK5ahP2I+VB4OJ4B4EizJGYyVZhqIhbkdAOD2WjLh8/hp+dH\n4/RSPJpC7wKBgB5f2M9ZaOfBFnDU0nzr2tuRvUtmSWod+3frylu6nauY0mi+KFbw\ndndsDJ1Ew8FftmsIRTlps1DvBZPrMAAao0MS52dVppIZtMkZ2HM168A3BFE08oHb\n98lsxw/DAc+KCKAPaV9pkBmaK8yyOxeNaZcd5WQ4lB/0Qww2Ef5zkmdhAoGAaolx\niFOX2kRYEsX/6OmYYb8SGLJHbm1ZAMn/ugFXDWP1WqZVH5A0aN4b9GAFWl9jh4hv\n7HAb6TbVN/Gd53qQqsV7n/Peeaa55foK19Eql7iy27ikm/Q8NYMotVbEo1ZcccTt\nltMiWB3O+76HuE6V3eXCVAYZNncvTuYuw7nOjGMCgYB/B7cRnLWMOX3VpYQ93uki\ntL4FbK52voO/WzpUTXqAIpEJwxHwwg0Npn5uyaqkGEp4tDpdGXqFIfbge10qXXTj\nAUu13LmzkT6PRTukzEedwKGK+ZfGCRYmuLubEswor3EvGgqkqEuQmUylekocinbj\nZrvFryehWn1ERMUZO6Sdsw==\n-----END PRIVATE KEY-----\n",
+  "client_email": "vision-api-for-project-tashiro@aim-tashiro-poc.iam.gserviceaccount.com",
+  "client_id": "115570163071906200088",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/vision-api-for-project-tashiro%40aim-tashiro-poc.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
