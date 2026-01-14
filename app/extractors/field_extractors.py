@@ -793,8 +793,8 @@ class FieldExtractor:
         # Second, look for shorter invoice-like numbers (but not registration numbers)
         # FIRST: Check for long registration numbers to avoid conflicts with short patterns
         registration_patterns = [
-            r'([T]\d{12,})',                              # T7380001003643 (long registration numbers)
-            r'([A-Za-z]\d{12,})',                         # Other long registration patterns
+            r'(T-?\d{12,})',                              # T7380001003643 or T-7380001003643
+            r'([A-Za-z]-?\d{12,})',                       # Other long registration patterns
         ]
 
         for line in lines:

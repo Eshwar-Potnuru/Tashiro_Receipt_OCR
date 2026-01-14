@@ -1,6 +1,8 @@
 """
 Enhanced Field Extractor with Document AI Support
-Combines Document AI structured extraction with pattern-based fallback
+Combines Document AI structured extraction with pattern-based fallback.
+
+TODO: Document mapping outputs expected by the new service layer before changes.
 """
 
 import json

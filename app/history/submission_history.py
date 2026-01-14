@@ -11,6 +11,7 @@ class SubmissionHistory:
         self.analysis_queue: Dict[str, Dict[str, Any]] = {}
         self.submissions: List[Dict[str, Any]] = []
         self.analysis_cache: Dict[str, Dict[str, Any]] = {}
+        self.batches: Dict[str, Dict[str, Any]] = {}
         self.lock = Lock()
 
     def create_pending_analysis(self, queue_id: str, metadata: Optional[str], payload_hash: Optional[str], preprocess_stats: Optional[Dict[str, Any]] = None):
@@ -139,3 +140,53 @@ class SubmissionHistory:
         """Clear old unprocessed analyses (optional cleanup)."""
         # Implementation for cleanup if needed
         pass
+
+    # ---------------------------
+    # Batch helpers (scaffolding)
+    # ---------------------------
+    def create_batch(self, batch_id: str, filenames: List[str], engine: str) -> None:
+        """Register a new batch with placeholder file entries."""
+
+        batch_record = {
+            'batch_id': batch_id,
+            'status': 'pending',
+            'engine': engine,
+            'created_at': datetime.now().isoformat(),
+            'updated_at': None,
+            'files': [
+                {
+                    'filename': name,
+                    'status': 'pending',
+                    'updated_at': None
+                }
+                for name in filenames
+            ]
+        }
+
+        with self.lock:
+            self.batches[batch_id] = batch_record
+
+    def update_file_status(self, batch_id: str, filename: str, status: str) -> None:
+        with self.lock:
+            batch = self.batches.get(batch_id)
+            if not batch:
+                return
+            for file_entry in batch.get('files', []):
+                if file_entry.get('filename') == filename:
+                    file_entry['status'] = status
+                    file_entry['updated_at'] = datetime.now().isoformat()
+                    batch['updated_at'] = datetime.now().isoformat()
+                    break
+
+    def update_batch_status(self, batch_id: str, status: str) -> None:
+        with self.lock:
+            batch = self.batches.get(batch_id)
+            if not batch:
+                return
+            batch['status'] = status
+            batch['updated_at'] = datetime.now().isoformat()
+
+    def get_batch(self, batch_id: str) -> Optional[Dict[str, Any]]:
+        with self.lock:
+            batch = self.batches.get(batch_id)
+            return copy.deepcopy(batch) if batch else None

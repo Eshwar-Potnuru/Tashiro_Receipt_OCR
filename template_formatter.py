@@ -1,6 +1,8 @@
 """
 CORRECT Template-preserving accumulation system for Receipt OCR.
 
+TODO: Document hook points for upcoming Excel writer services without altering legacy behavior.
+
 This module implements the CORRECT behavior for client's template:
 
 CRITICAL REQUIREMENTS:

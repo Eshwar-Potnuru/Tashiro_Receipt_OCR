@@ -1,0 +1,7 @@
+{
+  "text": "Sample\n1200\nTax 100\n",
+  "entities": {
+    "total": {"text": "1200", "confidence": 0.8},
+    "tax": {"text": "100", "confidence": 0.7}
+  }
+}

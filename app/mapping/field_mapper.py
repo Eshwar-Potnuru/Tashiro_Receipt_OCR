@@ -6,7 +6,9 @@ Tashiro Receipt-to-Excel Field Mapping System
 Based on PowerPoint workflow specification
 
 Maps receipt fields A,B,C,D,E,F to Excel columns in 各個人出金伝票別紙データ.xlsx
-Handles mixed receipts, tax classification (内税/外税), and automatic accounting categorization
+Handles mixed receipts, tax classification (内税/外税), and automatic accounting categorization.
+
+TODO: Link this legacy mapper into `app/services/mapping_service.py` once orchestration rules are signed off.
 """
 
 import re

@@ -1,0 +1,1916 @@
+{
+  "invoice_number": "17380001006893",
+  "vendor": "7 ヨークベニマル",
+  "date": "2025-06-26",
+  "currency": "JPY",
+  "subtotal": null,
+  "tax": 24.0,
+  "total": 1560.0,
+  "normalized_currency": "JPY",
+  "normalized_subtotal": null,
+  "normalized_tax": 24.0,
+  "normalized_total": 1560.0,
+  "inferred_tax": false,
+  "financial_consistency_ok": null,
+  "line_items": [],
+  "raw_text": "7 ヨークベニマル\nお取替 返品の際はレシートをお持ち\nくださるようお願いいたします\n片平店 ☎ 024-962-4977\n7のつく日は、ナナコカードに\n1万円以上チャージで、 100P\nプレゼント! 店内セブン銀行\nATMでもチャージできます。\n< 領収証 >\n2025年 6月26日(木) 18:34 レジ:088\n担当者: モーさん\n061 冷たい鶏中華\n*537\n061 ぶっかけとろろそば *537\n061 茄子のお浸し\n*356\n062 とうもろこしのつま *120\n･201 レジ袋 L\n10\n(¥5X2個)\n小計/ 6点\n¥1,560\nお買上計\n¥1,560\n内税率10%対象額\n¥10\n(内消費税等10%\n¥0)\n内税率 8% 対象額 ¥1,550\n(内消費税等 8%\n¥114)\n* 印は軽減税率対象商品です\nお預り金\n¥1,560\nお釣り\n¥0\nレシートNo:9205 取引: 9139 店:758\n発行者: 株式会社ヨークベニマル\n登録番号 17380001006893\n",
+  "fields_confidence": {
+    "date": 0.45,
+    "vendor": 0.45,
+    "total": 0.45,
+    "invoice_number": 0.45,
+    "tax_category": 0.45,
+    "account_title": 0.45,
+    "confidence": 0.45,
+    "tax": 0.45
+  },
+  "verified": true,
+  "verification_issues": [],
+  "missing_required_fields": [],
+  "warnings": [],
+  "processing_time_ms": 87690,
+  "category_summary": {},
+  "primary_category": null,
+  "overall_confidence": null,
+  "confidence_source": "document_ai",
+  "tashiro_categorization": null,
+  "expense_category": null,
+  "expense_confidence": null,
+  "tax_classification": null,
+  "business_unit": null,
+  "approval_level": null,
+  "engine_used": "document_ai",
+  "confidence_docai": 0.0,
+  "confidence_standard": null,
+  "docai_raw_entities": [
+    {
+      "type_": "generic_entities",
+      "page_anchor": {
+        "page_refs": [
+          {}
+        ]
+      },
+      "properties": [
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "49",
+                "end_index": "61"
+              }
+            ]
+          },
+          "type_": "phone",
+          "mention_text": "024-962-4977",
+          "confidence": 0.99688053,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.5472155,
+                      "y": 0.14908257
+                    },
+                    {
+                      "x": 0.905569,
+                      "y": 0.14908257
+                    },
+                    {
+                      "x": 0.905569,
+                      "y": 0.17545871
+                    },
+                    {
+                      "x": 0.5472155,
+                      "y": 0.17545871
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "0"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "147",
+                "end_index": "152"
+              }
+            ]
+          },
+          "type_": "date_time",
+          "mention_text": "18:34",
+          "confidence": 0.7219503,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.527845,
+                      "y": 0.3440367
+                    },
+                    {
+                      "x": 0.65375304,
+                      "y": 0.3440367
+                    },
+                    {
+                      "x": 0.65375304,
+                      "y": 0.3727064
+                    },
+                    {
+                      "x": 0.527845,
+                      "y": 0.3727064
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "1"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "156",
+                "end_index": "159"
+              }
+            ]
+          },
+          "type_": "id",
+          "mention_text": "088",
+          "confidence": 0.44669542,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.779661,
+                      "y": 0.3440367
+                    },
+                    {
+                      "x": 0.8595642,
+                      "y": 0.3440367
+                    },
+                    {
+                      "x": 0.8595642,
+                      "y": 0.37041286
+                    },
+                    {
+                      "x": 0.779661,
+                      "y": 0.37041286
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "2"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "236",
+                "end_index": "239"
+              }
+            ]
+          },
+          "type_": "id",
+          "mention_text": "120",
+          "confidence": 0.16216145,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.7893462,
+                      "y": 0.48394495
+                    },
+                    {
+                      "x": 0.8668281,
+                      "y": 0.48394495
+                    },
+                    {
+                      "x": 0.8668281,
+                      "y": 0.5034404
+                    },
+                    {
+                      "x": 0.7893462,
+                      "y": 0.5034404
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "3"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "251",
+                "end_index": "253"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "10",
+          "confidence": 0.33355886,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.81840193,
+                      "y": 0.51261467
+                    },
+                    {
+                      "x": 0.86440676,
+                      "y": 0.51261467
+                    },
+                    {
+                      "x": 0.86440676,
+                      "y": 0.5298165
+                    },
+                    {
+                      "x": 0.81840193,
+                      "y": 0.5298165
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "4"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "255",
+                "end_index": "260"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "¥5X2個",
+          "confidence": 0.28440434,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.29782084,
+                      "y": 0.5401376
+                    },
+                    {
+                      "x": 0.50363195,
+                      "y": 0.5401376
+                    },
+                    {
+                      "x": 0.50363195,
+                      "y": 0.5619266
+                    },
+                    {
+                      "x": 0.29782084,
+                      "y": 0.5619266
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "5"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "266",
+                "end_index": "268"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "6点",
+          "confidence": 0.88894886,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.27118644,
+                      "y": 0.56880736
+                    },
+                    {
+                      "x": 0.36077482,
+                      "y": 0.56880736
+                    },
+                    {
+                      "x": 0.36077482,
+                      "y": 0.5905963
+                    },
+                    {
+                      "x": 0.27118644,
+                      "y": 0.5905963
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "6"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "269",
+                "end_index": "275"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥1,560",
+          "confidence": 0.9609841,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.7094431,
+                      "y": 0.5642202
+                    },
+                    {
+                      "x": 0.8692494,
+                      "y": 0.5642202
+                    },
+                    {
+                      "x": 0.8692494,
+                      "y": 0.5894495
+                    },
+                    {
+                      "x": 0.7094431,
+                      "y": 0.5894495
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "7"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "281",
+                "end_index": "287"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥1,560",
+          "confidence": 0.973063,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.55932206,
+                      "y": 0.5928899
+                    },
+                    {
+                      "x": 0.86198545,
+                      "y": 0.5928899
+                    },
+                    {
+                      "x": 0.86198545,
+                      "y": 0.61811924
+                    },
+                    {
+                      "x": 0.55932206,
+                      "y": 0.61811924
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "8"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "291",
+                "end_index": "294"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "10%",
+          "confidence": 0.9386914,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.25181597,
+                      "y": 0.6227064
+                    },
+                    {
+                      "x": 0.346247,
+                      "y": 0.6227064
+                    },
+                    {
+                      "x": 0.346247,
+                      "y": 0.6479358
+                    },
+                    {
+                      "x": 0.25181597,
+                      "y": 0.6479358
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "9"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "298",
+                "end_index": "301"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥10",
+          "confidence": 0.9469128,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.7384988,
+                      "y": 0.6215596
+                    },
+                    {
+                      "x": 0.8159806,
+                      "y": 0.6215596
+                    },
+                    {
+                      "x": 0.8159806,
+                      "y": 0.64220184
+                    },
+                    {
+                      "x": 0.7384988,
+                      "y": 0.64220184
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "10"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "308",
+                "end_index": "311"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "10%",
+          "confidence": 0.9563617,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.40435836,
+                      "y": 0.64908254
+                    },
+                    {
+                      "x": 0.49878934,
+                      "y": 0.64908254
+                    },
+                    {
+                      "x": 0.49878934,
+                      "y": 0.6754587
+                    },
+                    {
+                      "x": 0.40435836,
+                      "y": 0.6754587
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "11"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "312",
+                "end_index": "315"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥0)",
+          "confidence": 0.96608263,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.76029056,
+                      "y": 0.6479358
+                    },
+                    {
+                      "x": 0.8450363,
+                      "y": 0.6479358
+                    },
+                    {
+                      "x": 0.8450363,
+                      "y": 0.66972476
+                    },
+                    {
+                      "x": 0.76029056,
+                      "y": 0.66972476
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "12"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "320",
+                "end_index": "322"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "8%",
+          "confidence": 0.93631536,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.27360776,
+                      "y": 0.6766055
+                    },
+                    {
+                      "x": 0.34382567,
+                      "y": 0.6766055
+                    },
+                    {
+                      "x": 0.34382567,
+                      "y": 0.70298165
+                    },
+                    {
+                      "x": 0.27360776,
+                      "y": 0.70298165
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "13"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "327",
+                "end_index": "333"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥1,550",
+          "confidence": 0.97264576,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.66343826,
+                      "y": 0.67431194
+                    },
+                    {
+                      "x": 0.82082325,
+                      "y": 0.67431194
+                    },
+                    {
+                      "x": 0.82082325,
+                      "y": 0.6983945
+                    },
+                    {
+                      "x": 0.66343826,
+                      "y": 0.6983945
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "14"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "341",
+                "end_index": "343"
+              }
+            ]
+          },
+          "type_": "quantity",
+          "mention_text": "8%",
+          "confidence": 0.95344776,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.42857143,
+                      "y": 0.70298165
+                    },
+                    {
+                      "x": 0.50363195,
+                      "y": 0.70298165
+                    },
+                    {
+                      "x": 0.50363195,
+                      "y": 0.728211
+                    },
+                    {
+                      "x": 0.42857143,
+                      "y": 0.728211
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "15"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "344",
+                "end_index": "349"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥114)",
+          "confidence": 0.9659379,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.71428573,
+                      "y": 0.70298165
+                    },
+                    {
+                      "x": 0.8401937,
+                      "y": 0.70298165
+                    },
+                    {
+                      "x": 0.8401937,
+                      "y": 0.72591746
+                    },
+                    {
+                      "x": 0.71428573,
+                      "y": 0.72591746
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "16"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "370",
+                "end_index": "376"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥1,560",
+          "confidence": 0.98176694,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.56416464,
+                      "y": 0.75573397
+                    },
+                    {
+                      "x": 0.8692494,
+                      "y": 0.75573397
+                    },
+                    {
+                      "x": 0.8692494,
+                      "y": 0.7821101
+                    },
+                    {
+                      "x": 0.56416464,
+                      "y": 0.7821101
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "17"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "381",
+                "end_index": "383"
+              }
+            ]
+          },
+          "type_": "price",
+          "mention_text": "¥0",
+          "confidence": 0.96615857,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.7723971,
+                      "y": 0.7844037
+                    },
+                    {
+                      "x": 0.8765133,
+                      "y": 0.7844037
+                    },
+                    {
+                      "x": 0.8765133,
+                      "y": 0.80733943
+                    },
+                    {
+                      "x": 0.7723971,
+                      "y": 0.80733943
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "18"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "391",
+                "end_index": "395"
+              }
+            ]
+          },
+          "type_": "id",
+          "mention_text": "9205",
+          "confidence": 0.943619,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.2251816,
+                      "y": 0.8130734
+                    },
+                    {
+                      "x": 0.32687652,
+                      "y": 0.8130734
+                    },
+                    {
+                      "x": 0.32687652,
+                      "y": 0.83830273
+                    },
+                    {
+                      "x": 0.2251816,
+                      "y": 0.83830273
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "19"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "400",
+                "end_index": "404"
+              }
+            ]
+          },
+          "type_": "id",
+          "mention_text": "9139",
+          "confidence": 0.7711465,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.5617433,
+                      "y": 0.8107798
+                    },
+                    {
+                      "x": 0.6658596,
+                      "y": 0.8107798
+                    },
+                    {
+                      "x": 0.6658596,
+                      "y": 0.83830273
+                    },
+                    {
+                      "x": 0.5617433,
+                      "y": 0.83830273
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "20"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "407",
+                "end_index": "410"
+              }
+            ]
+          },
+          "type_": "id",
+          "mention_text": "758",
+          "confidence": 0.59862375,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.79176754,
+                      "y": 0.8107798
+                    },
+                    {
+                      "x": 0.8716707,
+                      "y": 0.8107798
+                    },
+                    {
+                      "x": 0.8716707,
+                      "y": 0.83600914
+                    },
+                    {
+                      "x": 0.79176754,
+                      "y": 0.83600914
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "21"
+        },
+        {
+          "text_anchor": {
+            "text_segments": [
+              {
+                "start_index": "433",
+                "end_index": "447"
+              }
+            ]
+          },
+          "type_": "id",
+          "mention_text": "17380001006893",
+          "confidence": 0.7163017,
+          "page_anchor": {
+            "page_refs": [
+              {
+                "bounding_poly": {
+                  "normalized_vertices": [
+                    {
+                      "x": 0.3874092,
+                      "y": 0.9461009
+                    },
+                    {
+                      "x": 0.748184,
+                      "y": 0.9461009
+                    },
+                    {
+                      "x": 0.748184,
+                      "y": 0.97591746
+                    },
+                    {
+                      "x": 0.3874092,
+                      "y": 0.97591746
+                    }
+                  ]
+                }
+              }
+            ]
+          },
+          "id": "22"
+        }
+      ]
+    }
+  ],
+  "docai_raw_fields": null,
+  "extracted_values": null,
+  "corrected_values": null,
+  "merged_fields": {
+    "generic_entities": {
+      "text": "",
+      "raw": {
+        "type_": "generic_entities",
+        "page_anchor": {
+          "page_refs": [
+            {}
+          ]
+        },
+        "properties": [
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "49",
+                  "end_index": "61"
+                }
+              ]
+            },
+            "type_": "phone",
+            "mention_text": "024-962-4977",
+            "confidence": 0.99688053,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.5472155,
+                        "y": 0.14908257
+                      },
+                      {
+                        "x": 0.905569,
+                        "y": 0.14908257
+                      },
+                      {
+                        "x": 0.905569,
+                        "y": 0.17545871
+                      },
+                      {
+                        "x": 0.5472155,
+                        "y": 0.17545871
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "0"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "147",
+                  "end_index": "152"
+                }
+              ]
+            },
+            "type_": "date_time",
+            "mention_text": "18:34",
+            "confidence": 0.7219503,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.527845,
+                        "y": 0.3440367
+                      },
+                      {
+                        "x": 0.65375304,
+                        "y": 0.3440367
+                      },
+                      {
+                        "x": 0.65375304,
+                        "y": 0.3727064
+                      },
+                      {
+                        "x": 0.527845,
+                        "y": 0.3727064
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "1"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "156",
+                  "end_index": "159"
+                }
+              ]
+            },
+            "type_": "id",
+            "mention_text": "088",
+            "confidence": 0.44669542,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.779661,
+                        "y": 0.3440367
+                      },
+                      {
+                        "x": 0.8595642,
+                        "y": 0.3440367
+                      },
+                      {
+                        "x": 0.8595642,
+                        "y": 0.37041286
+                      },
+                      {
+                        "x": 0.779661,
+                        "y": 0.37041286
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "2"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "236",
+                  "end_index": "239"
+                }
+              ]
+            },
+            "type_": "id",
+            "mention_text": "120",
+            "confidence": 0.16216145,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.7893462,
+                        "y": 0.48394495
+                      },
+                      {
+                        "x": 0.8668281,
+                        "y": 0.48394495
+                      },
+                      {
+                        "x": 0.8668281,
+                        "y": 0.5034404
+                      },
+                      {
+                        "x": 0.7893462,
+                        "y": 0.5034404
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "3"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "251",
+                  "end_index": "253"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "10",
+            "confidence": 0.33355886,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.81840193,
+                        "y": 0.51261467
+                      },
+                      {
+                        "x": 0.86440676,
+                        "y": 0.51261467
+                      },
+                      {
+                        "x": 0.86440676,
+                        "y": 0.5298165
+                      },
+                      {
+                        "x": 0.81840193,
+                        "y": 0.5298165
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "4"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "255",
+                  "end_index": "260"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "¥5X2個",
+            "confidence": 0.28440434,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.29782084,
+                        "y": 0.5401376
+                      },
+                      {
+                        "x": 0.50363195,
+                        "y": 0.5401376
+                      },
+                      {
+                        "x": 0.50363195,
+                        "y": 0.5619266
+                      },
+                      {
+                        "x": 0.29782084,
+                        "y": 0.5619266
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "5"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "266",
+                  "end_index": "268"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "6点",
+            "confidence": 0.88894886,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.27118644,
+                        "y": 0.56880736
+                      },
+                      {
+                        "x": 0.36077482,
+                        "y": 0.56880736
+                      },
+                      {
+                        "x": 0.36077482,
+                        "y": 0.5905963
+                      },
+                      {
+                        "x": 0.27118644,
+                        "y": 0.5905963
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "6"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "269",
+                  "end_index": "275"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥1,560",
+            "confidence": 0.9609841,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.7094431,
+                        "y": 0.5642202
+                      },
+                      {
+                        "x": 0.8692494,
+                        "y": 0.5642202
+                      },
+                      {
+                        "x": 0.8692494,
+                        "y": 0.5894495
+                      },
+                      {
+                        "x": 0.7094431,
+                        "y": 0.5894495
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "7"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "281",
+                  "end_index": "287"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥1,560",
+            "confidence": 0.973063,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.55932206,
+                        "y": 0.5928899
+                      },
+                      {
+                        "x": 0.86198545,
+                        "y": 0.5928899
+                      },
+                      {
+                        "x": 0.86198545,
+                        "y": 0.61811924
+                      },
+                      {
+                        "x": 0.55932206,
+                        "y": 0.61811924
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "8"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "291",
+                  "end_index": "294"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "10%",
+            "confidence": 0.9386914,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.25181597,
+                        "y": 0.6227064
+                      },
+                      {
+                        "x": 0.346247,
+                        "y": 0.6227064
+                      },
+                      {
+                        "x": 0.346247,
+                        "y": 0.6479358
+                      },
+                      {
+                        "x": 0.25181597,
+                        "y": 0.6479358
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "9"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "298",
+                  "end_index": "301"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥10",
+            "confidence": 0.9469128,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.7384988,
+                        "y": 0.6215596
+                      },
+                      {
+                        "x": 0.8159806,
+                        "y": 0.6215596
+                      },
+                      {
+                        "x": 0.8159806,
+                        "y": 0.64220184
+                      },
+                      {
+                        "x": 0.7384988,
+                        "y": 0.64220184
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "10"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "308",
+                  "end_index": "311"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "10%",
+            "confidence": 0.9563617,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.40435836,
+                        "y": 0.64908254
+                      },
+                      {
+                        "x": 0.49878934,
+                        "y": 0.64908254
+                      },
+                      {
+                        "x": 0.49878934,
+                        "y": 0.6754587
+                      },
+                      {
+                        "x": 0.40435836,
+                        "y": 0.6754587
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "11"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "312",
+                  "end_index": "315"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥0)",
+            "confidence": 0.96608263,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.76029056,
+                        "y": 0.6479358
+                      },
+                      {
+                        "x": 0.8450363,
+                        "y": 0.6479358
+                      },
+                      {
+                        "x": 0.8450363,
+                        "y": 0.66972476
+                      },
+                      {
+                        "x": 0.76029056,
+                        "y": 0.66972476
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "12"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "320",
+                  "end_index": "322"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "8%",
+            "confidence": 0.93631536,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.27360776,
+                        "y": 0.6766055
+                      },
+                      {
+                        "x": 0.34382567,
+                        "y": 0.6766055
+                      },
+                      {
+                        "x": 0.34382567,
+                        "y": 0.70298165
+                      },
+                      {
+                        "x": 0.27360776,
+                        "y": 0.70298165
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "13"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "327",
+                  "end_index": "333"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥1,550",
+            "confidence": 0.97264576,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.66343826,
+                        "y": 0.67431194
+                      },
+                      {
+                        "x": 0.82082325,
+                        "y": 0.67431194
+                      },
+                      {
+                        "x": 0.82082325,
+                        "y": 0.6983945
+                      },
+                      {
+                        "x": 0.66343826,
+                        "y": 0.6983945
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "14"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "341",
+                  "end_index": "343"
+                }
+              ]
+            },
+            "type_": "quantity",
+            "mention_text": "8%",
+            "confidence": 0.95344776,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.42857143,
+                        "y": 0.70298165
+                      },
+                      {
+                        "x": 0.50363195,
+                        "y": 0.70298165
+                      },
+                      {
+                        "x": 0.50363195,
+                        "y": 0.728211
+                      },
+                      {
+                        "x": 0.42857143,
+                        "y": 0.728211
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "15"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "344",
+                  "end_index": "349"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥114)",
+            "confidence": 0.9659379,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.71428573,
+                        "y": 0.70298165
+                      },
+                      {
+                        "x": 0.8401937,
+                        "y": 0.70298165
+                      },
+                      {
+                        "x": 0.8401937,
+                        "y": 0.72591746
+                      },
+                      {
+                        "x": 0.71428573,
+                        "y": 0.72591746
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "16"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "370",
+                  "end_index": "376"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥1,560",
+            "confidence": 0.98176694,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.56416464,
+                        "y": 0.75573397
+                      },
+                      {
+                        "x": 0.8692494,
+                        "y": 0.75573397
+                      },
+                      {
+                        "x": 0.8692494,
+                        "y": 0.7821101
+                      },
+                      {
+                        "x": 0.56416464,
+                        "y": 0.7821101
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "17"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "381",
+                  "end_index": "383"
+                }
+              ]
+            },
+            "type_": "price",
+            "mention_text": "¥0",
+            "confidence": 0.96615857,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.7723971,
+                        "y": 0.7844037
+                      },
+                      {
+                        "x": 0.8765133,
+                        "y": 0.7844037
+                      },
+                      {
+                        "x": 0.8765133,
+                        "y": 0.80733943
+                      },
+                      {
+                        "x": 0.7723971,
+                        "y": 0.80733943
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "18"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "391",
+                  "end_index": "395"
+                }
+              ]
+            },
+            "type_": "id",
+            "mention_text": "9205",
+            "confidence": 0.943619,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.2251816,
+                        "y": 0.8130734
+                      },
+                      {
+                        "x": 0.32687652,
+                        "y": 0.8130734
+                      },
+                      {
+                        "x": 0.32687652,
+                        "y": 0.83830273
+                      },
+                      {
+                        "x": 0.2251816,
+                        "y": 0.83830273
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "19"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "400",
+                  "end_index": "404"
+                }
+              ]
+            },
+            "type_": "id",
+            "mention_text": "9139",
+            "confidence": 0.7711465,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.5617433,
+                        "y": 0.8107798
+                      },
+                      {
+                        "x": 0.6658596,
+                        "y": 0.8107798
+                      },
+                      {
+                        "x": 0.6658596,
+                        "y": 0.83830273
+                      },
+                      {
+                        "x": 0.5617433,
+                        "y": 0.83830273
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "20"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "407",
+                  "end_index": "410"
+                }
+              ]
+            },
+            "type_": "id",
+            "mention_text": "758",
+            "confidence": 0.59862375,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.79176754,
+                        "y": 0.8107798
+                      },
+                      {
+                        "x": 0.8716707,
+                        "y": 0.8107798
+                      },
+                      {
+                        "x": 0.8716707,
+                        "y": 0.83600914
+                      },
+                      {
+                        "x": 0.79176754,
+                        "y": 0.83600914
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "21"
+          },
+          {
+            "text_anchor": {
+              "text_segments": [
+                {
+                  "start_index": "433",
+                  "end_index": "447"
+                }
+              ]
+            },
+            "type_": "id",
+            "mention_text": "17380001006893",
+            "confidence": 0.7163017,
+            "page_anchor": {
+              "page_refs": [
+                {
+                  "bounding_poly": {
+                    "normalized_vertices": [
+                      {
+                        "x": 0.3874092,
+                        "y": 0.9461009
+                      },
+                      {
+                        "x": 0.748184,
+                        "y": 0.9461009
+                      },
+                      {
+                        "x": 0.748184,
+                        "y": 0.97591746
+                      },
+                      {
+                        "x": 0.3874092,
+                        "y": 0.97591746
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "id": "22"
+          }
+        ]
+      }
+    }
+  },
+  "merge_strategy": "docai_over_standard"
+}

@@ -1,8 +1,10 @@
 import time
 import threading
-from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request, BackgroundTasks, Body
+import logging
+import json
+from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Request, BackgroundTasks, Body, Query
 from fastapi.responses import JSONResponse, FileResponse
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 import os
 import uuid
 from pathlib import Path
@@ -11,11 +13,16 @@ from PIL import Image
 import io
 
 from app.utils.image_processing import optimize_image_for_ocr
+from app.utils.logging_utils import log_ocr_event, log_batch_event
+from app.pipeline.multi_receipt_pipeline import MultiReceiptPipeline
 
 from app.extractors.enhanced_field_extractor import EnhancedFieldExtractor
 from app.ocr.multi_engine_ocr import MultiEngineOCR
 from app.exporters.excel_exporter import ExcelExporter
 from app.history.submission_history import SubmissionHistory
+from app.models.schema import ExtractionConfig
+from app.services.receipt_builder import ReceiptBuilder
+from app.services.validation_service import ValidationService
 from accumulator import append_to_location, ACCUM_DIR, test_template_system, get_staff_for_location, validate_staff_member, append_to_month_sheet
 from template_formatter import append_to_formatted_template
 from validators import (
@@ -25,9 +32,100 @@ from validators import (
 )
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 _locations_cache: Dict[str, Any] = get_available_locations()
 _ocr_max_concurrent = max(1, int(os.getenv("OCR_MAX_CONCURRENT", "2")))
 _ocr_concurrency_guard = threading.Semaphore(_ocr_max_concurrent)
+DEMO_AUTOSAVE_SAMPLE = os.getenv("DEMO_AUTOSAVE_SAMPLE", "true").lower() == "true"
+DEMO_SAMPLE_PATH = Path(__file__).resolve().parents[2] / "artifacts" / "sample_receipt.json"
+
+
+def _build_demo_sample_payload(data: Dict[str, Any]) -> Dict[str, Any]:
+    """Project analysis data to the ExtractionResult-compatible keys used by the Excel demo.
+
+    We intentionally drop large blobs (source_image, thumbnail) and keep only the fields
+    required by scripts/demo_hq_export.py to instantiate ExtractionResult.
+    """
+
+    allowed_keys = {
+        "invoice_number",
+        "vendor",
+        "date",
+        "currency",
+        "subtotal",
+        "tax",
+        "total",
+        "normalized_currency",
+        "normalized_subtotal",
+        "normalized_tax",
+        "normalized_total",
+        "inferred_tax",
+        "financial_consistency_ok",
+        "line_items",
+        "raw_text",
+        "fields_confidence",
+        "verified",
+        "verification_issues",
+        "missing_required_fields",
+        "warnings",
+        "processing_time_ms",
+        "category_summary",
+        "primary_category",
+        "overall_confidence",
+        "confidence_source",
+        "tashiro_categorization",
+        "expense_category",
+        "expense_confidence",
+        "tax_classification",
+        "business_unit",
+        "approval_level",
+        "engine_used",
+        "confidence_docai",
+        "confidence_standard",
+        "docai_raw_entities",
+        "docai_raw_fields",
+        "extracted_values",
+        "corrected_values",
+        "merged_fields",
+        "merge_strategy",
+    }
+
+    projected: Dict[str, Any] = {k: v for k, v in data.items() if k in allowed_keys}
+    projected.setdefault("line_items", [])
+    projected.setdefault("fields_confidence", {})
+    projected.setdefault("verification_issues", [])
+    projected.setdefault("missing_required_fields", [])
+    projected.setdefault("warnings", [])
+
+    if "processing_time_ms" not in projected:
+        timings = data.get("timings") or {}
+        total_ms = timings.get("total_ms") if isinstance(timings, dict) else None
+        projected["processing_time_ms"] = int(total_ms) if total_ms is not None else 0
+
+    return projected
+
+
+def _write_demo_sample(data: Dict[str, Any]) -> None:
+    """Persist the latest analysis payload for the Excel demo if enabled.
+
+    Uses default=str to avoid serialization errors (e.g., Decimal, UUID).
+    """
+    if not DEMO_AUTOSAVE_SAMPLE:
+        return
+
+    try:
+        DEMO_SAMPLE_PATH.parent.mkdir(parents=True, exist_ok=True)
+        payload = _build_demo_sample_payload(data)
+        # Ensure date is ISO if present
+        if payload.get("date") and isinstance(payload.get("date"), str):
+            from app.services.receipt_builder import _sanitize_iso_date
+            payload["date"] = _sanitize_iso_date(payload.get("date"))
+        DEMO_SAMPLE_PATH.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, default=str),
+            encoding="utf-8",
+        )
+    except Exception:
+        logger.exception("Failed to write demo sample_receipt.json")
 
 
 def _refresh_locations_cache() -> Dict[str, Any]:
@@ -60,6 +158,7 @@ try:
     print("Multi-engine OCR initialized")
 except Exception as e:
     print(f"Multi-engine OCR initialization failed: {e}")
+    logger.exception("Multi-engine OCR initialization failed")
     multi_engine_ocr = None
 
 try:
@@ -68,6 +167,7 @@ try:
     print("Enhanced field extractor initialized")
 except Exception as e:
     print(f"Enhanced extractor initialization failed: {e}")
+    logger.exception("Enhanced extractor initialization failed")
     enhanced_extractor = None
 
 try:
@@ -75,6 +175,7 @@ try:
     print("ExcelExporter initialized")
 except Exception as e:
     print(f"ExcelExporter initialization failed: {e}")
+    logger.exception("ExcelExporter initialization failed")
     excel_exporter = None
 
 try:
@@ -82,10 +183,28 @@ try:
     print("SubmissionHistory initialized")
 except Exception as e:
     print(f"SubmissionHistory initialization failed: {e}")
+    logger.exception("SubmissionHistory initialization failed")
     submission_history = None
 
+try:
+    receipt_builder = ReceiptBuilder()
+    print("ReceiptBuilder initialized")
+except Exception as e:
+    print(f"ReceiptBuilder initialization failed: {e}")
+    logger.exception("ReceiptBuilder initialization failed")
+    receipt_builder = None
+
+try:
+    validation_service = ValidationService()
+    print("ValidationService initialized")
+except Exception as e:
+    print(f"ValidationService initialization failed: {e}")
+    logger.exception("ValidationService initialization failed")
+    validation_service = None
+
 def _process_analysis_job(queue_id: str, image_bytes: bytes, metadata: Optional[str], payload_hash: Optional[str],
-                          source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any]):
+                          source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any],
+                          engine_preference: str, source_filename: str):
     try:
         submission_history.mark_analysis_processing(queue_id)
         analysis_data, timings = _run_analysis_pipeline(
@@ -95,15 +214,22 @@ def _process_analysis_job(queue_id: str, image_bytes: bytes, metadata: Optional[
             payload_hash,
             source_image_b64,
             thumbnail_b64,
-            preprocess_stats
+            preprocess_stats,
+            engine_preference,
+            source_filename
         )
         submission_history.store_analysis(queue_id, analysis_data, metadata, payload_hash, timings)
     except Exception as exc:
+        logger.exception("Background analysis job failed", extra={"queue_id": queue_id})
         submission_history.mark_analysis_failed(queue_id, str(exc))
 
 
 def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional[str], payload_hash: Optional[str],
-                           source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any]):
+                           source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any],
+                           engine_preference: str, source_filename: str):
+    if receipt_builder is None or validation_service is None:
+        raise RuntimeError("Receipt builder not available")
+
     timings: Dict[str, Any] = {'preprocess': preprocess_stats}
 
     wait_start = time.perf_counter()
@@ -112,10 +238,44 @@ def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional
 
     try:
         stage_start = time.perf_counter()
-        ocr_result = multi_engine_ocr.extract_structured(image_bytes)
+        try:
+            ocr_result = multi_engine_ocr.extract_structured(image_bytes, engine=engine_preference)
+        except Exception as exc:
+            log_ocr_event({
+                "file": source_filename,
+                "queue_id": queue_id,
+                "engine": engine_preference,
+                "merge_strategy": None,
+                "confidence_docai": None,
+                "confidence_standard": None,
+                "status": "error",
+                "error_message": str(exc)
+            })
+            raise
+
         timings['ocr'] = round(time.perf_counter() - stage_start, 3)
 
+        log_ocr_event({
+            "file": source_filename,
+            "queue_id": queue_id,
+            "engine": ocr_result.get('engine_used', engine_preference),
+            "merge_strategy": ocr_result.get('merge_strategy'),
+            "confidence_docai": ocr_result.get('confidence_docai'),
+            "confidence_standard": ocr_result.get('confidence_standard'),
+            "status": "success" if ocr_result.get('success') else "error",
+            "error_message": None if ocr_result.get('success') else "OCR extraction failed"
+        })
+
         if not ocr_result.get('success'):
+            logger.error(
+                "OCR extraction returned success=False",
+                extra={
+                    "queue_id": queue_id,
+                    "engine_preference": engine_preference,
+                    "engines_attempted": ocr_result.get('engines_attempted'),
+                    "engine_used": ocr_result.get('engine_used'),
+                }
+            )
             raise RuntimeError("OCR extraction failed")
 
         raw_text = ocr_result.get('raw_text', '')
@@ -129,21 +289,87 @@ def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional
         )
         timings['field_extractor'] = round(time.perf_counter() - stage_start, 3)
 
+        builder_payload: Dict[str, Any] = {
+            **extracted_data,
+            "structured_data": structured_data,
+            "raw_text": raw_text,
+            "diagnostics": {"timings": timings},
+            "engine_used": engine_used,
+            "merge_strategy": ocr_result.get('merge_strategy'),
+            "confidence_docai": ocr_result.get('confidence_docai'),
+            "confidence_standard": ocr_result.get('confidence_standard'),
+            "docai_raw_entities": structured_data.get('docai_raw_entities'),
+            "docai_raw_fields": structured_data.get('docai_raw_fields'),
+            "entities": structured_data.get('entities'),
+            "line_items": extracted_data.get('line_items') or structured_data.get('line_items'),
+            "fields_confidence": extracted_data.get('field_confidence') or extracted_data.get('fields_confidence') or structured_data.get('fields_confidence'),
+        }
+
+        standard_result = receipt_builder.build_from_standard_ocr(
+            builder_payload,
+            raw_text=raw_text,
+            processing_time_ms=None,
+            metadata=None,
+        )
+
+        docai_present = bool(
+            structured_data.get('docai_raw_entities')
+            or structured_data.get('docai_raw_fields')
+            or ocr_result.get('confidence_docai') is not None
+        )
+        docai_result = receipt_builder.build_from_document_ai(
+            builder_payload,
+            raw_text=raw_text,
+            processing_time_ms=None,
+            metadata=None,
+        ) if docai_present else None
+
+        if engine_preference == 'document_ai' and docai_result:
+            canonical_result = docai_result
+        elif engine_preference == 'standard':
+            canonical_result = standard_result
+        elif docai_result:
+            canonical_result = receipt_builder.build_auto(standard_result, docai_result, metadata=None)
+        else:
+            canonical_result = standard_result
+
+        validated_result = validation_service.validate(
+            canonical_result,
+            ExtractionConfig()
+        )
+
+        analysis_result = validated_result.model_dump()
+
+        analysis_result["engine_used"] = engine_used
+        analysis_result["ocr_engine"] = engine_used
+        analysis_result["confidence_docai"] = analysis_result.get("confidence_docai") or ocr_result.get('confidence_docai')
+        analysis_result["confidence_standard"] = analysis_result.get("confidence_standard") or ocr_result.get('confidence_standard')
+        analysis_result["docai_raw_entities"] = analysis_result.get("docai_raw_entities") or structured_data.get('docai_raw_entities')
+        analysis_result["docai_raw_fields"] = analysis_result.get("docai_raw_fields") or structured_data.get('docai_raw_fields')
+        analysis_result["merged_fields"] = analysis_result.get("merged_fields") or structured_data.get('entities')
+        analysis_result["merge_strategy"] = analysis_result.get("merge_strategy") or ocr_result.get('merge_strategy')
+        analysis_result["overall_confidence"] = analysis_result.get("overall_confidence") or analysis_result.get("confidence_docai") or analysis_result.get("confidence_standard")
+        analysis_result["raw_text"] = analysis_result.get("raw_text") or raw_text
+        if "field_confidence" in extracted_data:
+            analysis_result.setdefault("field_confidence", extracted_data.get("field_confidence"))
+        for passthrough_key in ("invoice_number", "tax_category", "account_title", "confidence"):
+            if passthrough_key in extracted_data and passthrough_key not in analysis_result:
+                analysis_result[passthrough_key] = extracted_data[passthrough_key]
+
+        analysis_result['source_image'] = source_image_b64
+        analysis_result['thumbnail'] = thumbnail_b64
+        analysis_result.setdefault('diagnostics', {})
+        analysis_result['diagnostics'].update({
+            'queue_id': queue_id,
+            'engines_attempted': ocr_result.get('engines_attempted', []),
+            'payload_hash': payload_hash,
+            'timings': timings
+        })
+
     finally:
         _ocr_concurrency_guard.release()
 
-    extracted_data['ocr_engine'] = engine_used
-    extracted_data['source_image'] = source_image_b64
-    extracted_data['thumbnail'] = thumbnail_b64
-    extracted_data.setdefault('diagnostics', {})
-    extracted_data['diagnostics'].update({
-        'queue_id': queue_id,
-        'engines_attempted': ocr_result.get('engines_attempted', []),
-        'payload_hash': payload_hash,
-        'timings': timings
-    })
-
-    return extracted_data, timings
+    return analysis_result, timings
 
 
 @router.post("/mobile/analyze")
@@ -151,11 +377,12 @@ async def analyze_receipt(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     metadata: Optional[str] = Form(None),
-    processing_mode: str = Form('sync')
+    processing_mode: str = Form('sync'),
+    engine: str = Form('auto')
 ):
     """Analyze a receipt image and extract structured data using Document AI + enhanced extraction."""
     try:
-        if multi_engine_ocr is None or enhanced_extractor is None or submission_history is None:
+        if multi_engine_ocr is None or enhanced_extractor is None or submission_history is None or receipt_builder is None or validation_service is None:
             raise HTTPException(status_code=500, detail="OCR service not available")
 
         # Generate unique queue ID
@@ -179,6 +406,7 @@ async def analyze_receipt(
         print(f"  - Filename: {file.filename}")
         print(f"  - Content type: {file.content_type}")
         print(f"  - File size: {len(file_content)} bytes")
+        source_filename = file.filename or 'uploaded_receipt'
         
         # Validate file size
         if len(file_content) < 100:  # Less than 100 bytes is likely corrupted
@@ -226,6 +454,7 @@ async def analyze_receipt(
                 'cache_hit': True
             })
             submission_history.store_analysis(queue_id, cached_analysis, metadata, payload_hash, {'cache_hit': True})
+            _write_demo_sample(cached_analysis)
             return {
                 "queue_id": queue_id,
                 "status": "completed",
@@ -237,6 +466,9 @@ async def analyze_receipt(
             }
 
         processing_mode = (processing_mode or 'sync').lower()
+        engine_preference = (engine or 'auto').lower()
+        if engine_preference not in {'auto', 'standard', 'document_ai'}:
+            engine_preference = 'auto'
 
         if processing_mode == 'async':
             submission_history.create_pending_analysis(queue_id, metadata, payload_hash, preprocess_stats)
@@ -248,7 +480,9 @@ async def analyze_receipt(
                 payload_hash,
                 source_image_b64,
                 thumbnail_b64,
-                preprocess_stats
+                preprocess_stats,
+                engine_preference,
+                source_filename
             )
             return {
                 "queue_id": queue_id,
@@ -264,9 +498,12 @@ async def analyze_receipt(
             payload_hash,
             source_image_b64,
             thumbnail_b64,
-            preprocess_stats
+            preprocess_stats,
+            engine_preference,
+            source_filename
         )
         submission_history.store_analysis(queue_id, analysis_data, metadata, payload_hash, timings)
+        _write_demo_sample(analysis_data)
 
         return {
             "queue_id": queue_id,
@@ -280,7 +517,63 @@ async def analyze_receipt(
 
     except Exception as e:
         print(f"Analysis error: {str(e)}")
+        logger.exception("Analysis failed")
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+
+@router.post("/mobile/analyze_batch")
+async def analyze_receipt_batch(
+    background_tasks: BackgroundTasks,
+    files: List[UploadFile] = File(...),
+    engine_form: Optional[str] = Form(None),
+    engine_query: Optional[str] = Query(None)
+):
+    """Register a batch of receipts for sequential placeholder processing."""
+
+    if submission_history is None:
+        raise HTTPException(status_code=500, detail="Submission history not available")
+
+    if not files:
+        raise HTTPException(status_code=400, detail="No files uploaded")
+
+    engine_preference = (engine_form or engine_query or 'standard').lower()
+    if engine_preference not in {"document_ai", "standard"}:
+        engine_preference = "standard"
+
+    batch_id = str(uuid.uuid4())
+    batch_dir = Path(__file__).resolve().parents[2] / "artifacts" / "uploads" / "batches" / batch_id
+    batch_dir.mkdir(parents=True, exist_ok=True)
+
+    stored_paths: List[str] = []
+    filenames: List[str] = []
+
+    for index, upload in enumerate(files):
+        filename = upload.filename or f"receipt_{index + 1}.bin"
+        safe_name = Path(filename).name
+        destination = batch_dir / safe_name
+        file_bytes = await upload.read()
+        destination.write_bytes(file_bytes)
+        stored_paths.append(str(destination))
+        filenames.append(safe_name)
+        await upload.close()
+
+    submission_history.create_batch(batch_id, filenames, engine_preference)
+    log_batch_event({
+        "batch_id": batch_id,
+        "engine": engine_preference,
+        "file_count": len(stored_paths),
+        "status": "created"
+    })
+
+    pipeline = MultiReceiptPipeline(engine_preference, submission_history)
+    background_tasks.add_task(pipeline.process_batch, batch_id, stored_paths)
+
+    return {
+        "batch_id": batch_id,
+        "file_count": len(stored_paths),
+        "engine": engine_preference,
+        "status": "pending"
+    }
 
 @router.post("/mobile/submit")
 async def submit_receipt(
@@ -337,6 +630,11 @@ async def get_analysis_status_route(queue_id: str):
 
     if status_payload.get('status') == 'completed' and status_payload.get('analysis_data'):
         response['fields'] = status_payload['analysis_data']
+        # Defensive autosave: ensure sample_receipt.json reflects latest result even if caller only polls status
+        try:
+            _write_demo_sample(status_payload['analysis_data'])
+        except Exception:
+            logger.exception("Failed to autosave sample_receipt.json from status endpoint")
 
     return response
 

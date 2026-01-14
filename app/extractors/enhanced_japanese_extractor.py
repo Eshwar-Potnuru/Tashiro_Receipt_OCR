@@ -148,9 +148,10 @@ class EnhancedJapaneseExtractor:
                 r'(\d{2})[/-](\d{1,2})[/-](\d{1,2})',     # 25-7-2 (assume 20xx)
             ],
             'invoice_number': [
+                r'(T-?\d{8,15})',                                   # Japanese invoice/登録番号 starting with T and long digits
                 r'(?:No\.?|番号|伝票|レシート)\s*[:\s]*([A-Za-z0-9\-]+)',  # No.: 123, 番号: ABC123
-                r'([A-Za-z]\d{3,8})',                                    # T001234, R123456
-                r'(\d{4,10})',                                          # Pure numeric: 12345678
+                r'([A-Za-z]-?\d{3,14})',                                 # T001234, R123456, T-12345678901234
+                r'(\d{4,12})',                                          # Pure numeric: 12345678
             ],
             'subtotal': [
                 r'(?:小計|小\s*計)\s*[:\s]*[¥\\]?([0-9,]+\.?[0-9]*)',  # 小計: 2848, 小 計 ¥2848

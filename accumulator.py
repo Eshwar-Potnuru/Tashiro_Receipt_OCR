@@ -1,4 +1,7 @@
-"""Per-location Excel accumulation utilities for Receipt OCR."""
+"""Per-location Excel accumulation utilities for Receipt OCR.
+
+TODO: Capture full data-contract assumptions and edge-case handling in docs/services before refactoring.
+"""
 from __future__ import annotations
 
 import csv

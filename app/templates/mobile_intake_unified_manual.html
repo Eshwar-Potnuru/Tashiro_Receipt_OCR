@@ -1171,6 +1171,15 @@
                 </div>
                 
                 <div class="form-group">
+                    <label for="ocrEngineSelect">OCR Engine</label>
+                    <select id="ocrEngineSelect">
+                        <option value="auto">Hybrid (Auto)</option>
+                        <option value="standard">Standard Engines</option>
+                        <option value="document_ai">Document AI Preview</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
                     <label for="notificationToggle">Notifications</label>
                     <select id="notificationToggle">
                         <option value="all">All Notifications</option>
@@ -1531,6 +1540,10 @@
                 lightMode: "Light Mode",
                 darkMode: "Dark Mode",
                 autoSystem: "Auto (System)",
+                ocrEngine: "OCR Engine",
+                ocrEngineAuto: "Hybrid (Auto)",
+                ocrEngineStandard: "Standard Engines",
+                ocrEngineDocumentAI: "Document AI (Preview)",
                 english: "English",
                 japanese: "日本語 (Japanese)",
                 allNotifications: "All Notifications",
@@ -1712,6 +1725,10 @@
                 lightMode: "ライトモード",
                 darkMode: "ダークモード",
                 autoSystem: "自動（システム）",
+                ocrEngine: "OCRエンジン",
+                ocrEngineAuto: "ハイブリッド（自動）",
+                ocrEngineStandard: "通常エンジン",
+                ocrEngineDocumentAI: "Document AI（プレビュー）",
                 english: "English",
                 japanese: "日本語",
                 allNotifications: "すべての通知",
@@ -1948,6 +1965,7 @@ function updateFieldLabels() {
             document.querySelector('#settingsModal .modal-subtitle').textContent = t('customizeExperience');
             document.querySelector('label[for="themeToggle"]').textContent = t('theme');
             document.querySelector('label[for="languageSelect"]').textContent = t('language');
+            document.querySelector('label[for="ocrEngineSelect"]').textContent = t('ocrEngine');
             document.querySelector('label[for="notificationToggle"]').textContent = t('notifications');
             document.querySelector('label[for="autoSaveToggle"]').textContent = t('autoSave');
             document.getElementById('saveSettings').innerHTML = `<i class="fas fa-save"></i> ${t('saveSettings')}`;
@@ -1962,6 +1980,11 @@ function updateFieldLabels() {
             const languageSelect = document.getElementById('languageSelect');
             languageSelect.querySelector('option[value="en"]').textContent = t('english');
             languageSelect.querySelector('option[value="ja"]').textContent = t('japanese');
+
+            const engineSelect = document.getElementById('ocrEngineSelect');
+            engineSelect.querySelector('option[value="auto"]').textContent = t('ocrEngineAuto');
+            engineSelect.querySelector('option[value="standard"]').textContent = t('ocrEngineStandard');
+            engineSelect.querySelector('option[value="document_ai"]').textContent = t('ocrEngineDocumentAI');
 
             const notificationSelect = document.getElementById('notificationToggle');
             notificationSelect.querySelector('option[value="all"]').textContent = t('allNotifications');
@@ -2661,9 +2684,16 @@ function updateFieldLabels() {
         function handleQueuedAnalysis(queueId) {
             currentQueueId = queueId;
             showToast('Receipt added to OCR queue. Monitoring progress…', 'info');
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            const engine = (settings.ocrEngine || 'auto').toLowerCase();
+            const engineSubtext = engine === 'document_ai'
+                ? 'Document AI engine is processing your receipt.'
+                : engine === 'standard'
+                    ? 'Google Vision and OpenAI engines are processing your receipt.'
+                    : 'Hybrid mode: Document AI + standard engines are processing your receipt.';
             showLoadingOverlay({
                 message: 'OCR in progress…',
-                subtext: 'Both Google Vision and OpenAI engines are working.',
+                subtext: engineSubtext,
                 stepIndex: 1
             });
             pollAnalysisStatus(queueId, 0);
@@ -2764,6 +2794,8 @@ function updateFieldLabels() {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('processing_mode', 'async');
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            formData.append('engine', settings.ocrEngine || 'auto');
             
             // Call OCR API
             fetch('/api/mobile/analyze', {
@@ -2779,9 +2811,15 @@ function updateFieldLabels() {
             .then(data => {
                 console.log('OCR API response:', data);
                 if (data.status === 'queued') {
+                    const engine = (settings.ocrEngine || 'auto').toLowerCase();
+                    const engineSubtext = engine === 'document_ai'
+                        ? 'Document AI engine is processing your receipt.'
+                        : engine === 'standard'
+                            ? 'Google Vision and OpenAI engines are processing your receipt.'
+                            : 'Hybrid mode: Document AI + standard engines are processing your receipt.';
                     showLoadingOverlay({
                         message: 'Running OCR engines…',
-                        subtext: 'We will notify you when it is ready.',
+                        subtext: engineSubtext,
                         stepIndex: 1
                     });
                     handleQueuedAnalysis(data.queue_id);
@@ -3450,6 +3488,7 @@ function updateFieldLabels() {
             const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
             document.getElementById('themeToggle').value = settings.theme || 'light';
             document.getElementById('languageSelect').value = settings.language || 'en';
+            document.getElementById('ocrEngineSelect').value = settings.ocrEngine || 'auto';
             document.getElementById('notificationToggle').value = settings.notifications || 'all';
             document.getElementById('autoSaveToggle').value = settings.autoSave || 'enabled';
         }
@@ -3459,6 +3498,7 @@ function updateFieldLabels() {
             const settings = {
                 theme: document.getElementById('themeToggle').value,
                 language: document.getElementById('languageSelect').value,
+                ocrEngine: document.getElementById('ocrEngineSelect').value,
                 notifications: document.getElementById('notificationToggle').value,
                 autoSave: document.getElementById('autoSaveToggle').value
             };
