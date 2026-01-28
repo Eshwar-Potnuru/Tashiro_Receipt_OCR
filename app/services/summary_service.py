@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """Submission boundary wiring for Phase 3C (location + staff ledgers)."""
 
 from __future__ import annotations
@@ -77,17 +76,3 @@ class SummaryService:
             counts["skipped"] += 1
         elif status == "error":
             counts["error"] += 1
-=======
-"""Summary computation scaffolding."""
-
-
-class SummaryService:
-    """TODO: Compute summary rows for HQ outputs."""
-
-    def compute(self, receipts):
-        """Produce summary aggregates for a collection of receipts.
-
-        TODO: Implement HQ summary formulas and client overrides.
-        """
-        pass
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd

@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 """MappingService: orchestrate ExtractionResult → Receipt mapping."""
 
 from __future__ import annotations
@@ -51,17 +50,3 @@ class MappingService:
         )
 
         return receipt
-=======
-"""Mapping orchestration scaffolding."""
-
-
-class MappingService:
-    """Coordinate mapping inputs across multiple subsystems."""
-
-    def map(self, ocr_result, docai_result=None):
-        """Unify field_mapper, enhanced_field_extractor, Document AI artifacts, and categorization outputs.
-
-        TODO: Implement orchestration logic once the integration contract is finalized.
-        """
-        pass
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
