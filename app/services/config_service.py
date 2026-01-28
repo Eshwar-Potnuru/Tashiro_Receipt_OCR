@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """File-based configuration loader for Phase 2C."""
 
 from __future__ import annotations
@@ -108,3 +109,17 @@ class ConfigService:
         with self.vendor_overrides_path.open("r", encoding="utf-8") as handle:
             self._vendor_overrides = json.load(handle) or []
         return self._vendor_overrides
+=======
+"""Configuration loader scaffolding."""
+
+
+class ConfigService:
+    """TODO: Load settings, paths, and client-specific configs."""
+
+    def load(self):
+        """Load configuration snapshots.
+
+        TODO: Support environment overrides, secrets, and staff-specific metadata when scope finalizes.
+        """
+        pass
+>>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd

@@ -1,0 +1,8 @@
+# === Credentials & Secrets ===
+*.json
+config/*.json
+**/google_*_key.json
+
+# === Environment files ===
+.env
+.env.*

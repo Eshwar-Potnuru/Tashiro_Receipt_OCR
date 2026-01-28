@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 """ReceiptBuilder: construct canonical Receipt objects from OCR outputs."""
 
 from __future__ import annotations
@@ -9,6 +10,24 @@ from uuid import uuid4
 from datetime import datetime
 from app.models.schema import ExtractionResult, Receipt
 from app.services.config_service import ConfigService
+=======
+"""ReceiptBuilder: central place to construct ExtractionResult objects.
+
+Phase 2B – Step 2B.1 scaffolding:
+- Keep mapping logic minimal for now.
+- Do not refactor existing routes yet; this is additive-only.
+- Methods accept raw OCR outputs/metadata and return a valid ExtractionResult with obvious fields populated.
+- Detailed field mapping and merge logic remain TODO.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Optional
+from uuid import uuid4
+
+from datetime import datetime
+from app.models.schema import ExtractionResult
+>>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
 
 
 def _safe_dict(value: Any) -> Optional[Dict[str, Any]]:
@@ -322,6 +341,7 @@ class ReceiptBuilder:
             confidence_source=confidence_source,
         )
 
+<<<<<<< HEAD
     # -----------------
     # Receipt mapping
     # -----------------
@@ -465,5 +485,7 @@ class ReceiptBuilder:
         staff = staff_list[0]
         return staff.get("id")
 
+=======
+>>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
 
 __all__ = ["ReceiptBuilder"]
