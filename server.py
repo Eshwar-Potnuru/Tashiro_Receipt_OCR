@@ -11,15 +11,27 @@ from pathlib import Path
 project_root = Path(__file__).parent
 sys.path.insert(0, str(project_root))
 
-# Load environment variables from .env file
+# Load environment variables from .env file BEFORE importing app
 try:
     from dotenv import load_dotenv
-    load_dotenv()
-    print("✓ Environment variables loaded from .env file")
+    # Load .env and set environment variables IMMEDIATELY
+    load_dotenv(override=True)
+    
+    # Explicitly set GOOGLE_APPLICATION_CREDENTIALS in os.environ
+    # This ensures child processes (like uvicorn reload) inherit it
+    google_creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if google_creds:
+        os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = google_creds
+        print(f"[OK] Google credentials set: {google_creds}")
+        print(f"[OK] File exists: {Path(google_creds).exists()}")
+    else:
+        print("[WARNING] GOOGLE_APPLICATION_CREDENTIALS not set in .env")
+    
+    print("[OK] Environment variables loaded from .env file")
 except ImportError:
-    print("✗ python-dotenv not installed")
+    print("[ERROR] python-dotenv not installed")
 except Exception as e:
-    print(f"✗ Error loading .env file: {e}")
+    print(f"[ERROR] Error loading .env file: {e}")
 
 def main():
     import argparse

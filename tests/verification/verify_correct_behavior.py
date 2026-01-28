@@ -7,6 +7,9 @@ import sys
 import openpyxl
 from pathlib import Path
 
+# Add project root to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+
 def verify_correct_template_behavior():
     """Verify that the template system works correctly by preserving ALL existing content."""
     

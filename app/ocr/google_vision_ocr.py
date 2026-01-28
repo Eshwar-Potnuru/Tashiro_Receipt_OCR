@@ -34,6 +34,15 @@ class GoogleVisionOCR:
         self._client_available = False
         self.client = None
         self._credential_source = None
+        
+        # Log startup configuration
+        logger.info("=" * 60)
+        logger.info("Google Vision API Initialization:")
+        creds_env = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+        logger.info(f"  GOOGLE_APPLICATION_CREDENTIALS: {creds_env}")
+        if creds_env:
+            logger.info(f"  Credentials file exists: {os.path.exists(creds_env)}")
+        
         credentials = self._load_credentials(credentials_path)
 
         # Try to initialize client, but handle missing credentials gracefully
@@ -44,9 +53,12 @@ class GoogleVisionOCR:
                 self.client = vision.ImageAnnotatorClient()
             self._client_available = True
             if self._credential_source:
-                logger.info(f"Google Vision client initialized using {self._credential_source}")
+                logger.info(f"  ✓ Client initialized using: {self._credential_source}")
+            logger.info("=" * 60)
         except Exception as e:
-            logger.warning(f"Google Vision client initialization failed: {e}")
+            logger.error(f"  ✗ Client initialization failed: {e}")
+            logger.error("  Service account: aim-vision-api-dev@aim-tashiro-poc.iam.gserviceaccount.com")
+            logger.info("=" * 60)
             self.client = None
             self._client_available = False
 
@@ -58,7 +70,7 @@ class GoogleVisionOCR:
         if candidate_path and os.path.exists(candidate_path):
             try:
                 creds = service_account.Credentials.from_service_account_file(candidate_path, scopes=credential_scopes)
-                self._credential_source = candidate_path
+                self._credential_source = 'env-file'
                 return creds
             except Exception as exc:
                 logger.warning(f"Failed to load Google Vision credentials from {candidate_path}: {exc}")

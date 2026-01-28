@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Dict, List, Optional
 from uuid import UUID, uuid4
 
@@ -233,3 +234,57 @@ class ExtractionError(BaseModel):
 
 class ExtractionRequestMetadata(BaseModel):
     config: ExtractionConfig = Field(default_factory=ExtractionConfig)
+
+
+class Receipt(BaseModel):
+    """Canonical, UI/Excel-agnostic Receipt (Phase 2F locked contract)."""
+
+    receipt_id: UUID = Field(default_factory=uuid4)
+    receipt_date: Optional[str] = None  # ISO YYYY-MM-DD
+    vendor_name: Optional[str] = None
+    invoice_number: Optional[str] = None
+
+    total_amount: Optional[Decimal] = None
+    tax_10_amount: Optional[Decimal] = None
+    tax_8_amount: Optional[Decimal] = None
+    memo: Optional[str] = None
+
+    business_location_id: Optional[str] = None  # canonical stable key
+    staff_id: Optional[str] = None
+
+    ocr_engine: Optional[str] = None  # e.g., "document_ai"
+    ocr_confidence: Optional[float] = None
+    ocr_flags: List[str] = Field(default_factory=list)
+
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    @field_validator("receipt_date")
+    @classmethod
+    def _validate_date(cls, value: Optional[str]) -> Optional[str]:
+        if value is None:
+            return value
+        try:
+            datetime.fromisoformat(value)
+            return value
+        except Exception as exc:  # pragma: no cover - defensive guard
+            raise ValueError("receipt_date must be ISO format YYYY-MM-DD") from exc
+
+    @model_validator(mode="after")
+    def _coerce_decimal(self) -> "Receipt":
+        """Ensure numeric fields are Decimal for consistency."""
+
+        def _to_decimal(val: Any) -> Optional[Decimal]:
+            if val is None:
+                return None
+            if isinstance(val, Decimal):
+                return val
+            try:
+                return Decimal(str(val))
+            except Exception:
+                return None
+
+        self.total_amount = _to_decimal(self.total_amount)
+        self.tax_10_amount = _to_decimal(self.tax_10_amount)
+        self.tax_8_amount = _to_decimal(self.tax_8_amount)
+        return self

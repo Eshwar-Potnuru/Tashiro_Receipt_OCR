@@ -1,19 +1,14 @@
-"""ReceiptBuilder: central place to construct ExtractionResult objects.
-
-Phase 2B – Step 2B.1 scaffolding:
-- Keep mapping logic minimal for now.
-- Do not refactor existing routes yet; this is additive-only.
-- Methods accept raw OCR outputs/metadata and return a valid ExtractionResult with obvious fields populated.
-- Detailed field mapping and merge logic remain TODO.
-"""
+"""ReceiptBuilder: construct canonical Receipt objects from OCR outputs."""
 
 from __future__ import annotations
 
-from typing import Any, Dict, Optional
+from decimal import Decimal
+from typing import Any, Dict, Optional, Tuple
 from uuid import uuid4
 
 from datetime import datetime
-from app.models.schema import ExtractionResult
+from app.models.schema import ExtractionResult, Receipt
+from app.services.config_service import ConfigService
 
 
 def _safe_dict(value: Any) -> Optional[Dict[str, Any]]:
@@ -326,6 +321,149 @@ class ReceiptBuilder:
             overall_confidence=overall_confidence,
             confidence_source=confidence_source,
         )
+
+    # -----------------
+    # Receipt mapping
+    # -----------------
+    def build_receipt(
+        self,
+        extraction: ExtractionResult,
+        *,
+        config_service: ConfigService,
+        validation_warnings: Optional[list] = None,
+        validation_errors: Optional[list] = None,
+    ) -> Receipt:
+        """Convert an ExtractionResult into a normalized Receipt.
+
+        - Applies vendor overrides
+        - Normalizes amounts to Decimal
+        - Splits tax buckets (10% / 8%) per provided values or classification
+        - Binds business_location_id and staff_id deterministically
+        - Attaches validation warnings/errors
+        """
+
+        warnings = list(validation_warnings or [])
+        errors = list(validation_errors or [])
+
+        vendor_raw = extraction.vendor
+        vendor_canonical = config_service.get_vendor_canonical(vendor_raw)
+
+        receipt_date = _sanitize_iso_date(extraction.date)
+
+        # Location normalization
+        location_name = getattr(extraction, "business_unit", None) or None
+        canonical_location = config_service.normalize_location(location_name)
+        business_location_id = canonical_location.upper() if canonical_location else None
+
+        # Staff binding (deterministic first match if present)
+        staff_id = self._bind_staff(config_service, canonical_location)
+
+        # Amount normalization
+        _, _, total = self._normalize_amounts(
+            extraction.subtotal,
+            extraction.tax,
+            extraction.total,
+        )
+
+        tax_10, tax_8 = self._normalize_tax_buckets(
+            extraction,
+            total_amount=total,
+            tax_amount=self._to_decimal(extraction.tax),
+        )
+
+        # Mandatory fields check (non-blocking)
+        for field_name, value in (
+            ("receipt_date", receipt_date),
+            ("vendor_name", vendor_canonical or vendor_raw),
+            ("total_amount", total),
+            ("business_location_id", business_location_id),
+        ):
+            if value in (None, ""):
+                errors.append(f"missing_{field_name}")
+
+        ocr_flags = list(set([*warnings, *errors])) if (warnings or errors) else []
+
+        return Receipt(
+            receipt_date=receipt_date,
+            vendor_name=vendor_canonical or vendor_raw,
+            invoice_number=extraction.invoice_number,
+            total_amount=total,
+            tax_10_amount=tax_10,
+            tax_8_amount=tax_8,
+            memo=None,
+            business_location_id=business_location_id,
+            staff_id=staff_id,
+            ocr_engine=extraction.engine_used,
+            ocr_confidence=extraction.overall_confidence,
+            ocr_flags=ocr_flags,
+            created_at=None,
+            updated_at=None,
+        )
+
+    # -----------------
+    # Helpers
+    # -----------------
+    @staticmethod
+    def _to_decimal(val: Any) -> Optional[Decimal]:
+        if val is None:
+            return None
+        if isinstance(val, Decimal):
+            return val
+        try:
+            return Decimal(str(val))
+        except Exception:
+            return None
+
+    def _normalize_amounts(
+        self,
+        subtotal: Any,
+        tax: Any,
+        total: Any,
+    ) -> Tuple[Optional[Decimal], Optional[Decimal], Optional[Decimal]]:
+        subtotal_dec = self._to_decimal(subtotal)
+        tax_dec = self._to_decimal(tax)
+        total_dec = self._to_decimal(total)
+        return subtotal_dec, tax_dec, total_dec
+
+    def _normalize_tax_buckets(
+        self,
+        extraction: ExtractionResult,
+        *,
+        total_amount: Optional[Decimal],
+        tax_amount: Optional[Decimal],
+    ) -> Tuple[Optional[Decimal], Optional[Decimal]]:
+        """Apply tax bucket rules: explicit > classification > None."""
+        explicit_tax10 = getattr(extraction, "tax_10", None)
+        explicit_tax8 = getattr(extraction, "tax_8", None)
+
+        tax10 = self._to_decimal(explicit_tax10)
+        tax8 = self._to_decimal(explicit_tax8)
+
+        if tax10 is not None or tax8 is not None:
+            return tax10, tax8
+
+        tax_class = getattr(extraction, "tax_classification", None) or ""
+        tax_class_norm = str(tax_class).lower()
+
+        if "10" in tax_class_norm:
+            return total_amount, None
+        if "8" in tax_class_norm:
+            return None, total_amount
+
+        return None, None
+
+    def _bind_staff(
+        self,
+        config_service: ConfigService,
+        canonical_location: Optional[str],
+    ) -> Optional[str]:
+        if not canonical_location:
+            return None
+        staff_list = config_service.get_staff_for_location(canonical_location) or []
+        if not staff_list:
+            return None
+        staff = staff_list[0]
+        return staff.get("id")
 
 
 __all__ = ["ReceiptBuilder"]

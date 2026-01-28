@@ -1,7 +1,8 @@
 from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from pathlib import Path
 
@@ -9,8 +10,29 @@ from pathlib import Path
 try:
     from dotenv import load_dotenv
     load_dotenv()
+    
+    # Log critical environment variables at startup
+    print("=" * 60)
+    print("Environment Configuration:")
+    
     api_key_status = "OK" if os.getenv('OCR_SPACE_API_KEY') else "MISSING"
-    print(f"OCR.space API Key loaded: {api_key_status}")
+    print(f"  OCR.space API Key: {api_key_status}")
+    
+    google_creds = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if google_creds:
+        print(f"  Google Credentials: {google_creds}")
+        print(f"  Credentials file exists: {Path(google_creds).exists()}")
+    else:
+        print("  Google Credentials: NOT SET")
+    
+    doc_ai_project = os.getenv('DOCUMENT_AI_PROJECT_ID')
+    doc_ai_processor = os.getenv('DOCUMENT_AI_PROCESSOR_ID')
+    doc_ai_location = os.getenv('DOCUMENT_AI_LOCATION', 'us')
+    print(f"  Document AI Project: {doc_ai_project}")
+    print(f"  Document AI Processor: {doc_ai_processor}")
+    print(f"  Document AI Location: {doc_ai_location}")
+    print("=" * 60)
+    
     if not os.getenv('OCR_SPACE_API_KEY'):
         print("WARNING: OCR_SPACE_API_KEY not found in environment!")
 except ImportError:
@@ -21,6 +43,28 @@ except Exception as e:
     api_key_status = "MISSING"
 
 from app.api.routes import router as api_router
+from app.api.drafts import router as drafts_router
+from app.api.audits import router as audits_router  # Phase 5A Step 3
+
+
+class BlockTrackerMiddleware(BaseHTTPMiddleware):
+    """Block suspicious tracking/analytics requests to reduce log noise."""
+    
+    BLOCKED_PATTERNS = [
+        '/hybridaction/',  # Chinese browser extensions
+        'zybTrackerStatisticsAction',  # Specific tracker
+        '__callback__',  # JSONP callbacks from extensions
+    ]
+    
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        
+        # Check if request matches blocked patterns
+        if any(pattern in path or pattern in str(request.url) for pattern in self.BLOCKED_PATTERNS):
+            # Return empty response without logging
+            return PlainTextResponse('', status_code=204)
+        
+        return await call_next(request)
 
 
 def create_app() -> FastAPI:
@@ -74,6 +118,9 @@ def create_app() -> FastAPI:
         app.mount("/static", StaticFiles(directory=str(base_dir / "app" / "static")), name="static")
         app.mount("/artifacts", StaticFiles(directory=str(artifacts_dir)), name="artifacts")
 
+        # Add tracker blocking middleware (Phase 4F Fix 2)
+        app.add_middleware(BlockTrackerMiddleware)
+
         print("App initialization successful")
 
         @app.get("/health", tags=["health"])
@@ -93,7 +140,14 @@ def create_app() -> FastAPI:
         def debug_test(request: Request) -> HTMLResponse:
             return templates.TemplateResponse("debug.html", {"request": request})
 
+        @app.get("/drafts", response_class=HTMLResponse, tags=["ui"])
+        def draft_management(request: Request) -> HTMLResponse:
+            """Phase 4D: Draft management UI"""
+            return templates.TemplateResponse("draft_management.html", {"request": request})
+
         app.include_router(api_router, prefix="/api")
+        app.include_router(drafts_router)  # Phase 4B: Draft API endpoints
+        app.include_router(audits_router)  # Phase 5A Step 3: Audit API endpoints
 
         return app
 
