@@ -78,10 +78,11 @@ class DraftRepository:
             updated_at: TEXT (ISO timestamp)
             sent_at: TEXT (ISO timestamp, nullable)
             image_ref: TEXT (queue_id reference, nullable for backward compatibility)
+            image_data: TEXT (base64-encoded image data for Railway/cloud deployment)
         """
         conn = sqlite3.connect(self.db_path)
         try:
-            # Create table with image_ref column
+            # Create table with image_ref and image_data columns
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS draft_receipts (
                     draft_id TEXT PRIMARY KEY,
@@ -90,19 +91,26 @@ class DraftRepository:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     sent_at TEXT,
-                    image_ref TEXT
+                    image_ref TEXT,
+                    image_data TEXT
                 )
             """)
             
-            # Migrate existing table if needed (add image_ref column)
+            # Migrate existing table if needed (add image_ref and image_data columns)
             # This is safe: SQLite ignores ADD COLUMN if column exists
             try:
                 conn.execute("""
                     ALTER TABLE draft_receipts ADD COLUMN image_ref TEXT
                 """)
             except sqlite3.OperationalError:
-                # Column already exists, safe to ignore
-                pass
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN image_data TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
             
             conn.commit()
         finally:
@@ -130,8 +138,8 @@ class DraftRepository:
             
             conn.execute("""
                 INSERT OR REPLACE INTO draft_receipts 
-                (draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 str(draft.draft_id),
                 receipt_json,
@@ -140,6 +148,7 @@ class DraftRepository:
                 draft.updated_at.isoformat(),
                 draft.sent_at.isoformat() if draft.sent_at else None,
                 draft.image_ref,
+                draft.image_data,
             ))
             conn.commit()
             return draft
@@ -159,7 +168,7 @@ class DraftRepository:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
                 FROM draft_receipts
                 WHERE draft_id = ?
             """, (str(draft_id),))
@@ -188,13 +197,13 @@ class DraftRepository:
         try:
             if status is None:
                 cursor = conn.execute("""
-                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref
+                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
                     FROM draft_receipts
                     ORDER BY created_at DESC
                 """)
             else:
                 cursor = conn.execute("""
-                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref
+                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
                     FROM draft_receipts
                     WHERE status = ?
                     ORDER BY created_at DESC
@@ -240,7 +249,7 @@ class DraftRepository:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
                 FROM draft_receipts
                 WHERE image_ref = ?
                 ORDER BY created_at DESC
@@ -273,7 +282,7 @@ class DraftRepository:
             # Create placeholders for IN clause
             placeholders = ",".join("?" * len(draft_ids))
             cursor = conn.execute(f"""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
                 FROM draft_receipts
                 WHERE draft_id IN ({placeholders})
             """, [str(draft_id) for draft_id in draft_ids])
@@ -304,6 +313,9 @@ class DraftRepository:
         # Get image_ref (may be None for legacy drafts created before Phase 4C-3)
         image_ref = row["image_ref"] if "image_ref" in row.keys() else None
         
+        # Get image_data (may be None for legacy drafts or filesystem-based images)
+        image_data = row["image_data"] if "image_data" in row.keys() else None
+        
         # Create DraftReceipt
         return DraftReceipt(
             draft_id=UUID(row["draft_id"]),
@@ -313,6 +325,7 @@ class DraftRepository:
             updated_at=updated_at,
             sent_at=sent_at,
             image_ref=image_ref,
+            image_data=image_data,
         )
 
     def count_by_status(self, status: DraftStatus) -> int:

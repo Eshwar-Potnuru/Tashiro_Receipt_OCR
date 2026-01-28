@@ -328,21 +328,29 @@ async function renderDraftDetails(draft, validationErrors) {
         ` : ''}
         
         <!-- Source Image -->
-        ${draft.image_ref ? `
+        ${draft.image_ref || draft.image_data ? `
         <div style="margin-bottom: 24px;">
             <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📷 Receipt Image</h4>
             <div style="position: relative; background: #f8fafc; border-radius: 8px; padding: 12px; text-align: center;">
-                <img id="draftImage_${draft.draft_id}" 
-                     src="/artifacts/ocr_results/${draft.image_ref}.${getImageFormat(draft)}" 
-                     style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
-                     alt="Receipt Image"
-                     onclick="window.open(this.src, '_blank')"
-                     onerror="tryAlternativeImageFormats(this, '${draft.image_ref}');">
-                <div id="imageError_${draft.draft_id}" style="display: none; color: #64748b; font-size: 13px; padding: 20px;">
-                    <i class="fas fa-image" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i><br>
-                    Image not available<br>
-                    <span style="font-size: 11px; color: #94a3b8;">(${draft.image_ref})</span>
-                </div>
+                ${draft.image_data ? `
+                    <img id="draftImage_${draft.draft_id}" 
+                         src="data:image/jpeg;base64,${draft.image_data}" 
+                         style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
+                         alt="Receipt Image"
+                         onclick="window.open(this.src, '_blank')">
+                ` : `
+                    <img id="draftImage_${draft.draft_id}" 
+                         src="/artifacts/ocr_results/${draft.image_ref}.${getImageFormat(draft)}" 
+                         style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
+                         alt="Receipt Image"
+                         onclick="window.open(this.src, '_blank')"
+                         onerror="tryAlternativeImageFormats(this, '${draft.image_ref}');">
+                    <div id="imageError_${draft.draft_id}" style="display: none; color: #64748b; font-size: 13px; padding: 20px;">
+                        <i class="fas fa-image" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i><br>
+                        Image not available<br>
+                        <span style="font-size: 11px; color: #94a3b8;">(${draft.image_ref})</span>
+                    </div>
+                `}
             </div>
         </div>
         ` : ''}

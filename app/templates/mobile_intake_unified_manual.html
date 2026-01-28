@@ -2311,6 +2311,7 @@ function updateFieldLabels() {
 
         // Global variables
         let currentQueueId = null;
+        let currentImageData = null; // Store base64 image data for Railway deployment
         let accountClassifications = []; // Store loaded account classifications
         const LATEST_ANALYSIS_KEY = 'tashiro_latest_analysis_v1';
         let pollTimeoutHandle = null;
@@ -2728,6 +2729,7 @@ function updateFieldLabels() {
                         const status = statusPayload.status;
                         if (status === 'completed' && statusPayload.fields) {
                             resetPollingTimer();
+                            currentImageData = statusPayload.source_image || null; // Store for draft saving
                             applyOcrResultsToForm(statusPayload.fields);
                             reviewDataBtn.disabled = false;
                             showResultsTable();
@@ -2834,6 +2836,7 @@ function updateFieldLabels() {
                 }
                 if (data.status === 'completed' && data.fields) {
                     currentQueueId = data.queue_id;
+                    currentImageData = data.source_image || null; // Store for draft saving
                     applyOcrResultsToForm(data.fields);
                     reviewDataBtn.disabled = false;
                     showResultsTable();
@@ -2843,6 +2846,7 @@ function updateFieldLabels() {
                 }
                 if (data.fields) {
                     currentQueueId = data.queue_id;
+                    currentImageData = data.source_image || null; // Store for draft saving
                     applyOcrResultsToForm(data.fields);
                     reviewDataBtn.disabled = false;
                     showResultsTable();
@@ -3331,7 +3335,8 @@ function updateFieldLabels() {
             // Prepare draft payload
             const payload = {
                 receipt: receiptData,
-                image_ref: currentQueueId // Use queue_id as image reference
+                image_ref: currentQueueId, // Use queue_id as image reference
+                image_data: currentImageData // Include base64 image for Railway
             };
 
             // Show loading message
