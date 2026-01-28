@@ -56,6 +56,11 @@ class SaveDraftRequest(BaseModel):
         description="Optional reference to source image (queue_id from /mobile/analyze). "
                     "Used to link draft to uploaded image for RDV UI."
     )
+    image_data: Optional[str] = Field(
+        None,
+        description="Optional base64-encoded image data for Railway/cloud deployment. "
+                    "Stores image inline to avoid ephemeral filesystem issues."
+    )
 
 
 class UpdateDraftRequest(BaseModel):
@@ -81,6 +86,7 @@ class DraftResponse(BaseModel):
     updated_at: str
     sent_at: Optional[str] = None
     image_ref: Optional[str] = None
+    image_data: Optional[str] = None
     is_valid: bool = Field(default=False, description="Whether draft is ready to send")
     validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
 
@@ -101,6 +107,7 @@ class DraftResponse(BaseModel):
             updated_at=draft.updated_at.isoformat(),
             sent_at=draft.sent_at.isoformat() if draft.sent_at else None,
             image_ref=draft.image_ref,
+            image_data=draft.image_data,
             is_valid=is_valid,
             validation_errors=validation_errors or [],
         )
@@ -153,7 +160,7 @@ def save_draft(request: SaveDraftRequest) -> DraftResponse:
     service = get_draft_service()
     
     try:
-        draft = service.save_draft(request.receipt, image_ref=request.image_ref)
+        draft = service.save_draft(request.receipt, image_ref=request.image_ref, image_data=request.image_data)
         return DraftResponse.from_draft(draft)
     except Exception as exc:
         raise HTTPException(

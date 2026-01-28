@@ -78,7 +78,7 @@ class DraftService:
         self.config_service = config_service or ConfigService()
         self.audit_logger = audit_logger or AuditLogger(AuditRepository())
 
-    def save_draft(self, receipt: Receipt, image_ref: Optional[str] = None) -> DraftReceipt:
+    def save_draft(self, receipt: Receipt, image_ref: Optional[str] = None, image_data: Optional[str] = None) -> DraftReceipt:
         """Save a receipt as a draft (no Excel write).
         
         If image_ref is provided and a draft with that image_ref already exists,
@@ -91,6 +91,8 @@ class DraftService:
             image_ref: Optional reference to source image (queue_id from /mobile/analyze).
                       Links draft to uploaded image for RDV UI verification.
                       Used for duplicate detection.
+            image_data: Optional base64-encoded image data for Railway/cloud deployment.
+                       Stores image inline to avoid ephemeral filesystem issues.
         
         Returns:
             Created or updated DraftReceipt with status=DRAFT
@@ -125,6 +127,7 @@ class DraftService:
             receipt=receipt,
             status=DraftStatus.DRAFT,
             image_ref=image_ref,
+            image_data=image_data,
         )
         
         saved_draft = self.repository.save(draft)

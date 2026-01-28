@@ -120,6 +120,12 @@ class DraftReceipt(BaseModel):
         description="Reference to source image (queue_id from analysis endpoint). "
                     "Links draft to uploaded image for RDV UI display and verification.",
     )
+    
+    image_data: Optional[str] = Field(
+        default=None,
+        description="Base64-encoded image data for Railway/cloud deployment. "
+                    "Stores the actual image inline to avoid ephemeral filesystem issues.",
+    )
 
     class Config:
         """Pydantic configuration."""
