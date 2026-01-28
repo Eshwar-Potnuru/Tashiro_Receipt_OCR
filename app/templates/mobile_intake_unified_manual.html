@@ -1452,15 +1452,12 @@
                         <div id="dataTableContainer" style="display: none; margin-top: 20px;">
                             <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
                                 <h3 style="margin: 0; color: var(--text-dark);">Review & Edit Extracted Data</h3>
-                                <div style="display: flex; gap: 10px;">
-                                    <button class="secondary-button" id="saveChangesBtn" style="padding: 8px 16px; font-size: 14px;">
-                                        <i class="fas fa-save"></i> Save Changes
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="secondary-button" id="saveDraftBtn" style="padding: 10px 24px; font-size: 15px; background: white; border: 2px solid var(--primary-blue); color: var(--primary-blue); font-weight: 500;">
+                                        <i class="fas fa-save"></i> Save
                                     </button>
-                                    <button class="secondary-button" id="saveDraftBtn" style="padding: 8px 16px; font-size: 14px; background: white; border: 2px solid var(--primary-blue); color: var(--primary-blue);">
-                                        <i class="fas fa-file-alt"></i> Save as Draft
-                                    </button>
-                                    <button class="primary-button" id="saveAccumulationBtn" style="padding: 8px 16px; font-size: 14px;">
-                                        <i class="fas fa-database"></i> Save to HQ Ledger
+                                    <button class="primary-button" id="saveAccumulationBtn" style="padding: 10px 24px; font-size: 15px; font-weight: 500;">
+                                        <i class="fas fa-paper-plane"></i> Send to HQ Ledger
                                     </button>
                                 </div>
                             </div>
@@ -3116,14 +3113,9 @@ function updateFieldLabels() {
             saveToHeadquarters();
         });
 
-        // Handle save as draft button (Phase 4D.3)
+        // Handle save button (merged Save Changes + Save as Draft)
         document.getElementById('saveDraftBtn').addEventListener('click', function() {
             saveDraft();
-        });
-
-        // Handle save changes button
-        document.getElementById('saveChangesBtn').addEventListener('click', function() {
-            saveChanges();
         });
 
         // Handle reset button
@@ -3288,13 +3280,23 @@ function updateFieldLabels() {
             }
         }
 
-        // Phase 4D.3: Save as Draft
+        // Phase 4D.3: Save as Draft (merged with Save Changes functionality)
         function saveDraft() {
             // Validate we have receipt data
             if (!currentQueueId) {
                 showToast('No receipt data to save', 'error');
                 return;
             }
+
+            // First, save changes from editable table back to form fields (merged from saveChanges)
+            const correctedData = collectEditableFields();
+            Object.keys(correctedData).forEach(fieldName => {
+                const elementId = 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.value = correctedData[fieldName];
+                }
+            });
 
             // Get location and staff values (convert empty string to null)
             const locationValue = (businessLocationSelect?.value && businessLocationSelect.value !== '') ? businessLocationSelect.value : null;
@@ -3358,16 +3360,16 @@ function updateFieldLabels() {
                 return data;
             })
             .then(data => {
-                showToast('Draft saved successfully', 'success');
+                showToast('Data saved to draft', 'success');
                 
                 // Update verification status
                 const verificationStatus = document.getElementById('verificationStatus');
                 if (verificationStatus) {
                     verificationStatus.innerHTML = `
-                        <div class="status-icon">📋</div>
+                        <div class="status-icon">✅</div>
                         <div class="status-content">
-                            <div class="status-title">Draft Saved</div>
-                            <div class="confidence-badge">Open Drafts menu to review and edit</div>
+                            <div class="status-title">Data Saved to Draft</div>
+                            <div class="confidence-badge">Open Drafts menu to review and send</div>
                         </div>
                     `;
                 }
