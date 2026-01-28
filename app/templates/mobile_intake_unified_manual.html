@@ -1680,18 +1680,18 @@
                 // Editable Table
                 reviewEditExtractedData: "Review & Edit Extracted Data",
                 saveChanges: "Save Changes",
-                exportToExcel: "Export to Excel",
+                exportToExcel: "Send to Excel",
                 field: "Field",
                 value: "Value",
                 status: "Status",
                 ready: "✓ Ready",
                 changesSaved: "Changes saved locally.",
-                saveToHQ: "Save to HQ Ledger",
-                saveReceiptToLocation: "Save Receipt to {location}",
+                saveToHQ: "Send to HQ Ledger",
+                saveReceiptToLocation: "Send Receipt to {location}",
                 businessLocationLabel: "Business Location",
                 selectLocation: "Select location",
-                readyForHqSave: "Ready for HQ save",
-                locationRequired: "Select a business location before saving.",
+                readyForHqSave: "Ready to send",
+                locationRequired: "Select a business location before sending.",
                 operatorMissing: "Operator details missing. Please complete your profile.",
                 savingReceipt: "Saving receipt to HQ...",
                 duplicateWarning: "Potential duplicate detected.",
@@ -1871,12 +1871,12 @@
                 status: "ステータス",
                 ready: "✓ 準備完了",
                 changesSaved: "変更を保存しました。",
-                saveToHQ: "HQ台帳に保存",
-                saveReceiptToLocation: "{location} に保存",
+                saveToHQ: "HQ台帳に送信",
+                saveReceiptToLocation: "{location} に送信",
                 businessLocationLabel: "事業所",
                 selectLocation: "事業所を選択",
-                readyForHqSave: "HQ保存の準備完了",
-                locationRequired: "保存前に事業所を選択してください。",
+                readyForHqSave: "送信準備完了",
+                locationRequired: "送信前に事業所を選択してください。",
                 operatorMissing: "オペレーター情報が不足しています。プロフィールを入力してください。",
                 savingReceipt: "HQへ保存中...",
                 duplicateWarning: "重複の可能性があります。",
@@ -2224,7 +2224,7 @@ function updateFieldLabels() {
 
             const saveAccumulationBtn = document.getElementById('saveAccumulationBtn');
             if (saveAccumulationBtn) {
-                updateSaveButtonLabel();
+                updateSendButtonLabel();
             }
 
             // Update table headers
@@ -2301,7 +2301,7 @@ function updateFieldLabels() {
         if (businessLocationSelect) {
             businessLocationSelect.addEventListener('change', () => {
                 userLocationOverride = true;
-                updateSaveButtonLabel();
+                updateSendButtonLabel();
                 handleLocationChange();
             });
         }
@@ -2434,7 +2434,7 @@ function updateFieldLabels() {
             if (desiredValue && normalizedLocations.includes(desiredValue)) {
                 businessLocationSelect.value = desiredValue;
             }
-            updateSaveButtonLabel();
+            updateSendButtonLabel();
             handleLocationChange();
         }
 
@@ -2500,7 +2500,7 @@ function updateFieldLabels() {
                 });
         }
 
-        function updateSaveButtonLabel() {
+        function updateSendButtonLabel() {
             if (!saveAccumulationBtn) {
                 return;
             }
@@ -2510,7 +2510,7 @@ function updateFieldLabels() {
                 const readable = businessLocationSelect.options[index]?.textContent || businessLocationSelect.value;
                 label = t('saveReceiptToLocation', { location: readable });
             }
-            saveAccumulationBtn.innerHTML = `<i class="fas fa-database"></i> ${label}`;
+            saveAccumulationBtn.innerHTML = `<i class="fas fa-paper-plane"></i> ${label}`;
         }
 
         function guessLocationFromFields(fields) {
@@ -2921,7 +2921,7 @@ function updateFieldLabels() {
                 if (inferredLocation && (!userLocationOverride || !hasSelection)) {
                     if (businessLocationSelect.value !== inferredLocation) {
                         businessLocationSelect.value = inferredLocation;
-                        updateSaveButtonLabel();
+                        updateSendButtonLabel();
                     }
                     userLocationOverride = false;
                     pendingStaffSelection = fields.staff_member || null;
@@ -3436,7 +3436,7 @@ function updateFieldLabels() {
             if (saveAccumulationBtn) {
                 saveAccumulationBtn.disabled = true;
             }
-            updateSaveButtonLabel();
+            updateSendButtonLabel();
         }
 
         // Save receipt to history
