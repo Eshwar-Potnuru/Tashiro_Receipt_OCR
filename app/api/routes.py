@@ -23,7 +23,7 @@ from app.history.submission_history import SubmissionHistory
 from app.models.schema import ExtractionConfig
 from app.services.receipt_builder import ReceiptBuilder
 from app.services.validation_service import ValidationService
-from accumulator import append_to_location, ACCUM_DIR, test_template_system, get_staff_for_location, validate_staff_member, append_to_month_sheet
+from accumulator import ACCUM_DIR, test_template_system, get_staff_for_location, validate_staff_member, append_to_month_sheet
 from template_formatter import append_to_formatted_template
 from validators import (
     get_available_locations,
@@ -38,6 +38,7 @@ _ocr_max_concurrent = max(1, int(os.getenv("OCR_MAX_CONCURRENT", "2")))
 _ocr_concurrency_guard = threading.Semaphore(_ocr_max_concurrent)
 DEMO_AUTOSAVE_SAMPLE = os.getenv("DEMO_AUTOSAVE_SAMPLE", "true").lower() == "true"
 DEMO_SAMPLE_PATH = Path(__file__).resolve().parents[2] / "artifacts" / "sample_receipt.json"
+ARTIFACTS_DIR = Path(__file__).resolve().parents[2] / "artifacts"
 
 
 def _build_demo_sample_payload(data: Dict[str, Any]) -> Dict[str, Any]:
@@ -204,7 +205,7 @@ except Exception as e:
 
 def _process_analysis_job(queue_id: str, image_bytes: bytes, metadata: Optional[str], payload_hash: Optional[str],
                           source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any],
-                          engine_preference: str, source_filename: str):
+                          engine_preference: str, source_filename: str, image_format: str = 'jpg'):
     try:
         submission_history.mark_analysis_processing(queue_id)
         analysis_data, timings = _run_analysis_pipeline(
@@ -216,7 +217,8 @@ def _process_analysis_job(queue_id: str, image_bytes: bytes, metadata: Optional[
             thumbnail_b64,
             preprocess_stats,
             engine_preference,
-            source_filename
+            source_filename,
+            image_format  # Pass format through
         )
         submission_history.store_analysis(queue_id, analysis_data, metadata, payload_hash, timings)
     except Exception as exc:
@@ -226,7 +228,7 @@ def _process_analysis_job(queue_id: str, image_bytes: bytes, metadata: Optional[
 
 def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional[str], payload_hash: Optional[str],
                            source_image_b64: str, thumbnail_b64: Optional[str], preprocess_stats: Dict[str, Any],
-                           engine_preference: str, source_filename: str):
+                           engine_preference: str, source_filename: str, image_format: str = 'jpg'):
     if receipt_builder is None or validation_service is None:
         raise RuntimeError("Receipt builder not available")
 
@@ -363,7 +365,8 @@ def _run_analysis_pipeline(queue_id: str, image_bytes: bytes, metadata: Optional
             'queue_id': queue_id,
             'engines_attempted': ocr_result.get('engines_attempted', []),
             'payload_hash': payload_hash,
-            'timings': timings
+            'timings': timings,
+            'image_format': image_format  # Store format to avoid 404s
         })
 
     finally:
@@ -424,6 +427,26 @@ async def analyze_receipt(
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Invalid image file: {str(e)}")
 
+        # Save image to artifacts/ocr_results for draft display
+        try:
+            results_dir = ARTIFACTS_DIR / 'ocr_results'
+            results_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Determine image extension from format
+            image = Image.open(io.BytesIO(file_content))
+            ext = 'jpg' if image.format in ('JPEG', 'JPG') else (image.format.lower() if image.format else 'png')
+            
+            # Save with queue_id as filename
+            image_path = results_dir / f"{queue_id}.{ext}"
+            with open(image_path, 'wb') as f:
+                f.write(file_content)
+            print(f"  - Saved image to: {image_path}")
+            print(f"  - Image format: {ext}")
+        except Exception as e:
+            print(f"  - Failed to save image file: {e}")
+            ext = 'jpg'  # Default fallback
+            # Continue anyway - image save is optional for core functionality
+
         # Encode image as base64 for frontend display
         source_image_b64 = base64.b64encode(file_content).decode('utf-8')
 
@@ -451,7 +474,8 @@ async def analyze_receipt(
             cached_analysis['diagnostics'].update({
                 'queue_id': queue_id,
                 'payload_hash': payload_hash,
-                'cache_hit': True
+                'cache_hit': True,
+                'image_format': ext  # Store format to avoid 404s
             })
             submission_history.store_analysis(queue_id, cached_analysis, metadata, payload_hash, {'cache_hit': True})
             _write_demo_sample(cached_analysis)
@@ -482,7 +506,8 @@ async def analyze_receipt(
                 thumbnail_b64,
                 preprocess_stats,
                 engine_preference,
-                source_filename
+                source_filename,
+                ext  # Pass image format to background task
             )
             return {
                 "queue_id": queue_id,
@@ -500,7 +525,8 @@ async def analyze_receipt(
             thumbnail_b64,
             preprocess_stats,
             engine_preference,
-            source_filename
+            source_filename,
+            ext  # Pass image format
         )
         submission_history.store_analysis(queue_id, analysis_data, metadata, payload_hash, timings)
         _write_demo_sample(analysis_data)
@@ -753,20 +779,42 @@ async def accumulate_receipt(payload: Dict[str, Any] = Body(...)):
         if payload.get("source_file"):
             fields.setdefault("source_file", payload["source_file"])
 
-        result = append_to_location(fields, canonical, operator, force=force)
-        status_code = 200
-        if result.get("status") == "duplicate":
-            status_code = 409
+        # Phase 3: route to new SummaryService writers (Format 02 + Format 01)
+        from app.services.summary_service import SummaryService
+        from app.models.schema import Receipt
 
-        if result.get("filepath"):
-            rel_download = f"/api/accumulation/file?location={canonical}"
-            result["download_url"] = rel_download
-        if result.get("artifact_path"):
-            artifact_name = Path(result["artifact_path"]).name
-            result["artifact_url"] = f"/artifacts/accumulation/{artifact_name}"
-        result["duplicate"] = result.get("status") == "duplicate"
+        receipt_model = Receipt(
+            receipt_date=fields.get("receipt_date"),
+            vendor_name=fields.get("vendor_name"),
+            invoice_number=fields.get("invoice_number"),
+            total_amount=fields.get("total_amount"),
+            tax_10_amount=fields.get("tax_10") or fields.get("tax_10_amount"),
+            tax_8_amount=fields.get("tax_8") or fields.get("tax_8_amount"),
+            memo=fields.get("memo"),
+            business_location_id=canonical,
+            staff_id=fields.get("staff_member"),
+        )
 
-        return JSONResponse(status_code=status_code, content=result)
+        summary = SummaryService()
+        write_result = summary.send_receipts([receipt_model])
+
+        location_path = f"app/Data/accumulation/locations/{canonical}_Accumulated.xlsx"
+        staff_path = (
+            f"app/Data/accumulation/staff/{receipt_model.staff_id}.xlsx"
+            if receipt_model.staff_id else None
+        )
+
+        content = {
+            "status": "success",
+            "location": canonical,
+            "staff": receipt_model.staff_id,
+            "summary": write_result,
+            "download_path": location_path,
+        }
+        if staff_path:
+            content["staff_path"] = staff_path
+
+        return JSONResponse(status_code=200, content=content)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc))
     except HTTPException:

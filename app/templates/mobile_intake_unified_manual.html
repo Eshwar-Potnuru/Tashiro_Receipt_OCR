@@ -1223,6 +1223,9 @@
                     <div class="user-email" id="displayUserEmail">guest@example.com</div>
                 </div>
                 <div class="profile-actions">
+                    <button class="icon-button" id="openDraftsBtn" title="Drafts">
+                        <i class="fas fa-file-alt"></i>
+                    </button>
                     <button class="icon-button" id="profileButton" title="Update Profile">
                         <i class="fas fa-user-edit"></i>
                     </button>
@@ -1452,6 +1455,9 @@
                                 <div style="display: flex; gap: 10px;">
                                     <button class="secondary-button" id="saveChangesBtn" style="padding: 8px 16px; font-size: 14px;">
                                         <i class="fas fa-save"></i> Save Changes
+                                    </button>
+                                    <button class="secondary-button" id="saveDraftBtn" style="padding: 8px 16px; font-size: 14px; background: white; border: 2px solid var(--primary-blue); color: var(--primary-blue);">
+                                        <i class="fas fa-file-alt"></i> Save as Draft
                                     </button>
                                     <button class="primary-button" id="saveAccumulationBtn" style="padding: 8px 16px; font-size: 14px;">
                                         <i class="fas fa-database"></i> Save to HQ Ledger
@@ -2478,13 +2484,14 @@ function updateFieldLabels() {
                     staffMemberSelect.innerHTML = `<option value="">${t('selectStaff')}</option>`;
                     staffList.forEach(member => {
                         const option = document.createElement('option');
-                        option.value = member.name;
+                        // Use member.id as value (staff_id), display member.name
+                        option.value = member.id;
                         option.textContent = member.name;
                         staffMemberSelect.appendChild(option);
                     });
                     staffMemberSelect.dataset.location = selectedLocation;
 
-                    if (pendingStaffSelection && staffList.some(member => member.name === pendingStaffSelection)) {
+                    if (pendingStaffSelection && staffList.some(member => member.id === pendingStaffSelection)) {
                         staffMemberSelect.value = pendingStaffSelection;
                     }
                     pendingStaffSelection = null;
@@ -3105,6 +3112,11 @@ function updateFieldLabels() {
             saveToHeadquarters();
         });
 
+        // Handle save as draft button (Phase 4D.3)
+        document.getElementById('saveDraftBtn').addEventListener('click', function() {
+            saveDraft();
+        });
+
         // Handle save changes button
         document.getElementById('saveChangesBtn').addEventListener('click', function() {
             saveChanges();
@@ -3270,6 +3282,103 @@ function updateFieldLabels() {
                     </div>
                 `;
             }
+        }
+
+        // Phase 4D.3: Save as Draft
+        function saveDraft() {
+            // Validate we have receipt data
+            if (!currentQueueId) {
+                showToast('No receipt data to save', 'error');
+                return;
+            }
+
+            // Get location and staff values (convert empty string to null)
+            const locationValue = (businessLocationSelect?.value && businessLocationSelect.value !== '') ? businessLocationSelect.value : null;
+            const staffValue = (staffMemberSelect?.value && staffMemberSelect.value !== '') ? staffMemberSelect.value : null;
+            
+            console.log('💾 Saving draft with:', {
+                queueId: currentQueueId,
+                location: locationValue,
+                staff: staffValue,
+                locationSelect: businessLocationSelect ? {
+                    exists: true,
+                    value: businessLocationSelect.value,
+                    disabled: businessLocationSelect.disabled,
+                    options: Array.from(businessLocationSelect.options).map(o => ({text: o.text, value: o.value, selected: o.selected}))
+                } : null,
+                staffSelect: staffMemberSelect ? {
+                    exists: true,
+                    value: staffMemberSelect.value,
+                    disabled: staffMemberSelect.disabled,
+                    options: Array.from(staffMemberSelect.options).map(o => ({text: o.text, value: o.value, selected: o.selected}))
+                } : null
+            });
+
+            // Collect current form data
+            const receiptData = {
+                vendor_name: document.getElementById('fieldVendor').value || '',
+                receipt_date: document.getElementById('fieldDate').value || '',
+                total_amount: parseFloat(document.getElementById('fieldTotal').value) || 0,
+                invoice_number: document.getElementById('fieldInvoiceNumber').value || '',
+                tax_10_amount: parseFloat(document.getElementById('fieldTax').value) || 0,
+                tax_8_amount: 0,
+                business_location_id: locationValue,
+                staff_id: staffValue
+            };
+            
+            console.log('📋 Receipt data:', receiptData);
+
+            // Prepare draft payload
+            const payload = {
+                receipt: receiptData,
+                image_ref: currentQueueId // Use queue_id as image reference
+            };
+
+            // Show loading message
+            showToast('Saving draft...', 'info');
+
+            // Send POST request to create draft
+            fetch('/api/drafts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Failed to save draft');
+                }
+                return data;
+            })
+            .then(data => {
+                showToast('Draft saved successfully', 'success');
+                
+                // Update verification status
+                const verificationStatus = document.getElementById('verificationStatus');
+                if (verificationStatus) {
+                    verificationStatus.innerHTML = `
+                        <div class="status-icon">📋</div>
+                        <div class="status-content">
+                            <div class="status-title">Draft Saved</div>
+                            <div class="confidence-badge">Open Drafts menu to review and edit</div>
+                        </div>
+                    `;
+                }
+                
+                // Phase 4F.3: Reset form after successful save
+                console.log('Draft created, resetting form for new receipt:', data);
+                setTimeout(() => {
+                    resetForm();
+                    currentQueueId = null; // Clear queue ID for new receipt
+                    showToast('Form cleared - ready for new receipt', 'info');
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Draft save error:', error);
+                showToast(error.message || 'Failed to save draft', 'error');
+            });
         }
 
         // Reset the form
@@ -3615,5 +3724,50 @@ function updateFieldLabels() {
         // Start the application
         init();
     </script>
+
+    <!-- Phase 4D.1: Draft Management Modal -->
+    <div id="draftModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; overflow-y: auto;">
+        <div style="background: white; margin: 20px auto; max-width: 1200px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
+            <!-- Modal Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
+                <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin: 0;">Receipt Drafts</h2>
+                <button id="closeDraftModalBtn" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; padding: 0; width: 32px; height: 32px;">×</button>
+            </div>
+            
+            <!-- Modal Body -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px; min-height: 500px;">
+                <!-- Draft List Section -->
+                <div id="draftListSection" style="border-right: 1px solid #e2e8f0; padding-right: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #334155;">All Drafts</h3>
+                    <div id="draftListContainer" style="max-height: 500px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                            Loading drafts...
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Draft Detail Section -->
+                <div id="draftDetailSection" style="padding-left: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #334155;">Draft Details</h3>
+                    <div id="draftDetailContainer" style="max-height: 500px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                            Select a draft to view details
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Modal Footer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
+                <span id="draftSelectionCount" style="color: #64748b; font-size: 14px;">0 drafts selected</span>
+                <button id="sendSelectedDraftsBtn" disabled style="padding: 10px 24px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                    Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Phase 4D.1: Draft Management Script -->
+    <script src="/static/js/drafts.js"></script>
 </body>
 </html>

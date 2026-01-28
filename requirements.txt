@@ -38,9 +38,9 @@ openai==0.28.1
 # paddleocr==2.8.1
 
 # Testing and development (optional for production)
-# pytest==7.4.3
-# pytest-asyncio==0.21.1
-# httpx==0.25.2
+pytest==7.4.3
+pytest-asyncio==0.21.1
+httpx==0.25.2
 
 # Security (optional)
 # cryptography==41.0.7

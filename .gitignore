@@ -42,17 +42,36 @@ Thumbs.db
 *.log
 logs/
 
-# API Keys and Secrets
+# API Keys and Secrets - CRITICAL SECURITY
 config/google_vision_key.json
+config/google_docai_key.json
+config/aim-tashiro-poc-*.json
+config/aim-tashiro-poc-09a7f137eb05.json
+config/aim-tashiro-poc-dec6e8e0cdb7.json
 backup_important/config/google_vision_key.json
 *.key
 *.pem
 *.p12
+*credentials*.json
+*service-account*.json
+*service_account*.json
+*key*.json
+google-credentials.json
+google_credentials.json
+gcloud-credentials.json
+gcloud_credentials.json
+
+# NEVER COMMIT THESE PATTERNS
+**/*credentials*.json
+**/*service*account*.json
+**/aim-tashiro-*.json
+config/*.json
+!config/staff_config.json
 
 # Environment variables
 .env
-.env.local
-.env.production
+.env.*
+!.env.example
 
 # Artifacts and exports
 ../artifacts/

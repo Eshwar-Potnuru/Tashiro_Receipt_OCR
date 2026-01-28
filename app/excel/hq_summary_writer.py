@@ -1,12 +1,8 @@
-"""HQ summary writer skeleton."""
+"""HQ summary writer placeholder (Phase 2F: HQ summary removed)."""
 
 
 class HQSummaryWriter:
-    """TODO: Implements HQ Summary aggregation."""
+    """Inert placeholder; HQ summary is out of scope."""
 
     def write(self, summary_data):
-        """Persist aggregated metrics into the HQ summary workbook.
-
-        TODO: Incorporate business rules for totals, taxes, and adjustments.
-        """
-        pass
+        return None

@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Receipt Draft Management - Tashiro Ironworks</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            color: #333;
+            min-height: 100vh;
+        }
+        
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        /* Container */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Controls */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .controls-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .controls-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background: #1e40af;
+            color: white;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background: #1e3a8a;
+        }
+        
+        .btn-primary:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #334155;
+        }
+        
+        .btn-secondary:hover {
+            background: #cbd5e1;
+        }
+        
+        /* Draft list */
+        .draft-list {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .draft-item {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .draft-item:hover {
+            background: #f8fafc;
+        }
+        
+        .draft-item:last-child {
+            border-bottom: none;
+        }
+        
+        .draft-checkbox {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .draft-info {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 16px;
+            align-items: center;
+        }
+        
+        .draft-field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        
+        .draft-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+        
+        .draft-value {
+            font-size: 14px;
+            font-weight: 500;
+            color: #1e293b;
+        }
+        
+        .draft-date {
+            font-size: 12px;
+            color: #64748b;
+        }
+        
+        .draft-status {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .draft-status.draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .draft-status.sent {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+        
+        .modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        .modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #64748b;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 4px;
+        }
+        
+        .modal-close:hover {
+            background: #f1f5f9;
+        }
+        
+        .modal-body {
+            padding: 24px;
+        }
+        
+        .detail-section {
+            margin-bottom: 24px;
+        }
+        
+        .detail-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .detail-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #e2e8f0;
+        }
+        
+        .detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 16px;
+        }
+        
+        .detail-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .detail-field-label {
+            font-size: 12px;
+            color: #64748b;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        
+        .detail-field-value {
+            font-size: 14px;
+            color: #1e293b;
+            font-weight: 500;
+        }
+        
+        .detail-image {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .validation-errors {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 6px;
+            padding: 16px;
+        }
+        
+        .validation-error {
+            color: #991b1b;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+        
+        .validation-error:last-child {
+            margin-bottom: 0;
+        }
+        
+        .validation-error::before {
+            content: "⚠";
+            font-weight: bold;
+        }
+        
+        /* Loading & Empty States */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e2e8f0;
+            border-top-color: #1e40af;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #64748b;
+        }
+        
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+        
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            max-width: 400px;
+            display: none;
+            z-index: 2000;
+        }
+        
+        .notification.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+        
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .notification.success {
+            border-left: 4px solid #10b981;
+        }
+        
+        .notification.error {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .notification-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: #1e293b;
+        }
+        
+        .notification-message {
+            font-size: 14px;
+            color: #64748b;
+        }
+        
+        /* Send Results Modal */
+        .send-results {
+            margin-top: 16px;
+        }
+        
+        .send-result-item {
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .send-result-item.success {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+        }
+        
+        .send-result-item.error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+        }
+        
+        .send-result-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .send-result-errors {
+            font-size: 13px;
+            color: #991b1b;
+            margin-left: 20px;
+        }
+        
+        .send-result-error {
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <h1>Receipt Draft Management</h1>
+        <p>Review, validate, and send receipt drafts</p>
+    </div>
+    
+    <!-- Container -->
+    <div class="container">
+        <!-- Controls -->
+        <div class="controls">
+            <div class="controls-left">
+                <span id="selectionCount" style="color: #64748b; font-size: 14px;">
+                    0 drafts selected
+                </span>
+            </div>
+            <div class="controls-right">
+                <button class="btn btn-secondary" onclick="refreshDrafts()">
+                    Refresh
+                </button>
+                <button id="sendBtn" class="btn btn-primary" onclick="sendSelectedDrafts()" disabled>
+                    Send Selected
+                </button>
+            </div>
+        </div>
+        
+        <!-- Draft List -->
+        <div id="draftListContainer" class="draft-list">
+            <div class="loading">
+                <div class="loading-spinner"></div>
+                <div>Loading drafts...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Detail Modal -->
+    <div id="detailModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Draft Details</h2>
+                <button class="modal-close" onclick="closeDetailModal()">×</button>
+            </div>
+            <div class="modal-body" id="detailModalBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Send Results Modal -->
+    <div id="sendResultsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Send Results</h2>
+                <button class="modal-close" onclick="closeSendResultsModal()">×</button>
+            </div>
+            <div class="modal-body" id="sendResultsBody">
+                <!-- Content loaded dynamically -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <div class="notification-title" id="notificationTitle"></div>
+        <div class="notification-message" id="notificationMessage"></div>
+    </div>
+    
+    <script>
+        // State
+        let allDrafts = [];
+        let selectedDraftIds = new Set();
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            loadDrafts();
+        });
+        
+        // Load drafts from API
+        async function loadDrafts() {
+            try {
+                const response = await fetch('/api/drafts');
+                if (!response.ok) throw new Error('Failed to load drafts');
+                
+                const data = await response.json();
+                allDrafts = data.drafts || [];
+                
+                // Sort by created_at desc (newest first)
+                allDrafts.sort((a, b) => 
+                    new Date(b.created_at) - new Date(a.created_at)
+                );
+                
+                renderDraftList();
+            } catch (error) {
+                console.error('Error loading drafts:', error);
+                showNotification('Error', 'Failed to load drafts', 'error');
+                renderEmptyState('Failed to load drafts. Please refresh.');
+            }
+        }
+        
+        // Render draft list
+        function renderDraftList() {
+            const container = document.getElementById('draftListContainer');
+            
+            if (allDrafts.length === 0) {
+                renderEmptyState('No drafts yet');
+                return;
+            }
+            
+            container.innerHTML = allDrafts.map(draft => `
+                <div class="draft-item" onclick="showDraftDetail('${draft.draft_id}')">
+                    <input 
+                        type="checkbox" 
+                        class="draft-checkbox"
+                        ${draft.status === 'SENT' ? 'disabled' : ''}
+                        ${selectedDraftIds.has(draft.draft_id) ? 'checked' : ''}
+                        onclick="event.stopPropagation(); toggleDraftSelection('${draft.draft_id}')"
+                    >
+                    <div class="draft-info">
+                        <div class="draft-field">
+                            <div class="draft-label">Vendor</div>
+                            <div class="draft-value">${escapeHtml(draft.receipt.vendor_name || 'N/A')}</div>
+                        </div>
+                        <div class="draft-field">
+                            <div class="draft-label">Amount</div>
+                            <div class="draft-value">¥${formatAmount(draft.receipt.total_amount)}</div>
+                        </div>
+                        <div class="draft-field">
+                            <div class="draft-label">Location</div>
+                            <div class="draft-value">${draft.receipt.business_location_id || 'N/A'}</div>
+                        </div>
+                        <div class="draft-field">
+                            <span class="draft-status ${draft.status.toLowerCase()}">${draft.status}</span>
+                            <div class="draft-date">${formatDate(draft.created_at)}</div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            updateSelectionCount();
+        }
+        
+        // Render empty state
+        function renderEmptyState(message) {
+            const container = document.getElementById('draftListContainer');
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon">📭</div>
+                    <div>${message}</div>
+                </div>
+            `;
+        }
+        
+        // Toggle draft selection
+        function toggleDraftSelection(draftId) {
+            if (selectedDraftIds.has(draftId)) {
+                selectedDraftIds.delete(draftId);
+            } else {
+                // Only allow selecting DRAFT status
+                const draft = allDrafts.find(d => d.draft_id === draftId);
+                if (draft && draft.status === 'DRAFT') {
+                    selectedDraftIds.add(draftId);
+                }
+            }
+            updateSelectionCount();
+        }
+        
+        // Update selection count
+        function updateSelectionCount() {
+            const count = selectedDraftIds.size;
+            document.getElementById('selectionCount').textContent = 
+                `${count} draft${count !== 1 ? 's' : ''} selected`;
+            document.getElementById('sendBtn').disabled = count === 0;
+        }
+        
+        // Show draft detail modal
+        async function showDraftDetail(draftId) {
+            const draft = allDrafts.find(d => d.draft_id === draftId);
+            if (!draft) return;
+            
+            // Validate draft to get errors
+            let validationErrors = [];
+            if (draft.status === 'DRAFT') {
+                try {
+                    const response = await fetch(`/api/drafts/${draftId}/validate`);
+                    if (response.ok) {
+                        const data = await response.json();
+                        validationErrors = data.errors || [];
+                    }
+                } catch (error) {
+                    console.error('Validation check failed:', error);
+                }
+            }
+            
+            const r = draft.receipt;
+            const modalBody = document.getElementById('detailModalBody');
+            
+            modalBody.innerHTML = `
+                <!-- Receipt Information -->
+                <div class="detail-section">
+                    <div class="detail-section-title">Receipt Information</div>
+                    <div class="detail-grid">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Vendor Name</div>
+                            <div class="detail-field-value">${escapeHtml(r.vendor_name || 'N/A')}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Date</div>
+                            <div class="detail-field-value">${r.receipt_date || 'N/A'}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Total Amount</div>
+                            <div class="detail-field-value">¥${formatAmount(r.total_amount)}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Tax (10%)</div>
+                            <div class="detail-field-value">¥${formatAmount(r.tax_10_amount || 0)}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Tax (8%)</div>
+                            <div class="detail-field-value">¥${formatAmount(r.tax_8_amount || 0)}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Invoice Number</div>
+                            <div class="detail-field-value">${escapeHtml(r.invoice_number || 'N/A')}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Location & Staff -->
+                <div class="detail-section">
+                    <div class="detail-section-title">Location & Staff</div>
+                    <div class="detail-grid">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Business Location</div>
+                            <div class="detail-field-value">${r.business_location_id || 'N/A'}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Staff ID</div>
+                            <div class="detail-field-value">${r.staff_id || 'N/A'}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Metadata -->
+                <div class="detail-section">
+                    <div class="detail-section-title">Draft Metadata</div>
+                    <div class="detail-grid">
+                        <div class="detail-field">
+                            <div class="detail-field-label">Status</div>
+                            <div class="detail-field-value">
+                                <span class="draft-status ${draft.status.toLowerCase()}">${draft.status}</span>
+                            </div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Created At</div>
+                            <div class="detail-field-value">${formatDateTime(draft.created_at)}</div>
+                        </div>
+                        <div class="detail-field">
+                            <div class="detail-field-label">Updated At</div>
+                            <div class="detail-field-value">${formatDateTime(draft.updated_at)}</div>
+                        </div>
+                        ${draft.sent_at ? `
+                        <div class="detail-field">
+                            <div class="detail-field-label">Sent At</div>
+                            <div class="detail-field-value">${formatDateTime(draft.sent_at)}</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                <!-- Validation Errors -->
+                ${validationErrors.length > 0 ? `
+                <div class="detail-section">
+                    <div class="detail-section-title">Validation Errors</div>
+                    <div class="validation-errors">
+                        ${validationErrors.map(err => `
+                            <div class="validation-error">${escapeHtml(err)}</div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <!-- Source Image -->
+                ${draft.image_ref ? `
+                <div class="detail-section">
+                    <div class="detail-section-title">Source Image</div>
+                    <img src="/artifacts/ocr_results/${draft.image_ref}.jpg" 
+                         class="detail-image" 
+                         alt="Receipt Image"
+                         onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div style="display:none; color: #64748b; font-size: 14px;">
+                        Image not available
+                    </div>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('detailModal').classList.add('show');
+        }
+        
+        // Close detail modal
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.remove('show');
+        }
+        
+        // Send selected drafts
+        async function sendSelectedDrafts() {
+            if (selectedDraftIds.size === 0) return;
+            
+            const draftIds = Array.from(selectedDraftIds);
+            
+            try {
+                const response = await fetch('/api/drafts/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ draft_ids: draftIds })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Send request failed');
+                }
+                
+                const result = await response.json();
+                
+                // Show results modal
+                showSendResults(result);
+                
+                // Refresh draft list
+                selectedDraftIds.clear();
+                await loadDrafts();
+                
+            } catch (error) {
+                console.error('Send error:', error);
+                showNotification('Error', 'Failed to send drafts', 'error');
+            }
+        }
+        
+        // Show send results
+        function showSendResults(result) {
+            const body = document.getElementById('sendResultsBody');
+            
+            body.innerHTML = `
+                <div style="margin-bottom: 16px;">
+                    <div style="font-size: 16px; font-weight: 600; margin-bottom: 8px;">
+                        Summary
+                    </div>
+                    <div style="color: #64748b;">
+                        Sent: ${result.sent} | Failed: ${result.failed} | Total: ${result.total}
+                    </div>
+                </div>
+                
+                <div class="send-results">
+                    ${result.results.map(r => `
+                        <div class="send-result-item ${r.success ? 'success' : 'error'}">
+                            <div class="send-result-title">
+                                ${r.success ? '✓' : '✗'} 
+                                Draft ${r.draft_id.slice(0, 8)}...
+                            </div>
+                            ${!r.success && r.errors ? `
+                                <div class="send-result-errors">
+                                    ${r.errors.map(err => `
+                                        <div class="send-result-error">• ${escapeHtml(err)}</div>
+                                    `).join('')}
+                                </div>
+                            ` : ''}
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('sendResultsModal').classList.add('show');
+            
+            if (result.sent > 0) {
+                showNotification('Success', `${result.sent} draft(s) sent successfully`, 'success');
+            }
+        }
+        
+        // Close send results modal
+        function closeSendResultsModal() {
+            document.getElementById('sendResultsModal').classList.remove('show');
+        }
+        
+        // Refresh drafts
+        async function refreshDrafts() {
+            selectedDraftIds.clear();
+            await loadDrafts();
+            showNotification('Refreshed', 'Draft list updated', 'success');
+        }
+        
+        // Show notification
+        function showNotification(title, message, type = 'success') {
+            const notification = document.getElementById('notification');
+            document.getElementById('notificationTitle').textContent = title;
+            document.getElementById('notificationMessage').textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Utility functions
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function formatAmount(amount) {
+            return Number(amount || 0).toLocaleString('ja-JP');
+        }
+        
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+        
+        function formatDateTime(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        // Close modals on background click
+        document.getElementById('detailModal').addEventListener('click', (e) => {
+            if (e.target.id === 'detailModal') closeDetailModal();
+        });
+        
+        document.getElementById('sendResultsModal').addEventListener('click', (e) => {
+            if (e.target.id === 'sendResultsModal') closeSendResultsModal();
+        });
+    </script>
+</body>
+</html>

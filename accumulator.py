@@ -46,7 +46,7 @@ LOG_HEADERS = [
 ]
 ARTIFACTS_ACCUM_DIR = BASE_DIR / "artifacts" / "accumulation"
 TEMPLATE_PATH = BASE_DIR / "Template" / "事業所集計テーブル.xlsx"
-STAFF_CONFIG_PATH = BASE_DIR / "staff_config.json"
+STAFF_CONFIG_PATH = BASE_DIR / "config" / "staff_config.json"
 logger = logging.getLogger(__name__)
 MAX_BACKUPS_PER_LOCATION = 3
 DATA_ENTRY_START_ROW = 41
