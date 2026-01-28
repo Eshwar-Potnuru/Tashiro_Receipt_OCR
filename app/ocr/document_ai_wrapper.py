@@ -32,7 +32,6 @@ class DocumentAIConfig:
         "DOCUMENT_AI_ENDPOINT",
         "https://us-documentai.googleapis.com/v1"
     )
-<<<<<<< HEAD
     
     def log_config(self) -> None:
         """Log Document AI configuration for debugging."""
@@ -50,8 +49,6 @@ class DocumentAIConfig:
         else:
             logger.warning("  Credentials: NOT SET (GOOGLE_APPLICATION_CREDENTIALS missing)")
         logger.info("=" * 60)
-=======
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
 
     @property
     def processor_name(self) -> Optional[str]:
@@ -71,7 +68,6 @@ class DocumentAIWrapper:
 
         if self.config.api_key:
             return True
-<<<<<<< HEAD
 
         # Prefer explicit env if already set
         if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
@@ -89,12 +85,6 @@ class DocumentAIWrapper:
                 return True
 
         return False
-=======
-        if os.getenv("GOOGLE_APPLICATION_CREDENTIALS"):
-            return True
-        credentials_file = Path("config/google_vision_key.json")
-        return credentials_file.exists()
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
 
     def process_document(self, image_path: str) -> Dict[str, object]:
         """Placeholder for the real Document AI call.
@@ -127,21 +117,15 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
         raise DocumentAIUnavailableError("google-cloud-documentai is not installed") from exc
 
     config = DocumentAIConfig()
-<<<<<<< HEAD
     config.log_config()
     
     if not config.processor_name:
         logger.error("Document AI processor configuration missing")
         logger.error("Required: DOCUMENT_AI_PROJECT_ID and DOCUMENT_AI_PROCESSOR_ID")
-=======
-    if not config.processor_name:
-        logger.warning("Document AI processor configuration missing (PROJECT_ID/PROCESSOR_ID)")
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
         raise DocumentAIUnavailableError("Document AI processor configuration missing")
 
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if not credentials_path:
-<<<<<<< HEAD
         logger.error("GOOGLE_APPLICATION_CREDENTIALS not set in environment")
         logger.error("Expected path: config/aim-tashiro-poc-09a7f137eb05.json")
         raise DocumentAIUnavailableError("Document AI credentials not configured")
@@ -149,10 +133,6 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
     if not Path(credentials_path).exists():
         logger.error(f"Credentials file not found: {credentials_path}")
         raise DocumentAIUnavailableError(f"Credentials file not found: {credentials_path}")
-=======
-        logger.warning("GOOGLE_APPLICATION_CREDENTIALS not set")
-        raise DocumentAIUnavailableError("Document AI credentials not configured")
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
 
     api_endpoint = f"{config.location}-documentai.googleapis.com"
 
@@ -175,7 +155,6 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
         return MessageToDict(response.document._pb, preserving_proto_field_name=True)
 
     except Exception as exc:  # pragma: no cover - network/SDK failures
-<<<<<<< HEAD
         logger.error("Document AI processing failed: %s", exc)
         # Check for permission errors
         error_str = str(exc)
@@ -185,7 +164,4 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
         if "403" in error_str or "permission" in error_str.lower():
             logger.error("Permission denied - service account may be missing IAM roles")
             logger.error("Required roles: roles/documentai.apiUser or roles/documentai.editor")
-=======
-        logger.warning("Document AI processing failed: %s", exc)
->>>>>>> 9e2daf15213dd71eff959806c399d94fb9510fdd
         raise DocumentAIUnavailableError("Document AI call failed") from exc
