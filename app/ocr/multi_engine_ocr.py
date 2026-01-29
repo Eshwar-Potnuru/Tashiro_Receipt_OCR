@@ -99,39 +99,47 @@ class MultiEngineOCR:
         
         if GOOGLE_VISION_AVAILABLE:
             try:
-                # Try different credential sources with absolute paths
-                google_creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-                if not google_creds_path:
-                    # Use absolute path relative to project root
-                    script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-                    # Try multiple possible filenames
-                    possible_keys = [
-                        'aim-tashiro-poc-dec6e8e0cdb7.json',  # Current key
-                        'aim-tashiro-poc-09a7f137eb05.json',  # Legacy key  
-                        'google_vision_key.json'               # Original key
-                    ]
-                    for key_file in possible_keys:
-                        test_path = os.path.join(script_dir, 'config', key_file)
-                        if os.path.exists(test_path):
-                            google_creds_path = test_path
-                            break
+                # Priority 1: Check for JSON credentials in environment (Railway/cloud)
+                creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS_JSON')
+                if creds_json:
+                    logger.info("Using GOOGLE_APPLICATION_CREDENTIALS_JSON from environment (Railway)")
+                    # GoogleVisionOCR will handle the JSON parsing
+                    self.google_vision = GoogleVisionOCR(credentials_path=None)
+                else:
+                    # Priority 2: Check for file path in environment
+                    google_creds_path = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
                     
-                    # Fallback: try from current working directory
-                    if not google_creds_path or not os.path.exists(google_creds_path):
-                        current_dir = os.getcwd()
+                    # Priority 3: Search for credentials file locally
+                    if not google_creds_path:
+                        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+                        # Try multiple possible filenames
+                        possible_keys = [
+                            'aim-tashiro-poc-dec6e8e0cdb7.json',  # Current key
+                            'aim-tashiro-poc-09a7f137eb05.json',  # Legacy key  
+                            'google_vision_key.json'               # Original key
+                        ]
                         for key_file in possible_keys:
-                            test_path = os.path.join(current_dir, 'config', key_file)
+                            test_path = os.path.join(script_dir, 'config', key_file)
                             if os.path.exists(test_path):
                                 google_creds_path = test_path
                                 break
-                
-                if google_creds_path and os.path.exists(google_creds_path):
-                    logger.info(f"Attempting to load Google Vision credentials from: {google_creds_path}")
-                    os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', google_creds_path)
-                    self.google_vision = GoogleVisionOCR(credentials_path=google_creds_path)
-                else:
-                    logger.warning("Google Vision credentials file not found")
-                    self.google_vision = GoogleVisionOCR()  # Try default credentials
+                        
+                        # Fallback: try from current working directory
+                        if not google_creds_path or not os.path.exists(google_creds_path):
+                            current_dir = os.getcwd()
+                            for key_file in possible_keys:
+                                test_path = os.path.join(current_dir, 'config', key_file)
+                                if os.path.exists(test_path):
+                                    google_creds_path = test_path
+                                    break
+                    
+                    if google_creds_path and os.path.exists(google_creds_path):
+                        logger.info(f"Using Google Vision credentials file: {google_creds_path}")
+                        os.environ.setdefault('GOOGLE_APPLICATION_CREDENTIALS', google_creds_path)
+                        self.google_vision = GoogleVisionOCR(credentials_path=google_creds_path)
+                    else:
+                        logger.info("No credentials file found, trying default credentials")
+                        self.google_vision = GoogleVisionOCR(credentials_path=None)
             except Exception as e:
                 logger.warning(f"Google Vision initialization failed: {e}")
         
