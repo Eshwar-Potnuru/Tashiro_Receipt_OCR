@@ -3331,6 +3331,24 @@ function updateFieldLabels() {
                 business_location_id: locationValue,
                 staff_id: staffValue
             };
+
+            // Validate required fields
+            if (!receiptData.receipt_date) {
+                showToast('⚠️ Receipt date is required. Please enter a date to save.', 'error');
+                // Focus on the date field
+                document.getElementById('fieldDate')?.focus();
+                return;
+            }
+            if (!receiptData.vendor_name) {
+                showToast('⚠️ Vendor name is required. Please enter a vendor name to save.', 'error');
+                document.getElementById('fieldVendor')?.focus();
+                return;
+            }
+            if (!receiptData.total_amount || receiptData.total_amount <= 0) {
+                showToast('⚠️ Total amount is required and must be greater than 0.', 'error');
+                document.getElementById('fieldTotal')?.focus();
+                return;
+            }
             
             console.log('📋 Receipt data:', receiptData);
 
@@ -3384,7 +3402,8 @@ function updateFieldLabels() {
             })
             .catch(error => {
                 console.error('Draft save error:', error);
-                showToast(error.message || 'Failed to save draft', 'error');
+                const errorMessage = typeof error === 'string' ? error : (error.message || 'Failed to save draft');
+                showToast(errorMessage, 'error');
             });
         }
 
