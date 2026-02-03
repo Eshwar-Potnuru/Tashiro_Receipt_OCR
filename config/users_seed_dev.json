@@ -1,0 +1,212 @@
+[
+  {
+    "login_id": "TIW-V48XE",
+    "email": "w01_sam@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Sam"
+  },
+  {
+    "login_id": "TIW-XX6E4",
+    "email": "w02_mark@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Mark"
+  },
+  {
+    "login_id": "TIW-FZ3CL",
+    "email": "w03_lisa@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Lisa"
+  },
+  {
+    "login_id": "TIW-2OIPF",
+    "email": "w04_tom@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Tom"
+  },
+  {
+    "login_id": "TIW-U4AT9",
+    "email": "w05_nina@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Nina"
+  },
+  {
+    "login_id": "TIW-Q7EOO",
+    "email": "w06_jake@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Jake"
+  },
+  {
+    "login_id": "TIW-RKM8P",
+    "email": "w07_emma@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Emma"
+  },
+  {
+    "login_id": "TIW-7P199",
+    "email": "w08_ryan@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Ryan"
+  },
+  {
+    "login_id": "TIW-FM4YZ",
+    "email": "w09_maya@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Maya"
+  },
+  {
+    "login_id": "TIW-M6MR1",
+    "email": "w10_alex@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Alex"
+  },
+  {
+    "login_id": "TIW-V41OY",
+    "email": "w11_zoe@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Zoe"
+  },
+  {
+    "login_id": "TIW-A53TH",
+    "email": "w12_leo@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Leo"
+  },
+  {
+    "login_id": "TIW-9ZI75",
+    "email": "w13_mia@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Mia"
+  },
+  {
+    "login_id": "TIW-B5PRH",
+    "email": "w14_owen@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Owen"
+  },
+  {
+    "login_id": "TIW-PB279",
+    "email": "w15_eva@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Eva"
+  },
+  {
+    "login_id": "TIW-EZRH2",
+    "email": "w16_ian@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Ian"
+  },
+  {
+    "login_id": "TIW-G2QDF",
+    "email": "w17_ava@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Ava"
+  },
+  {
+    "login_id": "TIW-OIQWD",
+    "email": "w18_luke@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Luke"
+  },
+  {
+    "login_id": "TIW-WCWDG",
+    "email": "w19_isla@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Isla"
+  },
+  {
+    "login_id": "TIW-KH9PP",
+    "email": "w20_max@example.com",
+    "password": "password123",
+    "role": "WORKER",
+    "display_name": "Max"
+  },
+  {
+    "login_id": "TIW-3E08W",
+    "email": "a01_pau@example.com",
+    "password": "password123",
+    "role": "ADMIN",
+    "display_name": "Admin Pau"
+  },
+  {
+    "login_id": "TIW-BNZRL",
+    "email": "a02_raj@example.com",
+    "password": "password123",
+    "role": "ADMIN",
+    "display_name": "Admin Raj"
+  },
+  {
+    "login_id": "TIW-61NQ2",
+    "email": "a03_sofia@example.com",
+    "password": "password123",
+    "role": "ADMIN",
+    "display_name": "Admin Sofia"
+  },
+  {
+    "login_id": "TIW-5G5BT",
+    "email": "a04_chen@example.com",
+    "password": "password123",
+    "role": "ADMIN",
+    "display_name": "Admin Chen"
+  },
+  {
+    "login_id": "TIW-WJJ5N",
+    "email": "a05_amir@example.com",
+    "password": "password123",
+    "role": "ADMIN",
+    "display_name": "Admin Amir"
+  },
+  {
+    "login_id": "TIW-O5FXV",
+    "email": null,
+    "password": "password123",
+    "role": "HQ",
+    "display_name": "HQ1"
+  },
+  {
+    "login_id": "TIW-OQFOW",
+    "email": null,
+    "password": "password123",
+    "role": "HQ",
+    "display_name": "HQ2"
+  },
+  {
+    "login_id": "TIW-57OTC",
+    "email": null,
+    "password": "password123",
+    "role": "HQ",
+    "display_name": "HQ3"
+  },
+  {
+    "login_id": "TIW-ADLNS",
+    "email": null,
+    "password": "password123",
+    "role": "HQ",
+    "display_name": "HQ4"
+  },
+  {
+    "login_id": "TIW-KYDLD",
+    "email": null,
+    "password": "password123",
+    "role": "HQ",
+    "display_name": "HQ5"
+  }
+]
