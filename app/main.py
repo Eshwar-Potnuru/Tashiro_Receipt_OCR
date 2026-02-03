@@ -250,10 +250,17 @@ async def seed_dev_users():
     import json
     
     env = os.getenv("ENV", os.getenv("APP_ENV", "")).lower()
-    
-    if env != "dev":
-        return  # Skip seeding in non-dev environments
-    
+    force_seed = os.getenv("SEED_DEV_USERS", "0") == "1"
+
+    # If not explicitly in dev mode, allow seeding when DB is empty or when SEED_DEV_USERS=1
+    from app.repositories.user_repository import UserRepository
+    repo_check = UserRepository()
+    existing_users = repo_check.count_users()
+
+    if env != "dev" and not force_seed and existing_users > 0:
+        print(f"DEV SEED: Skipping - environment={env}, force_seed={force_seed}, existing_users={existing_users}")
+        return  # Skip seeding in non-dev environments when DB already has users
+
     seed_file = Path(__file__).parent.parent / "config" / "users_seed_dev.json"
     
     if not seed_file.exists():

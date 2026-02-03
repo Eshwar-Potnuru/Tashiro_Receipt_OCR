@@ -221,6 +221,16 @@ class UserRepository:
         finally:
             conn.close()
 
+    def count_users(self) -> int:
+        """Return number of users in the database."""
+        conn = sqlite3.connect(self.db_path)
+        try:
+            cursor = conn.execute("SELECT COUNT(*) FROM users")
+            row = cursor.fetchone()
+            return int(row[0]) if row else 0
+        finally:
+            conn.close()
+
     def upsert_user(self, login_id: str, email: Optional[str], plain_password: str, role: str, display_name: str) -> User:
         """Create or update user (for dev seeding).
         
