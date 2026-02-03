@@ -143,6 +143,7 @@ def create_app() -> FastAPI:
         templates = Jinja2Templates(directory=str(base_dir / "app" / "templates"))
         app.mount("/static", StaticFiles(directory=str(base_dir / "app" / "static")), name="static")
         app.mount("/artifacts", StaticFiles(directory=str(artifacts_dir)), name="artifacts")
+        app.mount("/accumulation", StaticFiles(directory=str(base_dir / "app" / "Data" / "accumulation")), name="accumulation")
 
         # Add tracker blocking middleware (Phase 4F Fix 2)
         # app.add_middleware(BlockTrackerMiddleware)
