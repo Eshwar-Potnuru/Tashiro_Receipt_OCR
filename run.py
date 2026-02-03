@@ -11,7 +11,7 @@ from pathlib import Path
 # Add current directory to Python path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from app.main import create_app
+from app.main import app  # Import the already-created app instance
 import uvicorn
 
 def main():
@@ -39,10 +39,9 @@ def main():
         print(f"API Documentation: http://localhost:{port}/docs")
         print("=" * 50)
 
-        # Create the FastAPI application
-        print("Creating FastAPI application...")
-        app = create_app()
-        print("Application created successfully")
+        # Use the pre-created FastAPI application instance
+        print("Using FastAPI application instance...")
+        print("Application loaded successfully")
 
         # Start the server
         print(f"Starting uvicorn server on port {port}...")
