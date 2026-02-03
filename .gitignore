@@ -85,8 +85,8 @@ config/*.json
 app/Data/accumulation/backups/
 *.pdf
 
-# Database files (can be large, regenerated locally)
-app/Data/*.db
+# Database files - ignore backups but allow fresh templates
+app/Data/*.db.backup
 app/Data/*.db-journal
 app/Data/*.db-wal
 app/Data/*.db-shm
