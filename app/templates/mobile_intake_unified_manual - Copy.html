@@ -931,87 +931,8 @@
             padding: 20px;
         }
 
-        /* Phase 5D: Mobile 3-Screen Layout */
-        .mobile-screen {
-            /* Don't hide on desktop - only manage on mobile */
-        }
-        
-        .mobile-nav {
-            display: none;
-        }
-        
         /* Responsive Design */
         @media (max-width: 768px) {
-            body {
-                padding-bottom: 70px;
-            }
-            
-            /* Only on mobile: hide non-active screens */
-            .mobile-screen {
-                display: none;
-            }
-            
-            .mobile-screen.active {
-                display: block !important;
-            }
-            
-            /* Mobile 3-Screen Navigation */
-            .mobile-nav {
-                display: flex;
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                background: white;
-                border-top: 1px solid #e2e8f0;
-                box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-                z-index: 1000;
-                padding: 8px;
-                padding-bottom: max(8px, env(safe-area-inset-bottom));
-            }
-            
-            .nav-btn {
-                flex: 1;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                gap: 4px;
-                padding: 8px;
-                background: none;
-                border: none;
-                color: #64748b;
-                font-size: 11px;
-                cursor: pointer;
-                border-radius: 8px;
-                transition: all 0.2s;
-            }
-            
-            .nav-btn i {
-                font-size: 20px;
-            }
-            
-            .nav-btn.active {
-                color: #3b82f6;
-                background: #eff6ff;
-            }
-            
-            .nav-btn:disabled {
-                opacity: 0.4;
-                cursor: not-allowed;
-            }
-            
-            /* Hide desktop cards on mobile, show only active screen */
-            .dashboard-grid {
-                display: block;
-            }
-            
-            .card {
-                margin-bottom: 0;
-            }
-            
-            .mobile-screen:not(.active) {
-                display: none !important;
-            }
             .dashboard-grid {
                 grid-template-columns: 1fr;
             }
@@ -1042,63 +963,6 @@
                 left: 10px;
                 right: 10px;
                 max-width: none;
-            }
-            
-            /* Phase 5D: Mobile-first batch upload styles */
-            #selectedFilesContainer {
-                padding: 12px;
-            }
-            
-            #uploadBatchBtn,
-            .primary-button,
-            .secondary-button {
-                width: 100%;
-                padding: 14px;
-                font-size: 15px;
-            }
-            
-            #batchReceiptTiles {
-                padding: 12px;
-            }
-            
-            /* Phase 5D: Draft modal mobile styles */
-            #draftModal > div,
-            #sendResultsModal > div {
-                margin: 0;
-                max-width: 100%;
-                width: 100%;
-                height: 100vh;
-                border-radius: 0;
-                max-height: none;
-            }
-            
-            #draftModal,
-            #sendResultsModal {
-                z-index: 2000;
-            }
-            
-            .draft-filter-btn {
-                flex: 1;
-                min-width: 70px;
-                font-size: 12px;
-                padding: 8px 12px;
-            }
-            
-            /* Sticky header and footer in draft modal */
-            #draftModal > div > div:first-child,
-            #sendResultsModal > div > div:first-child {
-                position: sticky;
-                top: 0;
-                background: white;
-                z-index: 10;
-            }
-            
-            #draftModal > div > div:last-child,
-            #sendResultsModal > div > div:last-child {
-                position: sticky;
-                bottom: 0;
-                background: #f8fafc;
-                z-index: 10;
             }
         }
 
@@ -1204,21 +1068,20 @@
             <form id="registrationForm" class="registration-form">
                 <div class="form-group">
                     <label for="userName">Full Name <span class="required">*</span></label>
-                    <input type="text" id="userName" name="userName" placeholder="Enter your full name" required autocomplete="name">
+                    <input type="text" id="userName" placeholder="Enter your full name" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="loginIdentifier">Login ID or Email <span class="required">*</span></label>
-                    <input type="text" id="loginIdentifier" name="loginIdentifier" placeholder="TIW-##### or your.email@company.com" required autocomplete="username">
-                    <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Enter your Login ID (e.g., TIW-#####) or email address</p>
+                    <label for="userEmail">Email Address <span class="required">*</span></label>
+                    <input type="email" id="userEmail" placeholder="your.email@company.com" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Password <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                    <label for="employeeId">Employee ID (Optional)</label>
+                    <input type="text" id="employeeId" placeholder="TY-2045">
                 </div>
                 
-                <button type="submit" id="launchSystemBtn" name="launchSystemBtn" class="primary-button">
+                <button type="submit" class="primary-button">
                     <i class="fas fa-rocket"></i> Launch OCR System
                 </button>
             </form>
@@ -1253,21 +1116,21 @@
             <form id="profileForm" class="registration-form">
                 <div class="form-group">
                     <label for="updateUserName">Full Name <span class="required">*</span></label>
-                    <input type="text" id="updateUserName" name="updateUserName" placeholder="Enter your full name" required autocomplete="name">
+                    <input type="text" id="updateUserName" placeholder="Enter your full name" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="updateUserEmail">Email Address (Optional)</label>
-                    <input type="email" id="updateUserEmail" name="updateUserEmail" placeholder="your.email@company.com" autocomplete="email">
+                    <label for="updateUserEmail">Email Address <span class="required">*</span></label>
+                    <input type="email" id="updateUserEmail" placeholder="your.email@company.com" required>
                 </div>
                 
                 <div class="form-group">
-                    <label for="updateEmployeeId">Login ID <span class="required">*</span></label>
-                    <input type="text" id="updateEmployeeId" name="updateEmployeeId" placeholder="PY-V48XE" required autocomplete="off">
+                    <label for="updateEmployeeId">Employee ID</label>
+                    <input type="text" id="updateEmployeeId" placeholder="TY-2045">
                 </div>
                 
                 <div class="form-actions">
-                    <button type="submit" id="updateProfileBtn" name="updateProfileBtn" class="primary-button">
+                    <button type="submit" class="primary-button">
                         <i class="fas fa-save"></i> Update Profile
                     </button>
                     <button type="button" class="secondary-button" id="cancelProfileUpdate">
@@ -1292,7 +1155,7 @@
             <div class="registration-form">
                 <div class="form-group">
                     <label for="themeToggle">Theme</label>
-                    <select id="themeToggle" name="themeToggle">
+                    <select id="themeToggle">
                         <option value="light">Light Mode</option>
                         <option value="dark">Dark Mode</option>
                         <option value="auto">Auto (System)</option>
@@ -1301,7 +1164,7 @@
                 
                 <div class="form-group">
                     <label for="languageSelect">Language</label>
-                    <select id="languageSelect" name="languageSelect">
+                    <select id="languageSelect">
                         <option value="en">English</option>
                         <option value="ja">日本語 (Japanese)</option>
                     </select>
@@ -1309,17 +1172,16 @@
                 
                 <div class="form-group">
                     <label for="ocrEngineSelect">OCR Engine</label>
-                    <select id="ocrEngineSelect" name="ocrEngineSelect">
+                    <select id="ocrEngineSelect">
                         <option value="auto">Hybrid (Auto)</option>
                         <option value="standard">Standard Engines</option>
                         <option value="document_ai">Document AI Preview</option>
                     </select>
-                    <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Choose engine for this device. Default: Hybrid (Auto).</p>
                 </div>
                 
                 <div class="form-group">
                     <label for="notificationToggle">Notifications</label>
-                    <select id="notificationToggle" name="notificationToggle">
+                    <select id="notificationToggle">
                         <option value="all">All Notifications</option>
                         <option value="important">Important Only</option>
                         <option value="none">Disabled</option>
@@ -1328,7 +1190,7 @@
                 
                 <div class="form-group">
                     <label for="autoSaveToggle">Auto-save Forms</label>
-                    <select id="autoSaveToggle" name="autoSaveToggle">
+                    <select id="autoSaveToggle">
                         <option value="enabled">Enabled</option>
                         <option value="disabled">Disabled</option>
                     </select>
@@ -1378,7 +1240,7 @@
         <!-- Dashboard Grid -->
         <div class="dashboard-grid">
             <!-- Capture Card -->
-            <div class="card" id="captureCard">
+            <div class="card">
                 <div class="card-header">
                     <div>
                         <h2 class="card-title">Capture Receipt</h2>
@@ -1388,7 +1250,6 @@
                         <i class="fas fa-camera"></i>
                     </div>
                 </div>
-                <section id="screenCapture" class="mobile-screen active">
                 
                 <div class="upload-options">
                     <div class="upload-button" id="cameraButton">
@@ -1399,23 +1260,9 @@
                     
                     <div class="upload-button" id="uploadButton">
                         <i class="fas fa-file-upload upload-icon"></i>
-                        <div class="upload-text">Upload Files</div>
-                        <div class="upload-subtext">Up to 4 receipts</div>
+                        <div class="upload-text">Upload File</div>
+                        <div class="upload-subtext">JPG, PNG, or PDF</div>
                     </div>
-                </div>
-                
-                <!-- Phase 5D: Pending Files Preview Tiles -->
-                <div id="pendingFilesContainer" style="display: none; margin-top: 16px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e2e8f0;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                        <span style="font-weight: 600; color: #1e293b;"><i class="fas fa-images"></i> Ready for OCR (<span id="pendingFileCount">0</span>/4)</span>
-                        <button id="clearPendingBtn" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; padding: 4px 8px;">
-                            <i class="fas fa-times"></i> Clear All
-                        </button>
-                    </div>
-                    <div id="pendingFilesTiles" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 16px;"></div>
-                    <button id="startOcrBtn" class="primary-button" style="width: 100%; margin-top: 8px;">
-                        <i class="fas fa-magic"></i> Start OCR Processing
-                    </button>
                 </div>
                 
                 <div class="dropzone" id="dropzone">
@@ -1433,17 +1280,14 @@
                         <li>Include all receipt edges in the photo</li>
                         <li>Avoid blurry or distorted images</li>
                         <li>Supported formats: JPG, PNG (max 5MB)</li>
-                        <li><strong>Phase 5D: Upload up to 4 receipts at once</strong></li>
                     </ul>
                 </div>
                 
-                <input type="file" id="fileInput" accept="image/*" multiple capture="environment" style="display: none;">
-                </section>
+                <input type="file" id="fileInput" accept="image/*" capture="environment" style="display: none;">
             </div>
 
             <!-- OCR Review Card -->
-            <div class="card" id="reviewCard">
-                <section id="screenReview" class="mobile-screen">
+            <div class="card">
                 <div class="card-header">
                     <div>
                         <h2 class="card-title">OCR Review & Verification</h2>
@@ -1451,16 +1295,6 @@
                     </div>
                     <div class="card-icon">
                         <i class="fas fa-search"></i>
-                    </div>
-                </div>
-                
-                <!-- Phase 5D: Batch Receipt Tiles -->
-                <div id="batchReceiptTiles" style="display: none; margin-bottom: 20px; padding: 16px; background: #f8fafc; border-radius: 8px;">
-                    <h4 style="margin: 0 0 12px 0; color: #1e293b; font-size: 14px; font-weight: 600;">
-                        <i class="fas fa-layer-group"></i> Receipt Batch (<span id="tileCount">0</span> receipts)
-                    </h4>
-                    <div id="receiptTilesContainer" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; -webkit-overflow-scrolling: touch; scroll-snap-type: x mandatory;">
-                        <!-- Tiles will be inserted here -->
                     </div>
                 </div>
                 
@@ -1479,7 +1313,10 @@
                         <!-- Field Mapping Header -->
                         <div class="field-mapping-header">
                             <h3>📋 Receipt Field Mapping (A-F)</h3>
-                            <p>Edit directly in the table below. Changes apply only to the selected receipt.</p>
+                            <p>Verify extracted data matches receipt content</p>
+                            <p style="color: #64748b; font-size: 13px; margin-top: 8px;">
+                                <i class="fas fa-info-circle"></i> Read-only view. Edit data in the Editable Table below.
+                            </p>
                         </div>
                         
                         <div class="form-grid">
@@ -1488,7 +1325,7 @@
                                     <span class="field-badge">A</span>
                                     <span class="field-text">Date (日付)</span>
                                 </div>
-                                <input type="text" id="fieldDate" name="fieldDate" placeholder="YYYY-MM-DD" autocomplete="off" style="background-color: white; cursor: text;" data-field="receipt_date">
+                                <input type="text" id="fieldDate" placeholder="YYYY-MM-DD" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
                             </div>
                             
                             <div class="form-field">
@@ -1496,7 +1333,7 @@
                                     <span class="field-badge">B</span>
                                     <span class="field-text">Store Name (店名)</span>
                                 </div>
-                                <input type="text" id="fieldVendor" name="fieldVendor" placeholder="Store name" autocomplete="off" style="background-color: white; cursor: text;" data-field="vendor_name">
+                                <input type="text" id="fieldVendor" placeholder="Store name" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
                             </div>
                             
                             <div class="form-field">
@@ -1504,7 +1341,7 @@
                                     <span class="field-badge">C</span>
                                     <span class="field-text">Total Amount (金額)</span>
                                 </div>
-                                <input type="text" id="fieldTotal" name="fieldTotal" placeholder="0.00" autocomplete="off" style="background-color: white; cursor: text;" data-field="total_amount">
+                                <input type="text" id="fieldTotal" placeholder="0.00" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
                             </div>
                             
                             <div class="form-field">
@@ -1512,7 +1349,7 @@
                                     <span class="field-badge">D</span>
                                     <span class="field-text">Invoice Number (インボイス番号)</span>
                                 </div>
-                                <input type="text" id="fieldInvoiceNumber" name="fieldInvoiceNumber" placeholder="Invoice/Receipt No." style="background-color: white; cursor: text;" data-field="invoice_number">
+                                <input type="text" id="fieldInvoiceNumber" placeholder="Invoice/Receipt No." readonly style="background-color: #f8f9fa; cursor: not-allowed;">
                             </div>
                             
                             <div class="form-field">
@@ -1520,7 +1357,7 @@
                                     <span class="field-badge">E</span>
                                     <span class="field-text">Tax Category (税区分)</span>
                                 </div>
-                                <select id="fieldTaxCategory" name="fieldTaxCategory" style="background-color: white; cursor: text;" data-field="tax_category">
+                                <select id="fieldTaxCategory" disabled style="background-color: #f8f9fa; cursor: not-allowed;">
                                     <option value="">Select tax category</option>
                                     <option value="軽減税率">軽減税率 (Reduced Tax Rate 8%)</option>
                                     <option value="標準税率">標準税率 (Standard Tax Rate 10%)</option>
@@ -1536,7 +1373,7 @@
                                         <i class="fas fa-robot"></i> AI Selected
                                     </span>
                                 </div>
-                                <select id="fieldAccountTitle" name="fieldAccountTitle" style="background-color: white; cursor: text;" data-field="account_title">
+                                <select id="fieldAccountTitle" disabled style="background-color: #f8f9fa; cursor: not-allowed;">
                                     <option value="">Select account title</option>
                                     <option value="食費">🍽️ 食費 (Meals)</option>
                                     <option value="交通費">🚗 交通費 (Transportation)</option>
@@ -1570,12 +1407,12 @@
                             <h4>Additional Information</h4>
                             <div class="form-grid">
                                 <div class="form-field">
-                                    <label for="fieldTax">Tax Amount (参考)</label>
-                                    <input type="text" id="fieldTax" name="fieldTax" placeholder="0.00" autocomplete="off" data-field="tax_amount">
+                                    <label>Tax Amount (参考)</label>
+                                    <input type="text" id="fieldTax" placeholder="0.00">
                                 </div>
                                 <div class="form-field">
-                                    <label for="fieldCurrency">Currency</label>
-                                    <input type="text" id="fieldCurrency" name="fieldCurrency" placeholder="JPY" value="JPY" autocomplete="off" data-field="currency">
+                                    <label>Currency</label>
+                                    <input type="text" id="fieldCurrency" placeholder="JPY" value="JPY">
                                 </div>
                             </div>
                         </div>
@@ -1587,13 +1424,13 @@
                             <div class="form-grid">
                                 <div class="form-field">
                                     <label for="businessLocationSelect">Business Location <span class="required">*</span></label>
-                                    <select id="businessLocationSelect" name="businessLocationSelect" data-field="business_location_id">
+                                    <select id="businessLocationSelect">
                                         <option value="">Select location</option>
                                     </select>
                                 </div>
                                 <div class="form-field">
                                     <label for="staffMemberSelect">Staff Member <span class="required">*</span></label>
-                                    <select id="staffMemberSelect" name="staffMemberSelect" disabled data-field="staff_id">
+                                    <select id="staffMemberSelect" disabled>
                                         <option value="">Select location first</option>
                                     </select>
                                 </div>
@@ -1601,11 +1438,8 @@
                         </div>
                         
                         <div class="form-actions">
-                            <button class="secondary-button" id="saveDraftBtn" style="padding: 10px 24px; font-size: 15px; background: white; border: 2px solid var(--primary-blue); color: var(--primary-blue); font-weight: 500;">
-                                <i class="fas fa-save"></i> Save
-                            </button>
-                            <button class="primary-button" id="saveAccumulationBtn" style="padding: 10px 24px; font-size: 15px; font-weight: 500;">
-                                <i class="fas fa-paper-plane"></i> Send to HQ Ledger
+                            <button class="primary-button" id="reviewDataBtn" disabled>
+                                <i class="fas fa-edit"></i> Review Data
                             </button>
                             <button class="secondary-button" id="resetButton">
                                 <i class="fas fa-redo"></i> Start Over
@@ -1617,29 +1451,39 @@
                             <pre id="ocrDebugContent" style="white-space: pre-wrap; background: white; padding: 12px; border-radius: 8px; border: 1px solid var(--medium-gray); max-height: 240px; overflow: auto;"></pre>
                         </div>
 
-
+                        <!-- Editable Data Table Container -->
+                        <div id="dataTableContainer" style="display: none; margin-top: 20px;">
+                            <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <h3 style="margin: 0; color: var(--text-dark);">Review & Edit Extracted Data</h3>
+                                <div style="display: flex; gap: 12px;">
+                                    <button class="secondary-button" id="saveDraftBtn" style="padding: 10px 24px; font-size: 15px; background: white; border: 2px solid var(--primary-blue); color: var(--primary-blue); font-weight: 500;">
+                                        <i class="fas fa-save"></i> Save
+                                    </button>
+                                    <button class="primary-button" id="saveAccumulationBtn" style="padding: 10px 24px; font-size: 15px; font-weight: 500;">
+                                        <i class="fas fa-paper-plane"></i> Send to HQ Ledger
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="table-container" style="overflow-x: auto; background: var(--light-gray); border-radius: 8px; padding: 15px;">
+                                <table id="editableTable" style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                                    <thead>
+                                        <tr style="background: var(--primary-blue); color: white;">
+                                            <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--medium-gray);">Field</th>
+                                            <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--medium-gray);">Value</th>
+                                            <th style="padding: 12px; text-align: left; font-weight: 600; border-bottom: 2px solid var(--medium-gray);">Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tableBody">
+                                        <!-- Table rows will be populated by JavaScript -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                         <div id="saveResultMessage" class="save-result"></div>
                     </div>
                 </div>
-                </section>
             </div>
         </div>
-
-        <!-- Mobile Bottom Navigation -->
-        <nav id="mobileNav" class="mobile-nav">
-            <button class="nav-btn active" data-screen="screenCapture" id="navCaptureBtn">
-                <i class="fas fa-camera"></i>
-                <span>Capture</span>
-            </button>
-            <button class="nav-btn" data-screen="screenReview" disabled id="navReviewBtn">
-                <i class="fas fa-search"></i>
-                <span>Review</span>
-            </button>
-            <button class="nav-btn" data-screen="screenEdit" disabled id="navEditBtn">
-                <i class="fas fa-edit"></i>
-                <span>Edit</span>
-            </button>
-        </nav>
 
         <!-- History Card -->
         <div class="card">
@@ -1675,18 +1519,16 @@
         // Language translations
         const translations = {
             en: {
-                uploadFiles: 'Upload Files',
-                uploadUpTo4: 'Up to 4 receipts',
                 // Welcome Modal
                 welcomeTitle: "Tashiro Ironworks Co., Ltd.",
                 welcomeSubtitle: "Professional Receipt OCR Automation System",
                 fullName: "Full Name",
-                emailAddress: "Email Address (Optional)",
-                employeeId: "Login ID",
+                emailAddress: "Email Address",
+                employeeId: "Employee ID (Optional)",
                 launchSystem: "Launch OCR System",
                 enterFullName: "Enter your full name",
                 enterEmail: "your.email@company.com",
-                enterEmployeeId: "PY-V48XE",
+                enterEmployeeId: "TY-2045",
 
                 // Profile Modal
                 updateProfile: "Update Profile",
@@ -1862,18 +1704,16 @@
                 savedToPath: "Saved to {path}."
             },
             ja: {
-                uploadFiles: 'ファイルをアップロード',
-                uploadUpTo4: '最大4枚まで',
                 // Welcome Modal
                 welcomeTitle: "株式会社タシロ鉄工所",
                 welcomeSubtitle: "プロフェッショナル領収書OCR自動化システム",
                 fullName: "氏名",
-                emailAddress: "メールアドレス（任意）",
-                employeeId: "社員ID",
+                emailAddress: "メールアドレス",
+                employeeId: "社員ID（任意）",
                 launchSystem: "OCRシステムを起動",
                 enterFullName: "氏名を入力してください",
                 enterEmail: "your.email@company.com",
-                enterEmployeeId: "PY-V48XE",
+                enterEmployeeId: "TY-2045",
 
                 // Profile Modal
                 updateProfile: "プロフィールを更新",
@@ -2055,27 +1895,7 @@
 
         // Translation function
         function t(key, params = {}) {
-            let text = translations[currentLanguage]?.[key] || translations['en']?.[key] || key;
-
-            // Provide readable fallbacks for common untranslated keys
-            if (text === key) {
-                const fallbacks = {
-                    'processingReceipt': 'Processing receipt...',
-                    'receiptAnalyzed': 'Receipt analyzed successfully!',
-                    'failedToAnalyze': 'Failed to analyze receipt',
-                    'uploadingImage': 'Uploading image...',
-                    'ocrInProgress': 'OCR in progress...',
-                    'extractingFields': 'Extracting fields...',
-                    'savingDraft': 'Saving draft...',
-                    'sendToHq': 'Sending to HQ...',
-                    'noReceiptData': 'No receipt data available',
-                    'locationRequired': 'Business location is required',
-                    'staffRequired': 'Staff member is required',
-                    'changesSaved': 'Changes saved successfully',
-                    'readyForHqSave': 'Ready for HQ submission'
-                };
-                text = fallbacks[key] || key;
-            }
+            let text = translations[currentLanguage][key] || translations['en'][key] || key;
 
             // Replace parameters
             Object.keys(params).forEach(param => {
@@ -2089,12 +1909,12 @@
 function updateFieldLabels() {
     const fieldTexts = document.querySelectorAll('.field-text');
     if (fieldTexts.length >= 6) {
-        const dateValue = document.getElementById('fieldDate')?.value || '';
-        const vendorValue = document.getElementById('fieldVendor')?.value || '';
-        const totalValue = document.getElementById('fieldTotal')?.value || '';
-        const invoiceValue = document.getElementById('fieldInvoiceNumber')?.value || '';
-        const taxValue = document.getElementById('fieldTaxCategory')?.value || '';
-        const accountValue = document.getElementById('fieldAccountTitle')?.value || '';
+        const dateValue = document.getElementById('fieldDate').value;
+        const vendorValue = document.getElementById('fieldVendor').value;
+        const totalValue = document.getElementById('fieldTotal').value;
+        const invoiceValue = document.getElementById('fieldInvoiceNumber').value;
+        const taxValue = document.getElementById('fieldTaxCategory').value;
+        const accountValue = document.getElementById('fieldAccountTitle').value;
         
         fieldTexts[0].textContent = dateValue ? `${t('dateLabel')}: ${dateValue}` : t('dateLabel');
         fieldTexts[1].textContent = vendorValue ? `${t('storeNameLabel')}: ${vendorValue}` : t('storeNameLabel');
@@ -2123,54 +1943,39 @@ function updateFieldLabels() {
         }
 
         function refreshLocalizedContent() {
-            // Helper function to safely update element content
-            const safeUpdate = (selector, property, value) => {
-                const el = typeof selector === 'string' ? document.querySelector(selector) : selector;
-                if (el) el[property] = value;
-            };
+            // Welcome Modal
+            document.querySelector('#welcomeModal h1').textContent = t('welcomeTitle');
+            document.querySelector('#welcomeModal .modal-subtitle').textContent = t('welcomeSubtitle');
+            document.querySelector('label[for="userName"]').innerHTML = `${t('fullName')} <span class="required">*</span>`;
+            document.querySelector('label[for="userEmail"]').innerHTML = `${t('emailAddress')} <span class="required">*</span>`;
+            document.querySelector('label[for="employeeId"]').textContent = t('employeeId');
+            document.querySelector('#registrationForm button[type="submit"]').innerHTML = `<i class="fas fa-rocket"></i> ${t('launchSystem')}`;
+            document.getElementById('userName').placeholder = t('enterFullName');
+            document.getElementById('userEmail').placeholder = t('enterEmail');
+            document.getElementById('employeeId').placeholder = t('enterEmployeeId');
 
-            // Welcome Modal (if exists)
-            safeUpdate('#welcomeModal h1', 'textContent', t('welcomeTitle'));
-            safeUpdate('#welcomeModal .modal-subtitle', 'textContent', t('welcomeSubtitle'));
-            safeUpdate('label[for="userName"]', 'innerHTML', `${t('fullName')} <span class="required">*</span>`);
-            safeUpdate('label[for="userEmail"]', 'textContent', t('emailAddress'));
-            safeUpdate('label[for="employeeId"]', 'innerHTML', `${t('employeeId')} <span class="required">*</span>`);
-            safeUpdate('#registrationForm button[type="submit"]', 'innerHTML', `<i class="fas fa-rocket"></i> ${t('launchSystem')}`);
-            const userName = document.getElementById('userName');
-            if (userName) userName.placeholder = t('enterFullName');
-            const userEmail = document.getElementById('userEmail');
-            if (userEmail) userEmail.placeholder = t('enterEmail');
-            const employeeId = document.getElementById('employeeId');
-            if (employeeId) employeeId.placeholder = t('enterEmployeeId');
-
-            // Profile Modal (if exists)
-            safeUpdate('#profileModal h1', 'textContent', t('updateProfile'));
-            safeUpdate('#profileModal .modal-subtitle', 'textContent', t('keepInfoUpdated'));
-            safeUpdate('label[for="updateUserName"]', 'innerHTML', `${t('fullName')} <span class="required">*</span>`);
-            safeUpdate('label[for="updateUserEmail"]', 'textContent', t('emailAddress'));
-            safeUpdate('label[for="updateEmployeeId"]', 'innerHTML', `${t('employeeId')} <span class="required">*</span>`);
-            safeUpdate('#profileForm button[type="submit"]', 'innerHTML', `<i class="fas fa-save"></i> ${t('updateProfileBtn')}`);
-            const cancelProfileBtn = document.getElementById('cancelProfileUpdate');
-            if (cancelProfileBtn) cancelProfileBtn.textContent = t('cancel');
-            const updateUserName = document.getElementById('updateUserName');
-            if (updateUserName) updateUserName.placeholder = t('enterFullName');
-            const updateUserEmail = document.getElementById('updateUserEmail');
-            if (updateUserEmail) updateUserEmail.placeholder = t('enterEmail');
-            const updateEmployeeId = document.getElementById('updateEmployeeId');
-            if (updateEmployeeId) updateEmployeeId.placeholder = t('enterEmployeeId');
+            // Profile Modal
+            document.querySelector('#profileModal h1').textContent = t('updateProfile');
+            document.querySelector('#profileModal .modal-subtitle').textContent = t('keepInfoUpdated');
+            document.querySelector('label[for="updateUserName"]').innerHTML = `${t('fullName')} <span class="required">*</span>`;
+            document.querySelector('label[for="updateUserEmail"]').innerHTML = `${t('emailAddress')} <span class="required">*</span>`;
+            document.querySelector('label[for="updateEmployeeId"]').textContent = t('employeeId');
+            document.querySelector('#profileForm button[type="submit"]').innerHTML = `<i class="fas fa-save"></i> ${t('updateProfileBtn')}`;
+            document.getElementById('cancelProfileUpdate').textContent = t('cancel');
+            document.getElementById('updateUserName').placeholder = t('enterFullName');
+            document.getElementById('updateUserEmail').placeholder = t('enterEmail');
+            document.getElementById('updateEmployeeId').placeholder = t('enterEmployeeId');
 
             // Settings Modal
-            safeUpdate('#settingsModal h1', 'textContent', t('appSettings'));
-            safeUpdate('#settingsModal .modal-subtitle', 'textContent', t('customizeExperience'));
-            safeUpdate('label[for="themeToggle"]', 'textContent', t('theme'));
-            safeUpdate('label[for="languageSelect"]', 'textContent', t('language'));
-            safeUpdate('label[for="ocrEngineSelect"]', 'textContent', t('ocrEngine'));
-            safeUpdate('label[for="notificationToggle"]', 'textContent', t('notifications'));
-            safeUpdate('label[for="autoSaveToggle"]', 'textContent', t('autoSave'));
-            const saveSettingsBtn = document.getElementById('saveSettings');
-            if (saveSettingsBtn) saveSettingsBtn.innerHTML = `<i class="fas fa-save"></i> ${t('saveSettings')}`;
-            const cancelSettingsBtn = document.getElementById('cancelSettings');
-            if (cancelSettingsBtn) cancelSettingsBtn.textContent = t('cancel');
+            document.querySelector('#settingsModal h1').textContent = t('appSettings');
+            document.querySelector('#settingsModal .modal-subtitle').textContent = t('customizeExperience');
+            document.querySelector('label[for="themeToggle"]').textContent = t('theme');
+            document.querySelector('label[for="languageSelect"]').textContent = t('language');
+            document.querySelector('label[for="ocrEngineSelect"]').textContent = t('ocrEngine');
+            document.querySelector('label[for="notificationToggle"]').textContent = t('notifications');
+            document.querySelector('label[for="autoSaveToggle"]').textContent = t('autoSave');
+            document.getElementById('saveSettings').innerHTML = `<i class="fas fa-save"></i> ${t('saveSettings')}`;
+            document.getElementById('cancelSettings').textContent = t('cancel');
 
             // Update select options
             const themeSelect = document.getElementById('themeToggle');
@@ -2436,8 +2241,8 @@ function updateFieldLabels() {
             // Update existing table rows if table is visible
             const dataTableContainer = document.getElementById('dataTableContainer');
             if (dataTableContainer && dataTableContainer.style.display !== 'none') {
-                // Table removed in Phase 5D-5 - no longer needed
-                // populateEditableTable();
+                // Re-populate the table to update all translated content
+                populateEditableTable();
             }
 
             // Update field labels based on current form values
@@ -2452,22 +2257,9 @@ function updateFieldLabels() {
         const registrationForm = document.getElementById('registrationForm');
         const profileForm = document.getElementById('profileForm');
         const userNameInput = document.getElementById('userName');
-        const loginIdentifierInput = document.getElementById('loginIdentifier');
-        const passwordInput = document.getElementById('password');
+        const userEmailInput = document.getElementById('userEmail');
+        const employeeIdInput = document.getElementById('employeeId');
         const updateUserNameInput = document.getElementById('updateUserName');
-
-        // Parse URL parameters for auto-fill
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.has('userName')) {
-            userNameInput.value = urlParams.get('userName');
-        }
-        if (urlParams.has('userEmail')) {
-            userEmailInput.value = urlParams.get('userEmail');
-        }
-        if (urlParams.has('employeeId')) {
-            employeeIdInput.value = urlParams.get('employeeId');
-        }
-
         const updateUserEmailInput = document.getElementById('updateUserEmail');
         const updateEmployeeIdInput = document.getElementById('updateEmployeeId');
         const displayUserName = document.getElementById('displayUserName');
@@ -2514,21 +2306,6 @@ function updateFieldLabels() {
                 userLocationOverride = true;
                 updateSendButtonLabel();
                 handleLocationChange();
-                
-                // Capture the location change to current draft
-                if (window.currentDraftId) {
-                    captureTableEditsToCurrentDraft();
-                }
-            });
-        }
-
-        // Also add for staff select:
-        if (staffMemberSelect) {
-            staffMemberSelect.addEventListener('change', () => {
-                // Capture staff change to current draft
-                if (window.currentDraftId) {
-                    captureTableEditsToCurrentDraft();
-                }
             });
         }
 
@@ -2537,57 +2314,13 @@ function updateFieldLabels() {
         let currentImageData = null; // Store base64 image data for Railway deployment
         let accountClassifications = []; // Store loaded account classifications
         const LATEST_ANALYSIS_KEY = 'tashiro_latest_analysis_v1';
-        
-        // Phase 5D: Global state variables
-        window.batchDraftsById = {};
-        window.batchOrder = [];
-        window.draftEditsById = {};
-        window.currentDraftId = null;
-        window.previewByDraftId = {};
-        window.allDrafts = [];
-
-        // Other global state
-        let pendingFiles = [];
-        let userLocationOverride = false;
-        let pendingStaffSelection = null;
-        
-        // JWT Authentication Helper
-        function apiFetch(url, options = {}) {
-            const token = localStorage.getItem('auth_token');
-            if (token && !url.includes('/auth/')) {
-                options.headers = {
-                    ...options.headers,
-                    'Authorization': `Bearer ${token}`
-                };
-            }
-            return fetch(url, options);
-        }
-
-        // Translation fallback helper (Phase 5D-0)
-        function tSafe(key, fallback) {
-            const value = t(key);
-            return (!value || value === key) ? fallback : value;
-        }
-        
-        // Phase 5D-1: Centralized engine status text
-        function getEngineStatusText(engine) {
-            const engineLower = (engine || 'auto').toLowerCase();
-            
-            if (engineLower === 'document_ai') {
-                return tSafe('engineDocumentAI', 'Document AI engine is processing your receipts.');
-            } else if (engineLower === 'standard') {
-                return tSafe('engineStandard', 'Google Vision and OpenAI engines are processing your receipts.');
-            } else {
-                return tSafe('engineHybrid', 'Hybrid mode: Document AI + standard engines are processing your receipts.');
-            }
-        }
-        
         let pollTimeoutHandle = null;
         const POLL_INTERVAL_MS = 3000;
         const MAX_POLL_ATTEMPTS = 40;
-        const MAX_BATCH = 4; // Backend enforces max 4 receipts
         let availableLocations = [];
         let locationSynonymMap = {};
+        let pendingStaffSelection = null;
+        let userLocationOverride = false;
 
         // Check if user is already registered
         function checkUserRegistration() {
@@ -2615,66 +2348,27 @@ function updateFieldLabels() {
         }
 
         // Handle registration form submission
-        registrationForm.addEventListener('submit', async function(e) {
+        registrationForm.addEventListener('submit', function(e) {
             e.preventDefault();
             
-            const identifier = loginIdentifierInput.value.trim();
-            const password = passwordInput.value;
+            const userData = {
+                name: userNameInput.value,
+                email: userEmailInput.value,
+                employeeId: employeeIdInput.value || null
+            };
             
-            if (!identifier) {
-                showToast('Please enter your Login ID or Email', 'error');
-                return;
-            }
+            // Save user data to localStorage
+            localStorage.setItem('tashiro_user', JSON.stringify(userData));
             
-            try {
-                const response = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: identifier, password })
-                });
-                
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Invalid Login ID/Email or Password');
-                }
-                
-                const data = await response.json();
-                localStorage.setItem('auth_token', data.access_token);
-                
-                // Store user data from server response
-                const userData = {
-                    name: data.user?.name || userNameInput.value,
-                    email: data.user?.email || (identifier.includes('@') ? identifier : null),
-                    employeeId: data.user?.login_id || identifier,
-                    role: data.user?.role || 'WORKER'
-                };
-                
-                localStorage.setItem('tashiro_user', JSON.stringify(userData));
-                
-                // Phase 5E: Role-based redirect
-                if (userData.role === 'ADMIN' || userData.role === 'HQ') {
-                    // Redirect to office view for admins
-                    window.location = '/office';
-                    return;
-                }
-                
-                // Phase 5D-2.1: Refresh AuthState after login
-                if (window.refreshAuthState) {
-                    window.refreshAuthState();
-                }
-                
-                // Update UI with user info (workers only)
-                displayUserInfo(userData);
-                
-                // Hide modal and show app
-                welcomeModal.style.display = 'none';
-                appContainer.style.display = 'block';
-                
-                // Show welcome toast
-                showToast(t('welcomeMessage', {name: userData.name}), 'success');
-            } catch (error) {
-                showToast('Login failed: ' + error.message, 'error');
-            }
+            // Update UI with user info
+            displayUserInfo(userData);
+            
+            // Hide modal and show app
+            welcomeModal.style.display = 'none';
+            appContainer.style.display = 'block';
+            
+            // Show welcome toast
+            showToast(t('welcomeMessage', {name: userData.name}), 'success');
         });
 
         function saveLatestAnalysis(queueId, fields) {
@@ -2704,7 +2398,8 @@ function updateFieldLabels() {
                 }
                 currentQueueId = parsed.queue_id || null;
                 applyOcrResultsToForm(parsed.fields);
-                if (reviewDataBtn) reviewDataBtn.disabled = false;
+                reviewDataBtn.disabled = false;
+                showResultsTable();
                 renderOcrDebugPanel(parsed.fields, parsed.queue_id);
                 showToast('Restored latest analysis', 'info');
             } catch (err) {
@@ -2713,7 +2408,7 @@ function updateFieldLabels() {
         }
 
         function loadLocationsFromServer() {
-            apiFetch('/api/locations')
+            fetch('/api/locations')
                 .then(resp => resp.json())
                 .then(data => {
                     availableLocations = data.locations || [];
@@ -2773,7 +2468,7 @@ function updateFieldLabels() {
             staffMemberSelect.disabled = true;
             staffMemberSelect.innerHTML = `<option value="">${t('loadingStaff')}</option>`;
 
-            apiFetch(`/api/staff?location=${encodeURIComponent(selectedLocation)}`)
+            fetch(`/api/staff?location=${encodeURIComponent(selectedLocation)}`)
                 .then(resp => {
                     if (!resp.ok) {
                         throw new Error('staff-fetch-failed');
@@ -2947,39 +2642,9 @@ function updateFieldLabels() {
 
         // Handle file selection
         fileInput.addEventListener('change', function(e) {
-            console.log('📁 File input changed, files selected:', e.target.files.length);
-            const files = Array.from(e.target.files);
-            if (files.length === 0) return;
-
-            console.log('📂 Processing selected files...');
-            // Phase 5D: Append files to pending queue up to max 4
-            files.forEach(file => {
-                if (pendingFiles.length >= MAX_BATCH) {
-                    console.log('⚠️ Maximum batch size reached');
-                    showToast(`Maximum ${MAX_BATCH} receipts allowed`, 'warning');
-                    return;
-                }
-
-                console.log(`  ➕ Adding file: ${file.name} (${file.size} bytes)`);
-                // Create file entry with preview
-                const fileEntry = {
-                    file: file,
-                    previewUrl: null,
-                    filename: file.name,
-                    status: 'pending'
-                };
-
-                // Generate preview blob URL and store by index
-                const previewUrl = URL.createObjectURL(file);
-                window.previewByIndex[pendingFiles.length] = previewUrl;
-                fileEntry.previewUrl = previewUrl;
-
-                pendingFiles.push(fileEntry);
-            });
-
-            console.log('📊 Total pending files:', pendingFiles.length);
-            updatePendingFilesUI();
-            e.target.value = ''; // Reset input
+            if (e.target.files.length > 0) {
+                handleFileUpload(e.target.files[0]);
+            }
         });
 
         // Handle drag and drop
@@ -3010,744 +2675,12 @@ function updateFieldLabels() {
 
         dropzone.addEventListener('drop', function(e) {
             const dt = e.dataTransfer;
-            const files = Array.from(dt.files);
+            const files = dt.files;
             
-            if (files.length === 0) return;
-            
-            // Phase 5D: Append files to pending queue up to max 4
-            files.forEach(file => {
-                if (pendingFiles.length >= MAX_BATCH) {
-                    showToast(`Maximum ${MAX_BATCH} receipts allowed`, 'warning');
-                    return;
-                }
-                
-                const fileEntry = {
-                    file: file,
-                    previewUrl: null,
-                    filename: file.name,
-                    status: 'pending'
-                };
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    fileEntry.previewUrl = event.target.result;
-                    updatePendingFilesUI();
-                };
-                reader.readAsDataURL(file);
-                
-                pendingFiles.push(fileEntry);
-            });
-            
-            updatePendingFilesUI();
+            if (files.length > 0) {
+                handleFileUpload(files[0]);
+            }
         });
-
-        // Phase 5D: Mobile Screen Navigation
-        function setActiveScreen(screenId) {
-            // Only run on mobile
-            if (window.innerWidth > 768) return;
-            
-            // Hide all screens
-            document.querySelectorAll('.mobile-screen').forEach(s => s.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            
-            // Show selected screen
-            const screen = document.getElementById(screenId);
-            if (screen) screen.classList.add('active');
-            
-            const btn = document.querySelector(`[data-screen="${screenId}"]`);
-            if (btn) btn.classList.add('active');
-        }
-        
-        // Mobile nav button listeners
-        setTimeout(() => {
-            document.querySelectorAll('.nav-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    if (!this.disabled) {
-                        setActiveScreen(this.dataset.screen);
-                    }
-                });
-            });
-        }, 500);
-        
-        // Phase 5D: Pending Files UI - Preview Tiles
-        function updatePendingFilesUI() {
-            const container = document.getElementById('pendingFilesContainer');
-            const tilesContainer = document.getElementById('pendingFilesTiles');
-            const fileCount = document.getElementById('pendingFileCount');
-            const startBtn = document.getElementById('startOcrBtn');
-            
-            if (pendingFiles.length === 0) {
-                if (container) container.style.display = 'none';
-                if (startBtn) startBtn.disabled = true;
-                return;
-            }
-            
-            if (container) container.style.display = 'block';
-            if (fileCount) fileCount.textContent = pendingFiles.length;
-            if (startBtn) startBtn.disabled = false;
-            
-            if (tilesContainer) {
-                tilesContainer.innerHTML = pendingFiles.map((entry, index) => {
-                    return `
-                        <div style="position: relative; padding: 8px; background: #f8fafc; border: 2px solid #e2e8f0; border-radius: 8px; text-align: center; cursor: default;">
-                            ${entry.previewUrl ? 
-                                `<img src="${entry.previewUrl}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;">` :
-                                `<div style="width: 80px; height: 80px; background: #e2e8f0; border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-bottom: 6px;"><i class="fas fa-file-image" style="color: #94a3b8; font-size: 24px;"></i></div>`
-                            }
-                            <div style="font-size: 11px; color: #64748b; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${entry.filename}</div>
-                            <div style="font-size: 10px; color: #94a3b8; margin-top: 2px;">${(entry.file.size / 1024).toFixed(0)}KB</div>
-                            <button onclick="removePendingFile(${index})" style="position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; border-radius: 50%; background: #ef4444; color: white; border: none; cursor: pointer; font-size: 10px; display: flex; align-items: center; justify-content: center;">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    `;
-                }).join('');
-            }
-        }
-        
-        function removePendingFile(index) {
-            pendingFiles.splice(index, 1);
-            updatePendingFilesUI();
-        }
-        
-        // Clear all pending files
-        document.getElementById('clearPendingBtn')?.addEventListener('click', function() {
-            pendingFiles = [];
-            updatePendingFilesUI();
-        });
-        
-        // Start OCR button handler
-        document.getElementById('startOcrBtn')?.addEventListener('click', function() {
-            console.log('🔘 Start OCR button clicked');
-            console.log('📁 Pending files:', pendingFiles.length);
-            pendingFiles.forEach((file, i) => {
-                console.log(`  ${i+1}. ${file.filename} (${file.file.size} bytes)`);
-            });
-
-            if (pendingFiles.length === 0) {
-                showToast('No files selected', 'warning');
-                return;
-            }
-            startOcrProcessing();
-        });
-        
-        async function startOcrProcessing() {
-            console.log('🚀 Starting OCR processing...');
-            console.log('📊 Pending files count:', pendingFiles.length);
-
-            if (pendingFiles.length === 0) {
-                console.log('❌ No files to process');
-                showToast('No files selected', 'warning');
-                return;
-            }
-
-            console.log('⏳ Showing loading overlay...');
-            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
-            const engine = (settings.ocrEngine || 'auto').toLowerCase();
-            const engineSubtext = getEngineStatusText(engine);
-            showLoadingOverlay({
-                message: tSafe('ocrInProgress', 'OCR in progress…'),
-                subtext: engineSubtext,
-                stepIndex: 0
-            });
-
-            console.log('� Step 1: Waiting for OCR engines...');
-            console.log(`🔧 OCR Engine: ${engine}`);
-            console.log(`📊 Processing ${pendingFiles.length} file(s)`);
-            updateLoadingSteps(1);
-            if (loadingSubtext) loadingSubtext.textContent = engineSubtext.replace('processing your receipts', 'uploading files...');
-
-            // Get OCR engine from settings
-            const selectedEngine = settings.ocrEngine || 'auto';
-
-            // Create FormData with files and OCR engine
-            const formData = new FormData();
-            pendingFiles.forEach((entry, index) => {
-                formData.append('files', entry.file);
-            });
-            formData.append('ocr_engine', selectedEngine);  // ✅ ADDED: Send OCR engine to backend
-
-            try {
-            // Create abort controller for timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
-
-            console.log('🌐 Making API call to /api/drafts/batch-upload...');
-            const response = await apiFetch('/api/drafts/batch-upload', {
-                method: 'POST',
-                body: formData,
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-            console.log('📡 API response received, status:', response.status);
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('❌ API error:', errorData);
-                throw new Error(errorData.detail || 'Batch upload failed');
-            }
-
-            console.log('📡 Step 2: Extracting fields...');
-            updateLoadingSteps(2);
-            if (loadingSubtext) loadingSubtext.textContent = engineSubtext.replace('processing your receipts', 'extracting receipt fields...');
-
-            const result = await response.json();
-            console.log('📋 API result:', result);
-            console.log('📊 Batch processing summary:');
-            console.log(`   Total: ${result.total || 0}`);
-            console.log(`   Succeeded: ${result.succeeded || 0}`);
-            console.log(`   Failed: ${result.failed || 0}`);
-            
-            const apiResults = result.results || [];
-            
-            // Log detailed information for each receipt
-            apiResults.forEach((apiResult, index) => {
-                console.log(`\n📄 Receipt ${index + 1}: ${apiResult.filename}`);
-                console.log(`   Status: ${apiResult.status}`);
-                
-                if (apiResult.status === 'success') {
-                    const data = apiResult.extracted_data || {};
-                    console.log(`   Draft ID: ${apiResult.draft_id}`);
-                    console.log(`   Vendor: ${data.vendor_name || 'N/A'}`);
-                    console.log(`   Date: ${data.receipt_date || 'N/A'}`);
-                    console.log(`   Total: ${data.total_amount || 0}`);
-                    console.log(`   Invoice: ${data.invoice_number || 'N/A'}`);
-                    console.log(`   Tax Category: ${data.tax_category || 'N/A'}`);
-                    console.log(`   Account Title: ${data.account_title || 'N/A'}`);
-                    console.log(`   Currency: ${data.currency || 'N/A'}`);
-                    console.log(`   OCR Engine: ${data.ocr_engine || 'N/A'}`);
-                    console.log(`   OCR Confidence: ${data.ocr_confidence || 0}%`);
-                } else {
-                    console.log(`   Error: ${apiResult.error || 'Unknown error'}`);
-                    console.log(`   Error Code: ${apiResult.error_code || 'N/A'}`);
-                }
-            });
-
-            // Store OCR analysis for debugging
-            if (apiResults.length > 0 && apiResults[0].status === 'success') {
-                // Store only a small, sanitized summary to avoid exceeding localStorage quotas
-                const fieldWhitelist = ['date','vendor','total','invoice_number','tax_category','account_title','tax','currency','staff_member'];
-                const sanitizedFields = {};
-                const srcFields = apiResults[0].extracted_data || {};
-                fieldWhitelist.forEach(k => sanitizedFields[k] = srcFields[k] || '');
-
-                const latestAnalysis = {
-                    timestamp: new Date().toISOString(),
-                    queue_id: apiResults[0].draft_id,
-                    fields: sanitizedFields,
-                    batch_summary: {
-                        total: result.total,
-                        succeeded: result.succeeded,
-                        failed: result.failed
-                    }
-                };
-
-                try {
-                    const candidate = JSON.stringify(latestAnalysis);
-                    const sizeLimit = 100 * 1024; // 100 KB soft limit
-                    if (candidate.length > sizeLimit) {
-                        console.warn('Sanitized analysis exceeds size limit; skipping persistence to avoid quota issues', {size: candidate.length});
-                    } else {
-                        localStorage.setItem(LATEST_ANALYSIS_KEY, candidate);
-                        console.log('💾 Stored sanitized OCR analysis for debugging:', latestAnalysis);
-                    }
-                } catch (err) {
-                    console.warn('Failed to persist latest analysis (quota/exceeded). Clearing old cache and retrying...', err);
-                    try {
-                        localStorage.removeItem(LATEST_ANALYSIS_KEY);
-                        const candidate = JSON.stringify(latestAnalysis);
-                        if (candidate.length <= 100 * 1024) {
-                            localStorage.setItem(LATEST_ANALYSIS_KEY, candidate);
-                            console.log('💾 Re-saved sanitized OCR analysis after clearing cache');
-                        } else {
-                            console.warn('Re-save skipped: sanitized analysis still exceeds size limit', {size: candidate.length});
-                        }
-                    } catch (err2) {
-                        console.warn('Re-save failed; skipping storing latest analysis to avoid repeated quota errors', err2);
-                    }
-                }
-            }
-
-                // Phase 5D-5: Convert API results to new state model
-                window.batchDraftsById = {};
-                window.batchOrder = [];
-                apiResults.forEach((apiResult, index) => {
-                    if (apiResult.status === 'success') {
-                        // Phase 5D-1: Store preview URL for this draft
-                        if (window.previewByIndex[index] && apiResult.draft_id) {
-                            window.previewByDraftId[apiResult.draft_id] = window.previewByIndex[index];
-                            console.log(`📷 Stored preview for draft ${apiResult.draft_id} from index ${index}`);
-                        }
-                        
-                        // Create a draft object from the API result
-                        const draft = {
-                            draft_id: apiResult.draft_id,
-                            index: index,
-                            filename: pendingFiles[index]?.filename || `receipt_${index + 1}`,
-                            receipt: apiResult.extracted_data || {},
-                            ocr_payload: apiResult,
-                            status: 'DRAFT',
-                            created_at: new Date().toISOString(),
-                            image_ref: apiResult.image_ref,  // ✅ FIXED: Use consistent image_ref from backend
-                            image_url: null
-                        };
-                        
-                        window.batchDraftsById[apiResult.draft_id] = draft;
-                        window.batchOrder.push(apiResult.draft_id);
-                    } else {
-                        // Handle error case - create draft with error status
-                        const errorId = `error_${Date.now()}_${Math.random()}`;
-                        const draft = {
-                            draft_id: errorId,
-                            index: index,
-                            filename: pendingFiles[index]?.filename || `receipt_${index + 1}`,
-                            receipt: { vendor_name: 'Processing Failed', receipt_date: '', total_amount: 0 },
-                            ocr_payload: apiResult,
-                            status: 'ERROR',
-                            created_at: new Date().toISOString(),
-                            error: apiResult.error || 'Processing failed',
-                            image_url: null
-                        };
-                        
-                        window.batchDraftsById[errorId] = draft;
-                        window.batchOrder.push(errorId);
-                    }
-                });
-
-                hideLoadingOverlay();
-
-                const successCount = window.batchOrder.filter(id => window.batchDraftsById[id].status === 'DRAFT').length;
-                if (successCount > 0) {
-                    console.log('✅ Batch processing successful, showing results...');
-                    showToast(`Successfully processed ${successCount}/${pendingFiles.length} receipt(s)`, 'success');
-
-                    // Clear pending files and hide the container
-                    pendingFiles = [];
-                    updatePendingFilesUI();
-
-                    // Show batch tiles and auto-select first draft
-                    console.log('🎯 Rendering batch tiles...');
-                    renderBatchTiles();
-                    console.log('📝 Auto-selecting first draft...');
-                    if (window.batchOrder.length > 0) {
-                        selectDraftTile(window.batchOrder[0]);
-                    }
-                    console.log('📊 Batch processing complete - tiles rendered and first draft selected');
-
-                    // Show OCR debug panel with the first result
-                    if (window.batchOrder.length > 0 && window.batchDraftsById[window.batchOrder[0]]) {
-                        renderDebugPayload(window.batchOrder[0]);
-                    }
-
-                    // Enable Review nav and switch on mobile
-                    const reviewBtn = document.getElementById('navReviewBtn');
-                    if (reviewBtn) {
-                        reviewBtn.disabled = false;
-                        if (window.innerWidth <= 768) {
-                            setActiveScreen('screenReview');
-                        }
-                    }
-                } else {
-                    showToast('All receipts failed to process', 'error');
-                }
-
-            } catch (error) {
-                hideLoadingOverlay();
-                showToast(error.message || 'OCR processing failed', 'error');
-                console.error('OCR processing error:', error);
-            }
-        }
-        
-        function renderBatchTiles() {
-            const tilesSection = document.getElementById('batchReceiptTiles');
-            const tilesContainer = document.getElementById('receiptTilesContainer');
-            const tileCount = document.getElementById('tileCount');
-            
-            if (window.batchOrder.length === 0) {
-                tilesSection.style.display = 'none';
-                return;
-            }
-            
-            tilesSection.style.display = 'block';
-            tileCount.textContent = window.batchOrder.length;
-            
-            // Add editing indicator
-            const editIndicator = document.getElementById('editingIndicator');
-            if (editIndicator && window.batchOrder.length > 0 && window.currentDraftId) {
-                const current = window.batchDraftsById[window.currentDraftId];
-                const receipt = current?.receipt || {};
-                const currentIndex = window.batchOrder.indexOf(window.currentDraftId) + 1;
-                editIndicator.innerHTML = `
-                    <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #eff6ff; border-radius: 20px; font-size: 13px; color: #1e40af; margin-bottom: 12px;">
-                        <i class="fas fa-edit"></i>
-                        <span>Editing: Receipt ${currentIndex} of ${window.batchOrder.length}</span>
-                        <span style="font-weight: 600;">• ${receipt.vendor_name || 'Unknown'}</span>
-                    </div>
-                `;
-                editIndicator.style.display = 'block';
-            } else if (editIndicator) {
-                editIndicator.style.display = 'none';
-            }
-            
-            tilesContainer.innerHTML = window.batchOrder.map(draft_id => {
-                const draft = window.batchDraftsById[draft_id];
-                const receipt = draft.receipt || {};
-                const isActive = draft_id === window.currentDraftId;
-                const status = draft.status || 'DRAFT';
-                const statusColors = {
-                    'DRAFT': '#f59e0b',
-                    'SENT': '#10b981',
-                    'VALIDATION_FAILED': '#ef4444',
-                    'ERROR': '#ef4444'
-                };
-                const statusColor = statusColors[status] || '#6b7280';
-                const imageUrl = window.previewByDraftId[draft_id] || draft.image_url;
-                
-                return `
-                    <div onclick="selectDraftTile('${draft_id}')" style="
-                        min-width: 100px;
-                        padding: 12px;
-                        background: ${isActive ? '#eff6ff' : 'white'};
-                        border: 2px solid ${isActive ? '#3b82f6' : '#e2e8f0'};
-                        border-radius: 8px;
-                        cursor: pointer;
-                        transition: all 0.2s;
-                        text-align: center;
-                        scroll-snap-align: start;
-                    ">
-                        ${imageUrl ? `
-                            <img src="${imageUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;">
-                        ` : `<div style="font-size: 24px; margin-bottom: 4px;">🧾</div>`}
-                        <div style="font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 4px;">Receipt ${draft.index + 1}</div>
-                        <div style="font-size: 11px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${receipt.vendor_name || 'No vendor'}</div>
-                        <div style="margin-top: 6px; padding: 2px 6px; background: ${statusColor}; color: white; border-radius: 4px; font-size: 10px; font-weight: 600;">${status}</div>
-                        ${draft.is_valid === false ? '<div style="margin-top: 4px; color: #ef4444; font-size: 10px;">⚠️</div>' : ''}
-                    </div>
-                `;
-            }).join('');
-        }
-        
-        // Phase 5D-5: New state management functions
-        function captureTableEditsToCurrentDraft() {
-            if (!window.currentDraftId) return;
-            
-            // FIXED: Use the same field names as the backend/render expects
-            const edits = {
-                receipt_date: document.getElementById('fieldDate')?.value || '',
-                vendor_name: document.getElementById('fieldVendor')?.value || '',
-                total_amount: document.getElementById('fieldTotal')?.value || '',
-                invoice_number: document.getElementById('fieldInvoiceNumber')?.value || '',
-                tax_category: document.getElementById('fieldTaxCategory')?.value || '',
-                account_title: document.getElementById('fieldAccountTitle')?.value || '',
-                tax_amount: document.getElementById('fieldTax')?.value || '',
-                currency: document.getElementById('fieldCurrency')?.value || 'JPY',
-                business_location_id: document.getElementById('businessLocationSelect')?.value || null,
-                staff_id: document.getElementById('staffMemberSelect')?.value || null
-            };
-            
-            window.draftEditsById[window.currentDraftId] = edits;
-            console.log(`📝 Captured edits for draft ${window.currentDraftId}:`, edits);
-        }
-        
-        function getMergedDraftReceipt(draft_id) {
-            const base = window.batchDraftsById[draft_id]?.receipt || {};
-            const overlay = window.draftEditsById[draft_id] || {};
-            return { ...base, ...overlay };
-        }
-        
-        // Phase 5D-5.1: Safe tax calculation function (non-crashing)
-        function updateTaxCalculations() {
-            // If fields exist, compute derived values; otherwise do nothing.
-            const taxAmountEl = document.querySelector('[name="tax_amount"], #tax_amount, #taxAmount, #fieldTax');
-            const totalEl = document.querySelector('[name="total_amount"], #total_amount, #totalAmount, #fieldTotal');
-            // If nothing exists, safely return
-            if (!taxAmountEl && !totalEl) return;
-            // Do not over-engineer; just keep it non-crashing.
-        }
-        
-        function renderReceiptToTable(draft_id) {
-            const merged = getMergedDraftReceipt(draft_id);
-            
-            // Populate form fields
-            const fieldMappings = {
-                'fieldDate': merged.receipt_date || '',
-                'fieldVendor': merged.vendor_name || '',
-                'fieldTotal': merged.total_amount || '',
-                'fieldInvoiceNumber': (merged.invoice_number || '').split('\n')[0].trim(), // First line only
-                'fieldTax': merged.tax_amount || merged.tax_10_amount || '',
-                'fieldCurrency': merged.currency || 'JPY',
-                'fieldTaxCategory': merged.tax_category || '',
-                'fieldAccountTitle': merged.account_title || '',
-                'businessLocationSelect': merged.business_location_id || '',
-                'staffMemberSelect': merged.staff_id || ''
-            };
-            
-            Object.entries(fieldMappings).forEach(([fieldId, value]) => {
-                const element = document.getElementById(fieldId);
-                if (element) {
-                    element.value = value;
-                    
-                    // Enable disabled fields if they have values
-                    if ((fieldId === 'fieldTaxCategory' || fieldId === 'fieldAccountTitle') && value) {
-                        element.disabled = false;
-                        element.style.backgroundColor = 'white';
-                        element.style.cursor = 'text';
-                    }
-                }
-            });
-            
-            // Update derived fields if needed (safe call)
-            if (typeof updateTaxCalculations === "function") {
-                updateTaxCalculations();
-            }
-        }
-        
-        function renderDebugPayload(draft_id) {
-            const draft = window.batchDraftsById[draft_id];
-            if (!draft) {
-                console.warn('Cannot render debug: draft not found', draft_id);
-                return;
-            }
-            
-            // Get merged data (base + edits)
-            const merged = getMergedDraftReceipt(draft_id);
-            
-            // Call the OCR debug panel renderer
-            renderOcrDebugPanel(merged, draft_id);
-        }
-        
-        function selectDraftTile(draft_id) {
-            if (!window.batchDraftsById[draft_id]) return;
-            
-            // Capture current edits
-            captureTableEditsToCurrentDraft();
-            
-            // Update selection
-            window.currentDraftId = draft_id;
-            
-            // Update UI
-            renderBatchTiles();
-            renderReceiptToTable(draft_id);
-            renderDebugPayload(draft_id);
-            
-            // Set the receipt image
-            setReceiptImageForDraft(draft_id);
-        }
-        
-        function setReceiptImageForDraft(draft_id) {
-            const draft = window.batchDraftsById[draft_id];
-            if (!draft) return;
-            
-            const receipt = draft.receipt || {};
-            const imagePlaceholder = document.getElementById('imagePlaceholder');
-            const receiptImage = document.getElementById('receiptImage');
-            
-            // Try preview from memory first (for current session)
-            const previewUrl = window.previewByDraftId && window.previewByDraftId[draft.draft_id];
-            
-            if (previewUrl) {
-                // Use in-memory preview URL
-                if (imagePlaceholder) imagePlaceholder.style.display = 'none';
-                if (receiptImage) {
-                    receiptImage.style.display = 'block';
-                    receiptImage.src = previewUrl;
-                }
-                console.log('📷 Showing preview from memory for draft', draft.draft_id);
-            } else if (receipt.image_url && imagePlaceholder && receiptImage) {
-                if (imagePlaceholder) imagePlaceholder.style.display = 'none';
-                if (receiptImage) {
-                    receiptImage.style.display = 'block';
-                    receiptImage.src = receipt.image_url;
-                }
-            } else if (draft.image_data && imagePlaceholder && receiptImage) {
-                // Handle base64 image data from backend
-                if (imagePlaceholder) imagePlaceholder.style.display = 'none';
-                if (receiptImage) {
-                    receiptImage.style.display = 'block';
-                    receiptImage.src = `data:image/jpeg;base64,${draft.image_data}`;
-                }
-            } else {
-                // Fallback: Show placeholder
-                if (imagePlaceholder) imagePlaceholder.style.display = 'flex';
-                if (receiptImage) receiptImage.style.display = 'none';
-            }
-        }
-        
-        function renderDraftInModal(draftId) {
-            const draft = window.batchDraftsById[draftId];
-            if (!draft) return;
-            
-            // Get elements
-            const imageSection = document.getElementById('draftImagePreviewSection');
-            const draftImage = document.getElementById('draftModalImage');
-            const imagePlaceholder = document.getElementById('draftModalImagePlaceholder');
-            const emptyState = document.getElementById('draftEmptyState');
-            const detailsContent = document.getElementById('draftDetailsContent');
-            
-            // Hide empty state, show content
-            if (emptyState) emptyState.style.display = 'none';
-            if (imageSection) imageSection.style.display = 'block';
-            if (detailsContent) detailsContent.style.display = 'block';
-            
-            // Handle image display
-            const previewUrl = window.previewByDraftId?.[draft.draft_id];
-            const imageUrl = draft.receipt?.image_url || draft.image_url;
-            const imageData = draft.image_data;
-            
-            if (previewUrl) {
-                // Use in-memory preview
-                if (draftImage) {
-                    draftImage.src = previewUrl;
-                    draftImage.style.display = 'block';
-                }
-                if (imagePlaceholder) imagePlaceholder.style.display = 'none';
-            } else if (imageUrl) {
-                // Use server image URL
-                if (draftImage) {
-                    draftImage.src = imageUrl;
-                    draftImage.style.display = 'block';
-                }
-                if (imagePlaceholder) imagePlaceholder.style.display = 'none';
-            } else if (imageData) {
-                // Use base64 data
-                if (draftImage) {
-                    draftImage.src = `data:image/jpeg;base64,${imageData}`;
-                    draftImage.style.display = 'block';
-                }
-                if (imagePlaceholder) imagePlaceholder.style.display = 'none';
-            } else {
-                // No image available
-                if (draftImage) draftImage.style.display = 'none';
-                if (imagePlaceholder) imagePlaceholder.style.display = 'flex';
-            }
-            
-            // Render draft details
-            if (detailsContent) {
-                const merged = getMergedDraftReceipt(draftId);
-                detailsContent.innerHTML = `
-                    <h4 style="margin-bottom: 12px; color: #374151;">Receipt Details</h4>
-                    <div style="display: grid; gap: 8px; font-size: 14px;">
-                        <div><strong>Date:</strong> ${merged.receipt_date || 'Not set'}</div>
-                        <div><strong>Vendor:</strong> ${merged.vendor_name || 'Not set'}</div>
-                        <div><strong>Total:</strong> ${merged.total_amount || 'Not set'}</div>
-                        <div><strong>Invoice:</strong> ${merged.invoice_number || 'Not set'}</div>
-                        <div><strong>Tax Category:</strong> ${merged.tax_category || 'Not set'}</div>
-                        <div><strong>Account Title:</strong> ${merged.account_title || 'Not set'}</div>
-                        <div><strong>Status:</strong> ${draft.status || 'Draft'}</div>
-                    </div>
-                `;
-            }
-        }
-        
-        // Legacy function for backward compatibility (deprecated)
-        function persistCurrentEditsToState() {
-            captureTableEditsToCurrentDraft();
-        }
-        
-        // Legacy function for backward compatibility
-        function selectBatchReceipt(index) {
-            if (!window.batchOrder || index < 0 || index >= window.batchOrder.length) {
-                console.warn('Invalid batch receipt index:', index, 'Available:', window.batchOrder?.length || 0);
-                return;
-            }
-            const draft_id = window.batchOrder[index];
-            selectDraftTile(draft_id);
-        }
-        
-        function loadDraftIntoForm(draft) {
-            if (!draft) return;
-            
-            // Load from saved edits if available, otherwise from draft
-            const edits = draftEditsById[draft.draft_id];
-            const receipt = edits || draft.receipt || {};
-            
-            // Update current queue ID for compatibility
-            currentQueueId = draft.draft_id;
-            
-            // Populate form fields (with null checks)
-            const fieldDate = document.getElementById('fieldDate');
-            const fieldVendor = document.getElementById('fieldVendor');
-            const fieldTotal = document.getElementById('fieldTotal');
-            const fieldInvoice = document.getElementById('fieldInvoiceNumber');
-            const fieldTaxCategory = document.getElementById('fieldTaxCategory');
-            const fieldAccountTitle = document.getElementById('fieldAccountTitle');
-            const fieldTax = document.getElementById('fieldTax');
-            const fieldCurrency = document.getElementById('fieldCurrency');
-            
-            if (fieldDate) fieldDate.value = receipt.receipt_date || '';
-            if (fieldVendor) fieldVendor.value = receipt.vendor_name || '';
-            if (fieldTotal) fieldTotal.value = receipt.total_amount || '';
-            if (fieldInvoice) fieldInvoice.value = receipt.invoice_number || '';
-            if (fieldTaxCategory) fieldTaxCategory.value = receipt.tax_category || '';
-            if (fieldAccountTitle) fieldAccountTitle.value = receipt.account_title || '';
-            
-            // Enable tax category and account title fields if they have values
-            if (fieldTaxCategory && receipt.tax_category) {
-                fieldTaxCategory.disabled = false;
-                fieldTaxCategory.style.backgroundColor = 'white';
-                fieldTaxCategory.style.cursor = 'text';
-            }
-            if (fieldAccountTitle && receipt.account_title) {
-                fieldAccountTitle.disabled = false;
-                fieldAccountTitle.style.backgroundColor = 'white';
-                fieldAccountTitle.style.cursor = 'text';
-            }
-            if (fieldTax) fieldTax.value = receipt.tax_amount || receipt.tax_10_amount || '';
-            if (fieldCurrency) fieldCurrency.value = receipt.currency || 'JPY';
-            
-            // Phase 5D-1: Show image with preview rehydration
-            const imagePlaceholder = document.getElementById('imagePlaceholder');
-            const receiptImage = document.getElementById('receiptImage');
-            const imageUrl = receipt.image_url || draft.image_url;
-            const imageData = draft.image_data;
-            
-            // Try preview from memory first (for current session)
-            const previewUrl = window.previewByDraftId && window.previewByDraftId[draft.draft_id];
-            
-            if (previewUrl) {
-                // Use in-memory preview URL
-                imagePlaceholder.style.display = 'none';
-                receiptImage.style.display = 'block';
-                receiptImage.src = previewUrl;
-                console.log('📷 Showing preview from memory for draft', draft.draft_id);
-            } else if (imageUrl && imagePlaceholder && receiptImage) {
-                imagePlaceholder.style.display = 'none';
-                receiptImage.style.display = 'block';
-                receiptImage.src = imageUrl;
-            } else if (imageData && imagePlaceholder && receiptImage) {
-                // Handle base64 image data from backend
-                imagePlaceholder.style.display = 'none';
-                receiptImage.style.display = 'block';
-                receiptImage.src = `data:image/jpeg;base64,${imageData}`;
-            } else {
-                // Fallback: Show placeholder
-                if (imagePlaceholder) imagePlaceholder.style.display = 'flex';
-                if (receiptImage) receiptImage.style.display = 'none';
-            }
-            
-            // Update location and staff
-            if (businessLocationSelect && receipt.business_location_id) {
-                businessLocationSelect.value = receipt.business_location_id;
-                handleLocationChange();
-                if (staffMemberSelect && receipt.staff_id) {
-                    setTimeout(() => {
-                        staffMemberSelect.value = receipt.staff_id;
-                    }, 500);
-                }
-            }
-            
-            // Show verification status
-            if (verificationStatus) verificationStatus.style.display = 'flex';
-            
-            // Update field labels
-            updateFieldLabels();
-            
-            // Enable review button
-            if (reviewDataBtn) reviewDataBtn.disabled = false;
-            
-            showToast(`Viewing receipt ${currentDraftIndex + 1} of ${batchDrafts.length}`, 'info');
-        }
 
         function resetPollingTimer() {
             if (pollTimeoutHandle) {
@@ -3756,30 +2689,216 @@ function updateFieldLabels() {
             }
         }
 
-        // Legacy OCR functions removed - using Phase 5 batch upload system only
+        function handleQueuedAnalysis(queueId) {
+            currentQueueId = queueId;
+            showToast('Receipt added to OCR queue. Monitoring progress…', 'info');
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            const engine = (settings.ocrEngine || 'auto').toLowerCase();
+            const engineSubtext = engine === 'document_ai'
+                ? 'Document AI engine is processing your receipt.'
+                : engine === 'standard'
+                    ? 'Google Vision and OpenAI engines are processing your receipt.'
+                    : 'Hybrid mode: Document AI + standard engines are processing your receipt.';
+            showLoadingOverlay({
+                message: 'OCR in progress…',
+                subtext: engineSubtext,
+                stepIndex: 1
+            });
+            pollAnalysisStatus(queueId, 0);
+        }
+
+        function pollAnalysisStatus(queueId, attempt = 0) {
+            if (!queueId) {
+                return;
+            }
+            if (attempt > MAX_POLL_ATTEMPTS) {
+                resetPollingTimer();
+                showToast('OCR analysis timed out. Please try again.', 'error');
+                return;
+            }
+
+            const fetchStatus = () => {
+                fetch(`/api/mobile/analyze/status/${queueId}`)
+                    .then(resp => {
+                        if (!resp.ok) {
+                            throw new Error('Status endpoint failed');
+                        }
+                        return resp.json();
+                    })
+                    .then(statusPayload => {
+                        const status = statusPayload.status;
+                        if (status === 'completed' && statusPayload.fields) {
+                            resetPollingTimer();
+                            currentImageData = statusPayload.source_image || null; // Store for draft saving
+                            applyOcrResultsToForm(statusPayload.fields);
+                            reviewDataBtn.disabled = false;
+                            showResultsTable();
+                            showToast(t('receiptAnalyzed'), 'success');
+                            showLoadingOverlay({
+                                message: 'Extracting fields…',
+                                subtext: 'Applying enhanced field extractor.',
+                                stepIndex: 2
+                            });
+                            hideLoadingOverlay();
+                        } else if (status === 'failed') {
+                            resetPollingTimer();
+                            showToast('OCR job failed. Please retry.', 'error');
+                            hideLoadingOverlay();
+                        } else {
+                            pollAnalysisStatus(queueId, attempt + 1);
+                        }
+                    })
+                    .catch(err => {
+                        console.warn('Status polling error', err);
+                        pollAnalysisStatus(queueId, attempt + 1);
+                    });
+            };
+
+            if (attempt === 0) {
+                fetchStatus();
+            } else {
+                pollTimeoutHandle = setTimeout(fetchStatus, POLL_INTERVAL_MS);
+            }
+        }
+
+        // Handle file upload
+        function handleFileUpload(file) {
+            resetPollingTimer();
+            // Debug file information
+            console.log('File upload debug:', {
+                name: file.name,
+                size: file.size,
+                type: file.type,
+                lastModified: file.lastModified
+            });
+            
+            // Validate file
+            if (!file || file.size === 0) {
+                showToast('Error: No file selected or file is empty', 'error');
+                return;
+            }
+            
+            if (file.size < 100) {
+                showToast('Error: File too small (' + file.size + ' bytes). Please select a valid image.', 'error');
+                return;
+            }
+            
+            showToast(t('processingReceipt'), 'info');
+            showLoadingOverlay({
+                message: t('processingReceipt') || 'Processing receipt…',
+                subtext: 'Optimizing image and preparing upload…',
+                stepIndex: 0
+            });
+            
+            // Create a preview of the image
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePlaceholder.style.display = 'none';
+                receiptImage.src = e.target.result;
+                receiptImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+            
+            // Prepare form data for API call
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('processing_mode', 'async');
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            formData.append('engine', settings.ocrEngine || 'auto');
+            
+            // Call OCR API
+            fetch('/api/mobile/analyze', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('OCR API response:', data);
+                if (data.status === 'queued') {
+                    const engine = (settings.ocrEngine || 'auto').toLowerCase();
+                    const engineSubtext = engine === 'document_ai'
+                        ? 'Document AI engine is processing your receipt.'
+                        : engine === 'standard'
+                            ? 'Google Vision and OpenAI engines are processing your receipt.'
+                            : 'Hybrid mode: Document AI + standard engines are processing your receipt.';
+                    showLoadingOverlay({
+                        message: 'Running OCR engines…',
+                        subtext: engineSubtext,
+                        stepIndex: 1
+                    });
+                    handleQueuedAnalysis(data.queue_id);
+                    return;
+                }
+                if (data.status === 'completed' && data.fields) {
+                    currentQueueId = data.queue_id;
+                    currentImageData = data.source_image || null; // Store for draft saving
+                    applyOcrResultsToForm(data.fields);
+                    reviewDataBtn.disabled = false;
+                    showResultsTable();
+                    showToast(t('receiptAnalyzed'), 'success');
+                    hideLoadingOverlay();
+                    return;
+                }
+                if (data.fields) {
+                    currentQueueId = data.queue_id;
+                    currentImageData = data.source_image || null; // Store for draft saving
+                    applyOcrResultsToForm(data.fields);
+                    reviewDataBtn.disabled = false;
+                    showResultsTable();
+                    showToast(t('receiptAnalyzed'), 'success');
+                    hideLoadingOverlay();
+                    return;
+                }
+                throw new Error('No fields extracted');
+            })
+            .catch(error => {
+                console.error('OCR Error:', error);
+                showToast(t('failedToAnalyze'), 'error');
+                hideLoadingOverlay();
+                
+                // Fallback to sample data for testing
+                document.getElementById('fieldDate').value = '2025-07-02';
+                document.getElementById('fieldVendor').value = 'Sample Store';
+                document.getElementById('fieldTotal').value = '1000';
+                document.getElementById('fieldInvoiceNumber').value = '12345';
+                document.getElementById('fieldTaxCategory').value = '標準税率';
+                document.getElementById('fieldAccountTitle').value = '交通費';
+                document.getElementById('fieldTax').value = '91';
+                document.getElementById('fieldCurrency').value = 'JPY';
+                
+                verificationStatus.style.display = 'flex';
+                renderOcrDebugPanel({
+                    date: '2025-07-02',
+                    vendor: 'Sample Store',
+                    total: '1000',
+                    invoice_number: '12345',
+                    tax_category: '標準税率',
+                    account_title: '交通費',
+                    subtotal: '909',
+                    tax: '91',
+                    currency: 'JPY'
+                });
+            });
+        }
 
         function applyOcrResultsToForm(fields) {
-            const fieldDate = document.getElementById('fieldDate');
-            const fieldVendor = document.getElementById('fieldVendor');
-            const fieldTotal = document.getElementById('fieldTotal');
-            const fieldInvoice = document.getElementById('fieldInvoiceNumber');
-            const fieldTaxCategory = document.getElementById('fieldTaxCategory');
-            const fieldAccountTitle = document.getElementById('fieldAccountTitle');
-            const fieldTax = document.getElementById('fieldTax');
-            const fieldCurrency = document.getElementById('fieldCurrency');
-            
-            if (fieldDate) fieldDate.value = fields.date || '';
-            if (fieldVendor) fieldVendor.value = fields.vendor || '';
-            if (fieldTotal) fieldTotal.value = fields.total || '';
-            if (fieldInvoice) fieldInvoice.value = fields.invoice_number || '';
+            document.getElementById('fieldDate').value = fields.date || '';
+            document.getElementById('fieldVendor').value = fields.vendor || '';
+            document.getElementById('fieldTotal').value = fields.total || '';
+            document.getElementById('fieldInvoiceNumber').value = fields.invoice_number || '';
 
             let taxCategoryValue = fields.tax_category || '';
             if (taxCategoryValue === '課税') {
                 taxCategoryValue = '標準税率';
             }
-            if (fieldTaxCategory) fieldTaxCategory.value = taxCategoryValue;
+            document.getElementById('fieldTaxCategory').value = taxCategoryValue;
 
-            if (fieldAccountTitle) fieldAccountTitle.value = fields.account_title || '';
+            document.getElementById('fieldAccountTitle').value = fields.account_title || '';
 
             const aiIndicator = document.getElementById('aiConfidenceIndicator');
             if (aiIndicator) {
@@ -3791,22 +2910,13 @@ function updateFieldLabels() {
                 }
             }
 
-            if (fieldTax) fieldTax.value = fields.tax || '';
-            if (fieldCurrency) fieldCurrency.value = fields.currency || 'JPY';
+            document.getElementById('fieldTax').value = fields.tax || '';
+            document.getElementById('fieldCurrency').value = fields.currency || 'JPY';
 
             updateFieldLabels();
-            if (verificationStatus) verificationStatus.style.display = 'flex';
+            verificationStatus.style.display = 'flex';
             renderOcrDebugPanel(fields, currentQueueId);
             saveLatestAnalysis(currentQueueId, fields);
-            
-            // Enable Review nav on single upload
-            const reviewBtn = document.getElementById('navReviewBtn');
-            if (reviewBtn) {
-                reviewBtn.disabled = false;
-                if (window.innerWidth <= 768) {
-                    setActiveScreen('screenReview');
-                }
-            }
 
             if (businessLocationSelect) {
                 const inferredLocation = guessLocationFromFields(fields);
@@ -3827,81 +2937,29 @@ function updateFieldLabels() {
         }
 
         function renderOcrDebugPanel(fields, queueId) {
-            const panel = document.getElementById('ocrDebugPanel');
-            const content = document.getElementById('ocrDebugContent');
-            if (!panel || !content) {
-                console.warn('OCR Debug Panel elements not found');
+            if (!ocrDebugPanel || !ocrDebugContent) {
                 return;
             }
-            
-            // Get OCR engine settings
-            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
-            const configuredEngine = settings.ocrEngine || 'auto';
-            
-            // Determine actual mode based on configured engine
-            let mode = 'Unknown';
-            let engines = [];
-            if (configuredEngine === 'document_ai') {
-                mode = 'Document AI Only';
-                engines = ['Google Document AI'];
-            } else if (configuredEngine === 'standard') {
-                mode = 'Standard (Multi-Engine)';
-                engines = ['Google Vision AI', 'OpenAI GPT-4 Vision'];
-            } else {
-                mode = 'Hybrid (All Engines)';
-                engines = ['Google Document AI', 'Google Vision AI', 'OpenAI GPT-4 Vision'];
-            }
-            
-            // Enhanced payload with OCR metadata
             const payload = {
-                // OCR Engine Information
-                ocr_metadata: {
-                    configured_mode: configuredEngine,
-                    execution_mode: mode,
-                    engines_used: engines,
-                    engine_from_response: fields.ocr_engine || fields.engine || 'N/A',
-                    confidence_score: fields.ocr_confidence || fields.confidence || 'N/A',
-                    processing_time_ms: fields.processing_time || 'N/A'
-                },
-                
-                // Queue Information
                 queue_id: queueId || currentQueueId,
-                timestamp: new Date().toISOString(),
-                
-                // Extracted Fields
-                extracted_data: {
-                    receipt_date: fields.date || fields.receipt_date || '',
-                    vendor_name: fields.vendor || fields.vendor_name || '',
-                    total_amount: fields.total || fields.total_amount || '',
-                    invoice_number: fields.invoice_number || '',
-                    tax_category: fields.tax_category || '',
-                    account_title: fields.account_title || '',
-                    tax_amount: fields.tax || fields.tax_amount || fields.tax_10_amount || '',
-                    currency: fields.currency || 'JPY'
-                },
-                
-                // Raw Fields (for debugging)
-                raw_fields: fields
+                ...fields
             };
-            
-            content.textContent = JSON.stringify(payload, null, 2);
-            panel.style.display = 'block';
+            ocrDebugContent.textContent = JSON.stringify(payload, null, 2);
+            ocrDebugPanel.style.display = 'block';
         }
 
         function showResultsTable() {
             populateEditableTable();
             const tableContainer = document.getElementById('dataTableContainer');
-            if (tableContainer) tableContainer.style.display = 'block';
-            if (reviewDataBtn) reviewDataBtn.style.display = 'none';
+            tableContainer.style.display = 'block';
+            reviewDataBtn.style.display = 'none';
             if (saveAccumulationBtn) {
                 saveAccumulationBtn.disabled = false;
             }
         }
 
-        // Handle review data button - removed showResultsTable call (2nd table removed)
-        // if (reviewDataBtn) {
-        //     reviewDataBtn.addEventListener('click', showResultsTable);
-        // }
+        // Handle review data button
+        reviewDataBtn.addEventListener('click', showResultsTable);
 
         // Populate editable table with OCR data
         function populateEditableTable() {
@@ -3910,14 +2968,14 @@ function updateFieldLabels() {
 
             // Get current form values
             const fields = {
-                date: { value: document.getElementById('fieldDate')?.value || '', label: t('dateLabel'), type: 'text' },
-                vendor: { value: document.getElementById('fieldVendor')?.value || '', label: t('storeNameLabel'), type: 'text' },
-                total: { value: document.getElementById('fieldTotal')?.value || '', label: t('totalAmountLabel'), type: 'number' },
-                invoice_number: { value: document.getElementById('fieldInvoiceNumber')?.value || '', label: t('invoiceNumberLabel'), type: 'text' },
-                tax_category: { value: document.getElementById('fieldTaxCategory')?.value || '', label: t('taxCategoryLabel'), type: 'select' },
-                account_title: { value: document.getElementById('fieldAccountTitle')?.value || '', label: t('accountTitleLabel'), type: 'select' },
-                tax: { value: document.getElementById('fieldTax')?.value || '', label: t('taxAmountRef'), type: 'number' },
-                currency: { value: document.getElementById('fieldCurrency')?.value || '', label: t('currency'), type: 'text' }
+                date: { value: document.getElementById('fieldDate').value, label: t('dateLabel'), type: 'text' },
+                vendor: { value: document.getElementById('fieldVendor').value, label: t('storeNameLabel'), type: 'text' },
+                total: { value: document.getElementById('fieldTotal').value, label: t('totalAmountLabel'), type: 'number' },
+                invoice_number: { value: document.getElementById('fieldInvoiceNumber').value, label: t('invoiceNumberLabel'), type: 'text' },
+                tax_category: { value: document.getElementById('fieldTaxCategory').value, label: t('taxCategoryLabel'), type: 'select' },
+                account_title: { value: document.getElementById('fieldAccountTitle').value, label: t('accountTitleLabel'), type: 'select' },
+                tax: { value: document.getElementById('fieldTax').value, label: t('taxAmountRef'), type: 'number' },
+                currency: { value: document.getElementById('fieldCurrency').value, label: t('currency'), type: 'text' }
             };
 
             // Create table rows
@@ -4068,368 +3126,6 @@ function updateFieldLabels() {
             resetForm();
         });
 
-        // ============================================================
-        // Phase 5D: Draft Modal Event Listeners
-        // ============================================================
-
-        // Open Draft Modal
-        const openDraftsBtn = document.getElementById('openDraftsBtn');
-        if (openDraftsBtn) {
-            openDraftsBtn.addEventListener('click', function() {
-                console.log('Opening draft modal...');
-                const draftModal = document.getElementById('draftModal');
-                if (draftModal) {
-                    draftModal.style.display = 'block';
-                    // Load drafts from backend
-                    loadDraftsFromServer();
-                }
-            });
-        }
-
-        // Close Draft Modal
-        const closeDraftModalBtn = document.getElementById('closeDraftModalBtn');
-        if (closeDraftModalBtn) {
-            closeDraftModalBtn.addEventListener('click', function() {
-                console.log('Closing draft modal...');
-                const draftModal = document.getElementById('draftModal');
-                if (draftModal) {
-                    draftModal.style.display = 'none';
-                }
-            });
-        }
-
-        // Refresh Drafts Button
-        const refreshDraftsBtn = document.getElementById('refreshDraftsBtn');
-        if (refreshDraftsBtn) {
-            refreshDraftsBtn.addEventListener('click', function() {
-                console.log('Refreshing drafts...');
-                loadDraftsFromServer();
-            });
-        }
-
-        // Send Selected Drafts Button
-        const sendSelectedDraftsBtn = document.getElementById('sendSelectedDraftsBtn');
-        if (sendSelectedDraftsBtn) {
-            sendSelectedDraftsBtn.addEventListener('click', async function() {
-                console.log('Sending selected drafts...');
-
-                // Get all selected draft checkboxes
-                const selectedCheckboxes = document.querySelectorAll('.draft-checkbox:checked');
-                const selectedDraftIds = Array.from(selectedCheckboxes).map(cb => cb.value);
-
-                if (selectedDraftIds.length === 0) {
-                    showToast('No drafts selected', 'warning');
-                    return;
-                }
-
-                // Confirm before sending
-                if (!confirm(`Send ${selectedDraftIds.length} draft(s) to Excel?`)) {
-                    return;
-                }
-
-                // Send to backend
-                try {
-                    const response = await apiFetch('/api/drafts/send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ draft_ids: selectedDraftIds })
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.detail || data.error || 'Failed to send drafts');
-                    }
-
-                    showToast(`Successfully sent ${selectedDraftIds.length} draft(s)`, 'success');
-
-                    // Show results modal
-                    displaySendResults(data.results);
-
-                    // Refresh draft list
-                    loadDraftsFromServer();
-
-                } catch (error) {
-                    console.error('Error sending drafts:', error);
-                    showToast(`Error: ${error.message}`, 'error');
-                }
-            });
-        }
-
-        // Draft Filter Buttons
-        const filterButtons = document.querySelectorAll('.draft-filter-btn');
-        filterButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                const filter = this.dataset.filter;
-
-                // Update button states
-                filterButtons.forEach(b => {
-                    b.style.background = '#e2e8f0';
-                    b.style.color = '#475569';
-                });
-                this.style.background = '#3b82f6';
-                this.style.color = 'white';
-
-                // Apply filter to draft list
-                filterDrafts(filter);
-            });
-        });
-
-        // Select All Drafts Checkbox
-        const selectAllCheckbox = document.getElementById('selectAllDrafts');
-        if (selectAllCheckbox) {
-            selectAllCheckbox.addEventListener('change', function() {
-                const checkboxes = document.querySelectorAll('.draft-checkbox');
-                checkboxes.forEach(cb => {
-                    cb.checked = this.checked;
-                });
-                updateDraftSelectionCount();
-                updateSendButtonState();
-            });
-        }
-
-        // Helper: Update selection count display
-        function updateDraftSelectionCount() {
-            const selectedCount = document.querySelectorAll('.draft-checkbox:checked').length;
-            const countElement = document.getElementById('draftSelectionCount');
-            if (countElement) {
-                countElement.textContent = `${selectedCount} draft${selectedCount !== 1 ? 's' : ''} selected`;
-            }
-        }
-
-        // Helper: Enable/disable send button based on selection
-        function updateSendButtonState() {
-            const selectedCount = document.querySelectorAll('.draft-checkbox:checked').length;
-            const sendBtn = document.getElementById('sendSelectedDraftsBtn');
-            if (sendBtn) {
-                if (selectedCount > 0) {
-                    sendBtn.disabled = false;
-                    sendBtn.style.cursor = 'pointer';
-                    sendBtn.style.opacity = '1';
-                } else {
-                    sendBtn.disabled = true;
-                    sendBtn.style.cursor = 'not-allowed';
-                    sendBtn.style.opacity = '0.5';
-                }
-            }
-        }
-
-        // Helper: Filter drafts by status
-        function filterDrafts(filter) {
-            // Implementation depends on how drafts are rendered
-            // This is a placeholder that needs to be connected to your draft rendering logic
-            console.log('Filtering drafts by:', filter);
-
-            // Re-render draft list with filter
-            const currentDrafts = window.allDrafts || [];
-            let filteredDrafts = currentDrafts;
-
-            if (filter !== 'all') {
-                filteredDrafts = currentDrafts.filter(draft => {
-                    if (filter === 'DRAFT') return draft.status === 'DRAFT' || !draft.status;
-                    if (filter === 'SENT') return draft.status === 'SENT';
-                    if (filter === 'ERROR') return draft.status === 'ERROR';
-                    return true;
-                });
-            }
-
-            renderDraftList(filteredDrafts);
-        }
-
-        // Helper: Load drafts from server
-        async function loadDraftsFromServer() {
-            const container = document.getElementById('draftListContainer');
-            if (!container) return;
-
-            // Show loading state
-            container.innerHTML = `
-                <div style="text-align: center; padding: 40px 20px; color: #64748b;">
-                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
-                    <div>Loading drafts...</div>
-                </div>
-            `;
-
-            try {
-                const response = await apiFetch('/api/drafts');
-
-                if (!response.ok) {
-                    throw new Error('Failed to load drafts');
-                }
-
-                const data = await response.json();
-                window.allDrafts = data.drafts || [];
-
-                // Show user indicator if available
-                const userIndicator = document.getElementById('draftUserIndicator');
-                if (userIndicator && data.user_info) {
-                    userIndicator.textContent = `Logged in as: ${data.user_info.name} (${data.user_info.role})`;
-                    userIndicator.style.display = 'block';
-                }
-
-                // Render drafts
-                renderDraftList(window.allDrafts);
-
-            } catch (error) {
-                console.error('Error loading drafts:', error);
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: #ef4444;">
-                        <i class="fas fa-exclamation-triangle" style="font-size: 24px; margin-bottom: 8px;"></i>
-                        <div>Failed to load drafts</div>
-                        <div style="font-size: 12px; margin-top: 8px;">${error.message}</div>
-                    </div>
-                `;
-            }
-        }
-
-        // Helper: Render draft list
-        function renderDraftList(drafts) {
-            const container = document.getElementById('draftListContainer');
-            if (!container) return;
-
-            if (!drafts || drafts.length === 0) {
-                container.innerHTML = `
-                    <div style="text-align: center; padding: 40px 20px; color: #64748b;">
-                        <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 8px;"></i>
-                        <div>No drafts found</div>
-                    </div>
-                `;
-                return;
-            }
-
-            // Render draft cards
-            const html = drafts.map(draft => {
-                const statusColor = draft.status === 'SENT' ? '#10b981' :
-                                   draft.status === 'ERROR' ? '#ef4444' : '#64748b';
-
-                return `
-                    <div class="draft-card" style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; margin-bottom: 8px; cursor: pointer; transition: all 0.2s;"
-                         onclick="selectDraftForPreview('${draft.draft_id}')"
-                         onmouseover="this.style.background='#f8fafc'"
-                         onmouseout="this.style.background='white'">
-                        <div style="display: flex; align-items: start; gap: 12px;">
-                            <input type="checkbox" class="draft-checkbox" value="${draft.draft_id}"
-                                   onclick="event.stopPropagation(); updateDraftSelectionCount(); updateSendButtonState();"
-                                   style="margin-top: 4px;">
-                            <div style="flex: 1;">
-                                <div style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">
-                                    ${draft.receipt?.vendor_name || 'Unknown Vendor'}
-                                </div>
-                                <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">
-                                    ${draft.receipt?.receipt_date || 'No date'} • ¥${draft.receipt?.total_amount || '0'}
-                                </div>
-                                <div style="font-size: 11px; color: ${statusColor}; font-weight: 500;">
-                                    ${draft.status || 'DRAFT'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = html;
-        }
-
-        // Helper: Select draft for preview in detail panel
-        function selectDraftForPreview(draft_id) {
-            const draft = window.allDrafts?.find(d => d.draft_id === draft_id);
-            if (!draft) return;
-
-            const detailContainer = document.getElementById('draftDetailContainer');
-            if (!detailContainer) return;
-
-            // Show image if available
-            const imageSection = document.getElementById('draftImagePreviewSection');
-            const draftImage = document.getElementById('draftModalImage');
-            const imagePlaceholder = document.getElementById('draftModalImagePlaceholder');
-
-            // Handle image display (if preview section exists)
-            if (imageSection && draftImage && imagePlaceholder) {
-                imageSection.style.display = 'block';
-
-                const previewUrl = window.previewByDraftId?.[draft.draft_id];
-                const imageUrl = draft.receipt?.image_url || draft.image_url;
-                const imageData = draft.image_data;
-
-                if (previewUrl) {
-                    draftImage.src = previewUrl;
-                    draftImage.style.display = 'block';
-                    imagePlaceholder.style.display = 'none';
-                } else if (imageUrl) {
-                    draftImage.src = imageUrl;
-                    draftImage.style.display = 'block';
-                    imagePlaceholder.style.display = 'none';
-                } else if (imageData) {
-                    draftImage.src = `data:image/jpeg;base64,${imageData}`;
-                    draftImage.style.display = 'block';
-                    imagePlaceholder.style.display = 'none';
-                } else {
-                    draftImage.style.display = 'none';
-                    imagePlaceholder.style.display = 'flex';
-                }
-            }
-
-            // Hide empty state, show details
-            const emptyState = document.getElementById('draftEmptyState');
-            if (emptyState) emptyState.style.display = 'none';
-
-            const detailsContent = document.getElementById('draftDetailsContent');
-            if (detailsContent) {
-                detailsContent.style.display = 'block';
-                detailsContent.innerHTML = `
-                    <div style="background: #f8fafc; border-radius: 8px; padding: 16px; margin-top: 16px;">
-                        <div style="font-size: 13px; color: #475569; margin-bottom: 12px;">
-                            <strong>Draft Details</strong>
-                        </div>
-                        <div style="display: grid; gap: 8px; font-size: 13px;">
-                            <div><strong>Vendor:</strong> ${draft.receipt?.vendor_name || 'N/A'}</div>
-                            <div><strong>Date:</strong> ${draft.receipt?.receipt_date || 'N/A'}</div>
-                            <div><strong>Amount:</strong> ¥${draft.receipt?.total_amount || '0'}</div>
-                            <div><strong>Invoice:</strong> ${draft.receipt?.invoice_number || 'N/A'}</div>
-                            <div><strong>Location:</strong> ${draft.receipt?.business_location_id || 'N/A'}</div>
-                            <div><strong>Staff:</strong> ${draft.receipt?.staff_id || 'N/A'}</div>
-                            <div><strong>Status:</strong> <span style="color: ${draft.status === 'SENT' ? '#10b981' : '#64748b'}">${draft.status || 'DRAFT'}</span></div>
-                        </div>
-                    </div>
-                `;
-            }
-        }
-
-        // Helper: Display send results
-        function displaySendResults(results) {
-            const modal = document.getElementById('sendResultsModal');
-            const container = document.getElementById('sendResultsContainer');
-
-            if (!modal || !container) return;
-
-            const html = results.map(result => {
-                const icon = result.success ?
-                    '<i class="fas fa-check-circle" style="color: #10b981;"></i>' :
-                    '<i class="fas fa-times-circle" style="color: #ef4444;"></i>';
-
-                return `
-                    <div style="padding: 12px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; gap: 12px;">
-                        ${icon}
-                        <div style="flex: 1;">
-                            <div style="font-weight: 500;">${result.vendor_name || 'Unknown'}</div>
-                            <div style="font-size: 12px; color: #64748b;">${result.message || (result.success ? 'Sent successfully' : 'Failed to send')}</div>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-
-            container.innerHTML = html;
-            modal.style.display = 'block';
-        }
-
-        // Close send results modal
-        const closeSendResultsBtn = document.getElementById('closeSendResultsBtn');
-        if (closeSendResultsBtn) {
-            closeSendResultsBtn.addEventListener('click', function() {
-                const modal = document.getElementById('sendResultsModal');
-                if (modal) modal.style.display = 'none';
-            });
-        }
-
         function collectEditableFields() {
             const editableFields = document.querySelectorAll('.editable-field');
             const correctedData = {};
@@ -4440,8 +3136,7 @@ function updateFieldLabels() {
             return correctedData;
         }
 
-        // Phase 5D: Send to HQ - PUT draft first, then POST to /send
-        async function saveToHeadquarters(forceSave = false) {
+        function saveToHeadquarters(forceSave = false) {
             if (!currentQueueId) {
                 showToast(t('noReceiptData'), 'error');
                 return;
@@ -4459,7 +3154,18 @@ function updateFieldLabels() {
                 return;
             }
 
-            // Persist any in-table edits back to the form fields before saving/sending.
+            const operator = JSON.parse(localStorage.getItem('tashiro_user') || '{}');
+            if (!operator.name || !operator.email) {
+                showToast(t('operatorMissing'), 'error');
+                return;
+            }
+            const operatorPayload = {
+                full_name: operator.name,
+                name: operator.name,
+                email: operator.email,
+                employee_id: operator.employeeId || operator.employee_id || ''
+            };
+
             const correctedData = collectEditableFields();
             Object.keys(correctedData).forEach(fieldName => {
                 const elementId = 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
@@ -4473,114 +3179,48 @@ function updateFieldLabels() {
             const staffValue = staffMemberSelect.value;
             const taxValue = parseFloat(document.getElementById('fieldTax').value) || 0;
 
-            // Phase 5D Step 1: Update draft with current edits + assignment
-            const receiptData = {
-                vendor_name: document.getElementById('fieldVendor').value,
+            const payload = {
+                queue_id: currentQueueId,
+                location: locationValue,
+                staff_member: staffValue,
                 receipt_date: document.getElementById('fieldDate').value,
+                vendor_name: document.getElementById('fieldVendor').value,
                 total_amount: parseFloat(document.getElementById('fieldTotal').value) || 0,
                 invoice_number: document.getElementById('fieldInvoiceNumber').value,
-                tax_10_amount: taxValue,
-                tax_8_amount: 0,
-                business_location_id: locationValue,
-                staff_id: staffValue
+                tax_10: taxValue,
+                tax_8: 0,
+                tax_total: taxValue,
+                operator_name: operatorPayload.name,
+                operator_email: operatorPayload.email,
+                operator_id: operatorPayload.employee_id,
+                force: forceSave
             };
 
-            const draftPayload = {
-                receipt: receiptData,
-                image_ref: currentQueueId
-            };
-
-            showToast('Saving and sending...', 'info');
-            
-            try {
-                // Phase 5D Step 1: PUT /api/drafts/{id} to persist edits
-                const existingDraft = batchDrafts.find(d => d.draft_id === currentQueueId);
-                if (existingDraft) {
-                    const updateResponse = await apiFetch(`/api/drafts/${currentQueueId}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(draftPayload)
-                    });
-                    
-                    if (!updateResponse.ok) {
-                        throw new Error('Failed to update draft');
-                    }
+            showToast(t('savingReceipt'), 'info');
+            fetch('/api/accumulate_receipt', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            })
+            .then(async response => {
+                const data = await response.json();
+                if (response.status === 409) {
+                    handleDuplicateResponse(data);
+                    throw new Error('duplicate');
                 }
-                
-                // Phase 5D Step 2: POST /api/drafts/send with draft_id
-                const sendResponse = await apiFetch('/api/drafts/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ draft_ids: [currentQueueId] })
-                });
-                
-                if (!sendResponse.ok) {
-                    const errorData = await sendResponse.json();
-                    throw new Error(errorData.detail || 'Send failed');
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.detail || data.error || 'Save failed');
                 }
-                
-                const result = await sendResponse.json();
-                const draftResult = result.results?.[0];
-                
-                if (draftResult?.status === 'sent') {
-                    showToast('✅ Receipt sent to HQ successfully', 'success');
-                    
-                    // Update batch draft status
-                    const index = batchDrafts.findIndex(d => d.draft_id === currentQueueId);
-                    if (index !== -1) {
-                        batchDrafts[index].status = 'SENT';
-                        renderBatchTiles();
-                    }
-                    
-                    // Show download link if available
-                    if (draftResult.download_url && saveResultMessage) {
-                        saveResultMessage.style.display = 'block';
-                        saveResultMessage.innerHTML = `
-                            <div style="padding: 12px; background: #d1fae5; border-radius: 8px; margin-top: 12px;">
-                                <strong>✅ Success!</strong> Excel file created.<br>
-                                <a href="${draftResult.download_url}" target="_blank" style="color: #3b82f6; text-decoration: none;">
-                                    <i class="fas fa-download"></i> Download Excel
-                                </a>
-                            </div>
-                        `;
-                    }
-                    
-                    // Save to history
-                    saveToHistory({
-                        vendor_name: receiptData.vendor_name,
-                        id: currentQueueId,
-                        timestamp: new Date().toISOString(),
-                        business_location: locationValue,
-                        staff_member: staffValue,
-                        excel_url: draftResult.download_url
-                    });
-
-                    // Reset the form for single receipt flow (non-batch).
-                    if (!batchDrafts || batchDrafts.length === 0) {
-                        resetForm();
-                        currentQueueId = null;
-                    }
-
-                } else {
-                    // Show error with retry metadata
-                    const errorMsg = draftResult?.error || 'Send failed';
-                    const attemptCount = draftResult?.attempt_count || 0;
-                    showToast(`❌ ${errorMsg} (Attempt: ${attemptCount})`, 'error');
-                    
-                    // Update batch draft with error
-                    const index = batchDrafts.findIndex(d => d.draft_id === currentQueueId);
-                    if (index !== -1) {
-                        batchDrafts[index].status = 'ERROR';
-                        batchDrafts[index].last_send_error = errorMsg;
-                        batchDrafts[index].send_attempt_count = attemptCount;
-                        renderBatchTiles();
-                    }
+                handleSuccessfulSave(data, { ...correctedData, business_location: locationValue, staff_member: staffValue });
+            })
+            .catch(error => {
+                if (error.message !== 'duplicate') {
+                    console.error('Save error:', error);
+                    showToast(error.message || t('failedToSubmit'), 'error');
                 }
-                
-            } catch (error) {
-                console.error('Send error:', error);
-                showToast(error.message || 'Failed to send', 'error');
-            }
+            });
         }
 
         function handleDuplicateResponse(duplicatePayload) {
@@ -4643,103 +3283,143 @@ function updateFieldLabels() {
             }
         }
 
-        // Phase 5D: Save Draft - PUT if exists (from batch), POST if new
+        // Phase 4D.3: Save as Draft (merged with Save Changes functionality)
         function saveDraft() {
-            // Phase 5D-5.3: Save all drafts in batch order
-            if (!window.batchOrder || window.batchOrder.length === 0) {
-                showToast('No drafts to save', 'error');
+            // Validate we have receipt data
+            if (!currentQueueId) {
+                showToast('No receipt data to save', 'error');
                 return;
             }
 
-            // Capture current edits before saving
-            captureTableEditsToCurrentDraft();
-
-            showToast('Saving drafts...', 'info');
-
-            // Save all drafts in upload order
-            const savePromises = window.batchOrder.map(async (draftId) => {
-                const merged = getMergedDraftReceipt(draftId);
-                const draft = window.batchDraftsById[draftId];
-
-                if (!draft) {
-                    console.warn(`Draft ${draftId} not found, skipping`);
-                    return Promise.resolve();
+            // First, save changes from editable table back to form fields (merged from saveChanges)
+            const correctedData = collectEditableFields();
+            Object.keys(correctedData).forEach(fieldName => {
+                const elementId = 'field' + fieldName.charAt(0).toUpperCase() + fieldName.slice(1);
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.value = correctedData[fieldName];
                 }
-
-                // Prepare payload for this draft
-                const payload = {
-                    receipt: {
-                        vendor_name: merged.vendor_name || '',
-                        receipt_date: merged.receipt_date || '',
-                        total_amount: parseFloat(merged.total_amount) || 0,
-                        invoice_number: merged.invoice_number || '',
-                        tax_10_amount: parseFloat(merged.tax_amount || merged.tax_10_amount) || 0,
-                        tax_8_amount: 0,
-                        tax_category: merged.tax_category || '',
-                        account_title: merged.account_title || '',
-                        business_location_id: merged.business_location_id || null,
-                        staff_id: merged.staff_id || null
-                    },
-                    image_ref: draft.image_ref,  // Use the original image_ref
-                    image_data: null
-                };
-
-                // ✅ ALWAYS UPDATE - drafts already exist from batch upload
-                return apiFetch(`/api/drafts/${draftId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                })
-                .then(async response => {
-                    if (response.status === 401) {
-                        throw new Error('Authentication required. Please log in and try again.');
-                    }
-
-                    const data = await response.json();
-                    if (!response.ok) {
-                        throw new Error(data.detail || data.error || `Failed to save draft ${draftId}`);
-                    }
-                    return { draftId, success: true, data };
-                })
-                .catch(error => {
-                    console.error(`Error saving draft ${draftId}:`, error);
-                    return { draftId, success: false, error: error.message };
-                });
             });
 
-            // Wait for all saves to complete
-            Promise.all(savePromises)
-                .then(results => {
-                    const successes = results.filter(r => r.success).length;
-                    const failures = results.filter(r => !r.success).length;
+            // Get location and staff values (convert empty string to null)
+            const locationValue = (businessLocationSelect?.value && businessLocationSelect.value !== '') ? businessLocationSelect.value : null;
+            const staffValue = (staffMemberSelect?.value && staffMemberSelect.value !== '') ? staffMemberSelect.value : null;
+            
+            console.log('💾 Saving draft with:', {
+                queueId: currentQueueId,
+                location: locationValue,
+                staff: staffValue,
+                locationSelect: businessLocationSelect ? {
+                    exists: true,
+                    value: businessLocationSelect.value,
+                    disabled: businessLocationSelect.disabled,
+                    options: Array.from(businessLocationSelect.options).map(o => ({text: o.text, value: o.value, selected: o.selected}))
+                } : null,
+                staffSelect: staffMemberSelect ? {
+                    exists: true,
+                    value: staffMemberSelect.value,
+                    disabled: staffMemberSelect.disabled,
+                    options: Array.from(staffMemberSelect.options).map(o => ({text: o.text, value: o.value, selected: o.selected}))
+                } : null
+            });
 
-                    // Update local drafts with saved data (including image_url if provided)
-                    results.forEach(result => {
-                        if (result.success && result.data && window.batchDraftsById[result.draftId]) {
-                            // Update the draft with server response data
-                            Object.assign(window.batchDraftsById[result.draftId], result.data);
-                            // Mark as saved - keep as DRAFT status (backend saves as DRAFT)
-                            window.batchDraftsById[result.draftId].status = 'DRAFT';  // ✅ FIXED: Keep as DRAFT
-                            window.batchDraftsById[result.draftId].saved_at = new Date().toISOString();
-                        }
-                    });
+            // Collect current form data
+            const receiptData = {
+                vendor_name: document.getElementById('fieldVendor').value || '',
+                receipt_date: document.getElementById('fieldDate').value || '',
+                total_amount: parseFloat(document.getElementById('fieldTotal').value) || 0,
+                invoice_number: document.getElementById('fieldInvoiceNumber').value || '',
+                tax_10_amount: parseFloat(document.getElementById('fieldTax').value) || 0,
+                tax_8_amount: 0,
+                business_location_id: locationValue,
+                staff_id: staffValue
+            };
 
-                    if (successes > 0) {
-                        showToast(`Successfully saved ${successes} draft(s)`, 'success');
-                        // Phase 5D-5: Reset intake UI state after successful batch save
-                        resetIntakeUIState("batch-save-success");
-                        // Refresh the batch tiles to show updated status
-                        renderBatchTiles();
-                    }
+            // Validate required fields
+            if (!receiptData.receipt_date) {
+                showToast('⚠️ Receipt date is required. Please enter a date to save.', 'error');
+                // Focus on the date field
+                document.getElementById('fieldDate')?.focus();
+                return;
+            }
+            if (!receiptData.vendor_name) {
+                showToast('⚠️ Vendor name is required. Please enter a vendor name to save.', 'error');
+                document.getElementById('fieldVendor')?.focus();
+                return;
+            }
+            if (!receiptData.total_amount || receiptData.total_amount <= 0) {
+                showToast('⚠️ Total amount is required and must be greater than 0.', 'error');
+                document.getElementById('fieldTotal')?.focus();
+                return;
+            }
+            
+            console.log('📋 Receipt data:', receiptData);
 
-                    if (failures > 0) {
-                        showToast(`Failed to save ${failures} draft(s)`, 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Batch save error:', error);
-                    showToast('Failed to save drafts', 'error');
-                });
+            // Prepare draft payload
+            const payload = {
+                receipt: receiptData,
+                image_ref: currentQueueId, // Use queue_id as image reference
+                image_data: currentImageData // Include base64 image for Railway
+            };
+
+            // Show loading message
+            showToast('Saving draft...', 'info');
+
+            // Phase 5B.3: Get auth headers
+            const authToken = localStorage.getItem('auth_token');
+            const headers = {
+                'Content-Type': 'application/json'
+            };
+            if (authToken) {
+                headers['Authorization'] = `Bearer ${authToken}`;
+            }
+
+            // Send POST request to create draft
+            fetch('/api/drafts', {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(payload)
+            })
+            .then(async response => {
+                // Phase 5B.3: Handle 401 - optional auth so just save without creator_user_id
+                if (response.status === 401) {
+                    console.log('Draft saved without authentication');
+                }
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    throw new Error(data.detail || data.error || 'Failed to save draft');
+                }
+                return data;
+            })
+            .then(data => {
+                showToast('Data saved to draft', 'success');
+                
+                // Update verification status
+                const verificationStatus = document.getElementById('verificationStatus');
+                if (verificationStatus) {
+                    verificationStatus.innerHTML = `
+                        <div class="status-icon">✅</div>
+                        <div class="status-content">
+                            <div class="status-title">Data Saved to Draft</div>
+                            <div class="confidence-badge">Open Drafts menu to review and send</div>
+                        </div>
+                    `;
+                }
+                
+                // Phase 4F.3: Reset form after successful save
+                console.log('Draft created, resetting form for new receipt:', data);
+                setTimeout(() => {
+                    resetForm();
+                    currentQueueId = null; // Clear queue ID for new receipt
+                    showToast('Form cleared - ready for new receipt', 'info');
+                }, 1000);
+            })
+            .catch(error => {
+                console.error('Draft save error:', error);
+                const errorMessage = typeof error === 'string' ? error : (error.message || 'Failed to save draft');
+                showToast(errorMessage, 'error');
+            });
         }
 
         // Reset the form
@@ -4750,12 +3430,6 @@ function updateFieldLabels() {
             document.getElementById('fieldInvoiceNumber').value = '';
             document.getElementById('fieldTaxCategory').value = '';
             document.getElementById('fieldAccountTitle').value = '';
-            document.getElementById('fieldTaxCategory').disabled = true;
-            document.getElementById('fieldAccountTitle').disabled = true;
-            document.getElementById('fieldTaxCategory').style.backgroundColor = '#f8f9fa';
-            document.getElementById('fieldAccountTitle').style.backgroundColor = '#f8f9fa';
-            document.getElementById('fieldTaxCategory').style.cursor = 'not-allowed';
-            document.getElementById('fieldAccountTitle').style.cursor = 'not-allowed';
             document.getElementById('fieldTax').value = '';
             document.getElementById('fieldCurrency').value = 'JPY';
             
@@ -4797,49 +3471,6 @@ function updateFieldLabels() {
                 saveAccumulationBtn.disabled = true;
             }
             updateSendButtonLabel();
-            
-            // Phase 5D-1: Clear ALL batch processing state
-            batchDrafts = [];
-            pendingFiles = [];
-            currentDraftIndex = 0;
-            draftEditsById = {};
-            
-            // Reset file input
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput) {
-                fileInput.value = '';
-            }
-            
-            // Update UI for pending files
-            updatePendingFilesUI();
-            
-            // Hide batch tiles
-            const batchTiles = document.getElementById('batchReceiptTiles');
-            if (batchTiles) {
-                batchTiles.style.display = 'none';
-            }
-            
-            // Clear batch tile container
-            const tileContainer = document.getElementById('receiptTilesContainer');
-            if (tileContainer) {
-                tileContainer.innerHTML = '';
-            }
-            
-            // Update tile count
-            const tileCount = document.getElementById('tileCount');
-            if (tileCount) {
-                tileCount.textContent = '0';
-            }
-            
-            // Clear editable table fields
-            const dataTableContainer = document.getElementById('dataTableContainer');
-            if (dataTableContainer) {
-                dataTableContainer.style.display = 'none';
-            }
-            
-            // Phase 5D-0: Clear image data
-            currentImageData = null;
-            currentQueueId = null;
         }
 
         // Save receipt to history
@@ -5096,99 +3727,8 @@ function updateFieldLabels() {
                 });
         }
 
-        // Phase 5D-5: Intake UI reset function
-        function resetIntakeUIState(reason) {
-            console.log(`Resetting intake UI state: ${reason}`);
-            
-            // Clear global state
-            window.batchDraftsById = {};
-            window.batchOrder = [];
-            window.draftEditsById = {};
-            window.currentDraftId = null;
-            
-            // ✅ ADDED: Clear preview URLs
-            if (window.previewByDraftId) {
-                // Revoke all blob URLs to free memory
-                Object.values(window.previewByDraftId).forEach(url => {
-                    if (url && url.startsWith('blob:')) {
-                        URL.revokeObjectURL(url);
-                    }
-                });
-                window.previewByDraftId = {};
-            }
-            window.previewByIndex = {};
-            
-            // Clear pending files
-            pendingFiles = [];
-            
-            // Clear receipt tiles container
-            const tilesContainer = document.getElementById('receiptTilesContainer');
-            if (tilesContainer) {
-                tilesContainer.innerHTML = '';
-            }
-            
-            // ✅ ADDED: Hide batch tiles section
-            const batchSection = document.getElementById('batchReceiptTiles');
-            if (batchSection) {
-                batchSection.style.display = 'none';
-            }
-            
-            // Clear mapping table inputs
-            const fieldIds = ['fieldDate', 'fieldVendor', 'fieldTotal', 'fieldInvoiceNumber', 
-                              'fieldTaxCategory', 'fieldAccountTitle', 'fieldTax', 'fieldCurrency'];
-            fieldIds.forEach(id => {
-                const element = document.getElementById(id);
-                if (element) element.value = '';
-            });
-            
-            // ✅ ADDED: Clear receipt image
-            const receiptImage = document.getElementById('receiptImage');
-            const imagePlaceholder = document.getElementById('imagePlaceholder');
-            if (receiptImage) {
-                receiptImage.style.display = 'none';
-                receiptImage.src = '';
-            }
-            if (imagePlaceholder) {
-                imagePlaceholder.style.display = 'flex';
-            }
-            
-            // Clear debug panel
-            const debugPanel = document.getElementById('ocrDebugPanel');
-            const debugContent = document.getElementById('ocrDebugContent');
-            if (debugPanel) debugPanel.style.display = 'none';
-            if (debugContent) debugContent.textContent = '';
-            
-            // Reset file input
-            const fileInput = document.getElementById('fileInput');
-            if (fileInput) fileInput.value = '';
-            
-            // Reset progress labels
-            const progressLabel = document.getElementById('progressLabel');
-            if (progressLabel) progressLabel.textContent = '';
-            
-            // Hide data table container
-            const dataTableContainer = document.getElementById('dataTableContainer');
-            if (dataTableContainer) dataTableContainer.style.display = 'none';
-            
-            // ✅ ADDED: Reset location and staff
-            const businessLocationSelect = document.getElementById('businessLocationSelect');
-            if (businessLocationSelect) businessLocationSelect.value = '';
-            if (staffMemberSelect) {
-                staffMemberSelect.value = '';
-                staffMemberSelect.disabled = true;
-            }
-            
-            // Update UI indicators
-            renderBatchTiles();
-            
-            console.log('✅ Full reset complete');
-        }
-
         // Initialize the application
         function init() {
-            // Phase 5D-5: Reset UI state on page load
-            resetIntakeUIState("page-load");
-            
             if (!checkUserRegistration()) {
                 welcomeModal.style.display = 'flex';
             } else {
@@ -5226,99 +3766,44 @@ function updateFieldLabels() {
         init();
     </script>
 
-    <!-- Phase 5D: Enhanced Draft Management Modal -->
+    <!-- Phase 4D.1: Draft Management Modal -->
     <div id="draftModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 2000; overflow-y: auto;">
         <div style="background: white; margin: 20px auto; max-width: 1200px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
             <!-- Modal Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
-                <div>
-                    <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin: 0;">Receipt Drafts</h2>
-                    <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">Manage and send receipt drafts</p>
-                    <p id="draftUserIndicator" style="font-size: 12px; color: #3b82f6; margin: 4px 0 0 0; display: none;"></p>
-                </div>
-                <div style="display: flex; align-items: center; gap: 12px;">
-                    <!-- Phase 5D-2: Logout button -->
-                    <button onclick="logout()" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">
-                        <i class="fas fa-sign-out-alt"></i> Logout
-                    </button>
-                    <button id="closeDraftModalBtn" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; padding: 0; width: 32px; height: 32px;">×</button>
-                </div>
-            </div>
-            
-            <!-- Filters Section -->
-            <div style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
-                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <span style="font-size: 14px; color: #475569; font-weight: 500;">Filter:</span>
-                    <button id="filterAll" class="draft-filter-btn" data-filter="all" style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">All</button>
-                    <button id="filterDraft" class="draft-filter-btn" data-filter="DRAFT" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Draft</button>
-                    <button id="filterSent" class="draft-filter-btn" data-filter="SENT" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Sent</button>
-                    <button id="filterError" class="draft-filter-btn" data-filter="ERROR" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Errors</button>
-                    <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
-                        <label for="selectAllDrafts" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; cursor: pointer;">
-                            <input type="checkbox" id="selectAllDrafts" name="selectAllDrafts" style="width: 16px; height: 16px; cursor: pointer;">
-                            Select All
-                        </label>
-                        <button id="refreshDraftsBtn" style="padding: 6px 12px; background: none; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; color: #475569;">
-                            <i class="fas fa-sync-alt"></i> Refresh
-                        </button>
-                    </div>
-                </div>
+                <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin: 0;">Receipt Drafts</h2>
+                <button id="closeDraftModalBtn" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; padding: 0; width: 32px; height: 32px;">×</button>
             </div>
             
             <!-- Modal Body -->
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px; min-height: 400px; max-height: 500px; overflow-y: auto;">
-                <!-- Left: Draft List -->
-                <div id="draftListContainer" style="border-right: 1px solid #e2e8f0; padding-right: 20px;">
-                    <div style="text-align: center; padding: 40px 20px; color: #64748b;">
-                        <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
-                        <div>Loading drafts...</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 24px; min-height: 500px;">
+                <!-- Draft List Section -->
+                <div id="draftListSection" style="border-right: 1px solid #e2e8f0; padding-right: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #334155;">All Drafts</h3>
+                    <div id="draftListContainer" style="max-height: 500px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                            Loading drafts...
+                        </div>
                     </div>
                 </div>
                 
-                <!-- Right: Draft Details -->
-                <div id="draftDetailContainer" style="padding-left: 20px;">
-                    <!-- Image Preview Section -->
-                    <div id="draftImagePreviewSection" style="display: none; margin-bottom: 16px;">
-                        <div style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; background: #f8fafc;">
-                            <img id="draftModalImage" style="max-width: 100%; display: none;">
-                            <div id="draftModalImagePlaceholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #94a3b8;">
-                                <i class="fas fa-receipt" style="font-size: 32px; margin-bottom: 8px;"></i>
-                                <p style="margin: 0;">No image available</p>
-                            </div>
+                <!-- Draft Detail Section -->
+                <div id="draftDetailSection" style="padding-left: 20px;">
+                    <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 16px; color: #334155;">Draft Details</h3>
+                    <div id="draftDetailContainer" style="max-height: 500px; overflow-y: auto;">
+                        <div style="text-align: center; padding: 40px 20px; color: #64748b;">
+                            Select a draft to view details
                         </div>
-                    </div>
-                    
-                    <!-- Empty State -->
-                    <div id="draftEmptyState" style="text-align: center; padding: 40px 20px; color: #64748b;">
-                        Select a draft to view details
-                    </div>
-                    
-                    <!-- Draft Details (will be populated dynamically) -->
-                    <div id="draftDetailsContent" style="display: none;">
-                        <!-- Details will be rendered here -->
                     </div>
                 </div>
             </div>
             
-            <!-- Modal Footer with Bulk Actions -->
+            <!-- Modal Footer -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
                 <span id="draftSelectionCount" style="color: #64748b; font-size: 14px;">0 drafts selected</span>
-                <button id="sendSelectedDraftsBtn" disabled style="padding: 10px 24px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: not-allowed; transition: all 0.2s; opacity: 0.5;">
-                    <i class="fas fa-paper-plane"></i> Send
+                <button id="sendSelectedDraftsBtn" disabled style="padding: 10px 24px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s;">
+                    Send
                 </button>
-            </div>
-        </div>
-    </div>
-    
-    <!-- Phase 5D: Send Results Modal -->
-    <div id="sendResultsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2100; overflow-y: auto;">
-        <div style="background: white; margin: 40px auto; max-width: 700px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
-            <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
-                <h2 style="font-size: 18px; font-weight: 600; color: #1e293b; margin: 0;">Send Results</h2>
-            </div>
-            <div id="sendResultsContainer" style="padding: 24px; max-height: 400px; overflow-y: auto;"></div>
-            <div style="padding: 16px 24px; border-top: 1px solid #e2e8f0; text-align: right;">
-                <button id="closeSendResultsBtn" style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">Close</button>
             </div>
         </div>
     </div>

@@ -65,7 +65,25 @@ class DraftRepository:
             db_path = str(data_dir / "drafts.db")
         
         self.db_path = db_path
+        
+        # For :memory: databases, keep a persistent connection
+        # (otherwise each new connection creates a fresh empty database)
+        self._memory_conn = None
+        if db_path == ":memory:":
+            self._memory_conn = sqlite3.connect(":memory:")
+            self._memory_conn.row_factory = sqlite3.Row
+        
         self._init_schema()
+
+    def _get_connection(self) -> sqlite3.Connection:
+        """Get a database connection.
+        
+        For :memory: databases, returns the persistent connection.
+        For file databases, creates a new connection.
+        """
+        if self._memory_conn is not None:
+            return self._memory_conn
+        return sqlite3.connect(self.db_path)
 
     def _init_schema(self) -> None:
         """Create draft_receipts table if it doesn't exist.
@@ -79,10 +97,15 @@ class DraftRepository:
             sent_at: TEXT (ISO timestamp, nullable)
             image_ref: TEXT (queue_id reference, nullable for backward compatibility)
             image_data: TEXT (base64-encoded image data for Railway/cloud deployment)
+            creator_user_id: TEXT (Phase 5B.2: ownership tracking)
+            send_attempt_count: INTEGER (Phase 5C-1: send retry count)
+            last_send_attempt_at: TEXT (Phase 5C-1: last send attempt timestamp)
+            last_send_error: TEXT (Phase 5C-1: last error message)
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         try:
-            # Create table with image_ref and image_data columns
+            # Create table with all columns (including Phase 5B.2 and 5C-1)
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS draft_receipts (
                     draft_id TEXT PRIMARY KEY,
@@ -92,11 +115,15 @@ class DraftRepository:
                     updated_at TEXT NOT NULL,
                     sent_at TEXT,
                     image_ref TEXT,
-                    image_data TEXT
+                    image_data TEXT,
+                    creator_user_id TEXT,
+                    send_attempt_count INTEGER DEFAULT 0,
+                    last_send_attempt_at TEXT,
+                    last_send_error TEXT
                 )
             """)
             
-            # Migrate existing table if needed (add image_ref and image_data columns)
+            # Migrate existing table if needed (add new columns)
             # This is safe: SQLite ignores ADD COLUMN if column exists
             try:
                 conn.execute("""
@@ -112,9 +139,40 @@ class DraftRepository:
             except sqlite3.OperationalError:
                 pass  # Column already exists
             
+            # Phase 5B.2: Add creator_user_id for ownership tracking
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN creator_user_id TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            # Phase 5C-1: Add failure recovery fields
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN send_attempt_count INTEGER DEFAULT 0
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN last_send_attempt_at TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN last_send_error TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
             conn.commit()
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def save(self, draft: DraftReceipt) -> DraftReceipt:
         """Save or update a draft receipt.
@@ -131,15 +189,22 @@ class DraftRepository:
             This is a pure persistence operation. State validation should
             be done by DraftService before calling this method.
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         try:
             # Serialize receipt to JSON
             receipt_json = json.dumps(draft.receipt.model_dump(mode="json"))
             
+            # Phase 5D-1.1: Defensive coercion - ensure creator_user_id is string before SQL insert
+            creator_user_id_str = str(draft.creator_user_id) if draft.creator_user_id is not None else None
+            if isinstance(creator_user_id_str, UUID):
+                creator_user_id_str = str(creator_user_id_str)
+            
             conn.execute("""
                 INSERT OR REPLACE INTO draft_receipts 
-                (draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                (draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                 send_attempt_count, last_send_attempt_at, last_send_error)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 str(draft.draft_id),
                 receipt_json,
@@ -149,11 +214,16 @@ class DraftRepository:
                 draft.sent_at.isoformat() if draft.sent_at else None,
                 draft.image_ref,
                 draft.image_data,
+                creator_user_id_str,
+                draft.send_attempt_count,
+                draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,
+                draft.last_send_error,
             ))
             conn.commit()
             return draft
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def get_by_id(self, draft_id: UUID) -> Optional[DraftReceipt]:
         """Retrieve a draft by its ID.
@@ -164,11 +234,13 @@ class DraftRepository:
         Returns:
             DraftReceipt if found, None otherwise
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error
                 FROM draft_receipts
                 WHERE draft_id = ?
             """, (str(draft_id),))
@@ -179,40 +251,72 @@ class DraftRepository:
             
             return self._row_to_draft(row)
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
-    def list_all(self, status: Optional[DraftStatus] = None) -> List[DraftReceipt]:
-        """List all drafts, optionally filtered by status.
+    def list_all(self, status: Optional[DraftStatus] = None, user_id: Optional[str] = None, include_image_data: bool = False) -> List[DraftReceipt]:
+        """List all drafts, optionally filtered by status and user.
+        
+        By default, excludes image_data field to keep response payload small.
+        Image data is only loaded when fetching individual draft details OR when explicitly requested.
         
         Args:
             status: If provided, only return drafts with this status.
                    If None, return all drafts.
+            user_id: If provided, only return drafts for this user.
+                    If None, return drafts for all users.
+            include_image_data: If True, includes base64 image_data in response.
+                               Use for admin views that need image previews.
+                               Default False to keep payload small.
         
         Returns:
             List of DraftReceipt objects, ordered by created_at descending
             (most recent first)
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         conn.row_factory = sqlite3.Row
         try:
-            if status is None:
-                cursor = conn.execute("""
-                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
+            # Build query based on include_image_data flag
+            if include_image_data:
+                # Include image_data for admin views
+                query_parts = ["""
+                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error
                     FROM draft_receipts
-                    ORDER BY created_at DESC
-                """)
+                """]
             else:
-                cursor = conn.execute("""
-                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
+                # Exclude image_data for list views to reduce payload
+                query_parts = ["""
+                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error
                     FROM draft_receipts
-                    WHERE status = ?
-                    ORDER BY created_at DESC
-                """, (status.value,))
+                """]
+            params = []
+            
+            # Add WHERE conditions
+            where_conditions = []
+            if status is not None:
+                where_conditions.append("status = ?")
+                params.append(status.value)
+            if user_id is not None:
+                where_conditions.append("creator_user_id = ?")
+                params.append(user_id)
+            
+            if where_conditions:
+                query_parts.append("WHERE " + " AND ".join(where_conditions))
+            
+            # Add ORDER BY
+            query_parts.append("ORDER BY created_at DESC")
+            
+            query = "\n".join(query_parts)
+            cursor = conn.execute(query, params)
             
             rows = cursor.fetchall()
             return [self._row_to_draft(row) for row in rows]
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def delete(self, draft_id: UUID) -> bool:
         """Delete a draft by its ID.
@@ -223,7 +327,8 @@ class DraftRepository:
         Returns:
             True if draft was deleted, False if not found
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         try:
             cursor = conn.execute("""
                 DELETE FROM draft_receipts
@@ -232,7 +337,8 @@ class DraftRepository:
             conn.commit()
             return cursor.rowcount > 0
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def get_by_image_ref(self, image_ref: str) -> Optional[DraftReceipt]:
         """Retrieve a draft by its image reference.
@@ -245,11 +351,13 @@ class DraftRepository:
         Returns:
             DraftReceipt if found, None otherwise
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error
                 FROM draft_receipts
                 WHERE image_ref = ?
                 ORDER BY created_at DESC
@@ -262,7 +370,8 @@ class DraftRepository:
             
             return self._row_to_draft(row)
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def get_by_ids(self, draft_ids: List[UUID]) -> List[DraftReceipt]:
         """Retrieve multiple drafts by their IDs (for bulk operations).
@@ -276,13 +385,15 @@ class DraftRepository:
         if not draft_ids:
             return []
         
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         conn.row_factory = sqlite3.Row
         try:
             # Create placeholders for IN clause
             placeholders = ",".join("?" * len(draft_ids))
             cursor = conn.execute(f"""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error
                 FROM draft_receipts
                 WHERE draft_id IN ({placeholders})
             """, [str(draft_id) for draft_id in draft_ids])
@@ -290,7 +401,8 @@ class DraftRepository:
             rows = cursor.fetchall()
             return [self._row_to_draft(row) for row in rows]
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def _row_to_draft(self, row: sqlite3.Row) -> DraftReceipt:
         """Convert a database row to a DraftReceipt object.
@@ -316,6 +428,18 @@ class DraftRepository:
         # Get image_data (may be None for legacy drafts or filesystem-based images)
         image_data = row["image_data"] if "image_data" in row.keys() else None
         
+        # Phase 5B.2: Get creator_user_id (may be None for legacy drafts)
+        creator_user_id = row["creator_user_id"] if "creator_user_id" in row.keys() else None
+        
+        # Phase 5C-1: Get failure recovery fields (may be None/0 for legacy drafts)
+        send_attempt_count = row["send_attempt_count"] if "send_attempt_count" in row.keys() else 0
+        last_send_attempt_at = (
+            datetime.fromisoformat(row["last_send_attempt_at"]) 
+            if "last_send_attempt_at" in row.keys() and row["last_send_attempt_at"] 
+            else None
+        )
+        last_send_error = row["last_send_error"] if "last_send_error" in row.keys() else None
+        
         # Create DraftReceipt
         return DraftReceipt(
             draft_id=UUID(row["draft_id"]),
@@ -326,6 +450,10 @@ class DraftRepository:
             sent_at=sent_at,
             image_ref=image_ref,
             image_data=image_data,
+            creator_user_id=creator_user_id,
+            send_attempt_count=send_attempt_count,
+            last_send_attempt_at=last_send_attempt_at,
+            last_send_error=last_send_error,
         )
 
     def count_by_status(self, status: DraftStatus) -> int:
@@ -337,7 +465,8 @@ class DraftRepository:
         Returns:
             Number of drafts with given status
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         try:
             cursor = conn.execute("""
                 SELECT COUNT(*) FROM draft_receipts
@@ -345,7 +474,8 @@ class DraftRepository:
             """, (status.value,))
             return cursor.fetchone()[0]
         finally:
-            conn.close()
+            if should_close:
+                conn.close()
 
     def clear_all(self) -> int:
         """Delete all drafts (for testing only).
@@ -356,10 +486,12 @@ class DraftRepository:
         Warning:
             This is a destructive operation. Use only in tests.
         """
-        conn = sqlite3.connect(self.db_path)
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
         try:
             cursor = conn.execute("DELETE FROM draft_receipts")
             conn.commit()
             return cursor.rowcount
         finally:
-            conn.close()
+            if should_close:
+                conn.close()

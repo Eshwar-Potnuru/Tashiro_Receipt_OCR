@@ -42,12 +42,10 @@ pytest==7.4.3
 pytest-asyncio==0.21.1
 httpx==0.25.2
 
-# Security (optional)
-# cryptography==41.0.7
-# pyjwt==2.8.0
-# bcrypt==4.0.1
-# passlib[bcrypt]==1.7.4
-# python-jose[cryptography]==3.3.0
+# Security (Phase 5B.1: Authentication)
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+bcrypt==4.0.1
 
 # Database (optional)
 # alembic==1.12.1
@@ -56,6 +54,9 @@ httpx==0.25.2
 
 # Google Cloud Vision API
 google-cloud-vision==3.7.2
+
+# Google Document AI API (for receipt processing)
+google-cloud-documentai==2.20.0
 
 # Visualization (optional for production)
 # matplotlib==3.8.0

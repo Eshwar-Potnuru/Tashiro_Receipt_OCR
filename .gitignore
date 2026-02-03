@@ -48,6 +48,9 @@ config/google_docai_key.json
 config/aim-tashiro-poc-*.json
 config/aim-tashiro-poc-09a7f137eb05.json
 config/aim-tashiro-poc-dec6e8e0cdb7.json
+
+# Phase 5D-4: Dev user seed file (contains test passwords)
+config/users_seed_dev.json
 backup_important/config/google_vision_key.json
 *.key
 *.pem
@@ -81,6 +84,12 @@ config/*.json
 !app/Data/accumulation/*.xlsx
 app/Data/accumulation/backups/
 *.pdf
+
+# Database files (can be large, regenerated locally)
+app/Data/*.db
+app/Data/*.db-journal
+app/Data/*.db-wal
+app/Data/*.db-shm
 
 # SSL certificates
 ssl/

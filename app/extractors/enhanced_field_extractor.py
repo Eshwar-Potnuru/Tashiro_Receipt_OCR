@@ -77,6 +77,17 @@ class EnhancedFieldExtractor:
             # Fill in missing fields without re-running OCR
             for key, value in pattern_fields.items():
                 if not result.get(key) and value:
+                    # Normalize tax category labels from fallback (e.g., 標準税率 -> 課税10%)
+                    if key == 'tax_category':
+                        norm = self._normalize_tax_category(value)
+                        if norm:
+                            result[key] = norm
+                            field_confidence[key] = {
+                                'source': 'pattern_fallback',
+                                'confidence': 0.45
+                            }
+                            logger.info(f"Used pattern fallback for {key}: {norm}")
+                            continue
                     result[key] = value
                     field_confidence[key] = {
                         'source': 'pattern_fallback',
@@ -114,6 +125,72 @@ class EnhancedFieldExtractor:
                     'confidence': 0.6
                 }
 
+        # Enhanced tax classification inference (simple heuristics)
+        if not result.get('tax_category'):
+            try:
+                tax_value = None
+                # extract structured tax/subtotal/total if available
+                if isinstance(structured_data, dict):
+                    tax_value = structured_data.get('tax') or structured_data.get('tax_amount')
+                    subtotal_value = structured_data.get('subtotal')
+                    total_value = structured_data.get('total')
+                else:
+                    subtotal_value = None
+                    total_value = None
+
+                def _to_float(s):
+                    if s is None:
+                        return None
+                    try:
+                        import re as _re
+                        ss = str(s)
+                        ss = _re.sub(r"[^0-9\.\-]", "", ss)
+                        return float(ss) if ss not in ("", "-") else None
+                    except Exception:
+                        return None
+
+                tax_f = _to_float(tax_value)
+                sub_f = _to_float(subtotal_value)
+                tot_f = _to_float(total_value)
+
+                # percent in raw_text
+                if raw_text:
+                    m = re.search(r"(\d{1,2})\s*%", raw_text)
+                    if m:
+                        perc = int(m.group(1))
+                        if perc in (8, 10):
+                            result['tax_category'] = f"課税{perc}%"
+                            field_confidence['tax_category'] = {'source': 'heuristic', 'confidence': 0.9}
+
+                # ratio heuristics
+                if not result.get('tax_category') and tax_f is not None and sub_f:
+                    rate = tax_f / sub_f if sub_f and sub_f != 0 else None
+                    if rate is not None:
+                        if abs(rate - 0.1) < 0.03:
+                            result['tax_category'] = '課税10%'
+                            field_confidence['tax_category'] = {'source': 'heuristic', 'confidence': 0.9}
+                        elif abs(rate - 0.08) < 0.03:
+                            result['tax_category'] = '課税8%'
+                            field_confidence['tax_category'] = {'source': 'heuristic', 'confidence': 0.9}
+
+                if not result.get('tax_category') and tax_f is not None and tot_f:
+                    rate2 = tax_f / tot_f if tot_f and tot_f != 0 else None
+                    if rate2 is not None:
+                        if abs(rate2 - 0.1) < 0.03:
+                            result['tax_category'] = '課税10%'
+                            field_confidence['tax_category'] = {'source': 'heuristic', 'confidence': 0.8}
+                        elif abs(rate2 - 0.08) < 0.03:
+                            result['tax_category'] = '課税8%'
+                            field_confidence['tax_category'] = {'source': 'heuristic', 'confidence': 0.8}
+
+                # presence of 内税/税込
+                if not result.get('tax_category') and raw_text and any(k in raw_text for k in ('税込', '内税')):
+                    # Normalize to canonical unknown tax label
+                    result['tax_category'] = '課税(不明)'
+                    field_confidence['tax_category'] = {'source': 'heuristic', 'confidence': 0.5}
+            except Exception as exc:
+                logger.debug('Tax inference failed: %s', exc)
+
         self._apply_vendor_overrides(result, field_confidence)
 
         result['field_confidence'] = field_confidence
@@ -121,6 +198,23 @@ class EnhancedFieldExtractor:
         logger.info(f"Final extracted fields: {result}")
         return result
     
+    def _normalize_tax_category(self, label: str) -> str | None:
+        """Normalize tax category labels from various extractors/fallbacks to canonical labels used across the system."""
+        if not label:
+            return None
+        l = str(label).strip()
+        # canonical mappings
+        if '標準' in l or '10%' in l or '課税10' in l:
+            return '課税10%'
+        if '軽減' in l or '8%' in l or '課税8' in l:
+            return '課税8%'
+        if '税込' in l or '内税' in l or l == '課税' or '不明' in l:
+            return '課税(不明)'
+        # Already canonical?
+        if l in ('課税10%', '課税8%', '課税(不明)'):
+            return l
+        return None
+
     def _extract_from_document_ai(self, entities: Dict[str, Any], confidence_scores: Dict[str, float]) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
         """Extract fields from Document AI entities"""
         result = {}

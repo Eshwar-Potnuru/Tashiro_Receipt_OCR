@@ -126,6 +126,33 @@ class DraftReceipt(BaseModel):
         description="Base64-encoded image data for Railway/cloud deployment. "
                     "Stores the actual image inline to avoid ephemeral filesystem issues.",
     )
+    
+    creator_user_id: Optional[str] = Field(
+        default=None,
+        description="Phase 5B.2: User ID of the user who created this draft. "
+                    "NULL for drafts created before Phase 5B.2 or by unauthenticated users. "
+                    "Stored as string (UUID) for compatibility with user.user_id.",
+    )
+    
+    # Phase 5C-1: Failure Recovery & Retry Fields
+    send_attempt_count: int = Field(
+        default=0,
+        description="Phase 5C-1: Number of send attempts for this draft. "
+                    "Incremented before each send attempt. "
+                    "0 = never attempted, 1+ = has been tried.",
+    )
+    
+    last_send_attempt_at: Optional[datetime] = Field(
+        default=None,
+        description="Phase 5C-1: Timestamp of last send attempt. "
+                    "Updated before each send. NULL if never attempted.",
+    )
+    
+    last_send_error: Optional[str] = Field(
+        default=None,
+        description="Phase 5C-1: Last error message from failed send attempt. "
+                    "Cleared on successful send. NULL if no errors or never attempted.",
+    )
 
     class Config:
         """Pydantic configuration."""

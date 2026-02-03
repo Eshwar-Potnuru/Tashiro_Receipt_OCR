@@ -247,6 +247,8 @@ class Receipt(BaseModel):
     total_amount: Optional[Decimal] = None
     tax_10_amount: Optional[Decimal] = None
     tax_8_amount: Optional[Decimal] = None
+    tax_category: Optional[str] = None  # 税区分 - Tax Category (標準税率/軽減税率)
+    account_title: Optional[str] = None  # 勘定科目 - Account Title (食費/交通費/etc)
     memo: Optional[str] = None
 
     business_location_id: Optional[str] = None  # canonical stable key
@@ -258,6 +260,14 @@ class Receipt(BaseModel):
 
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+
+    model_config = {
+        "json_encoders": {
+            UUID: str,
+            Decimal: str,
+            datetime: lambda v: v.isoformat() if v else None,
+        }
+    }
 
     @field_validator("receipt_date")
     @classmethod

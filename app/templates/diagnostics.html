@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt OCR - System Diagnostics</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        h1 { color: #1e293b; }
+        h2 { color: #475569; margin-top: 32px; }
+        .section {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .status { display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 14px; font-weight: 600; }
+        .status-ok { background: #dcfce7; color: #166534; }
+        .status-error { background: #fee2e2; color: #991b1b; }
+        .status-warning { background: #fef3c7; color: #92400e; }
+        .test-button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        .test-button:hover { background: #2563eb; }
+        .result { margin-top: 12px; padding: 12px; background: #f1f5f9; border-radius: 4px; font-family: monospace; font-size: 13px; }
+        pre { background: #1e293b; color: #e2e8f0; padding: 16px; border-radius: 6px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 8px; border-bottom: 1px solid #e2e8f0; }
+        th { font-weight: 600; color: #475569; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Receipt OCR System Diagnostics</h1>
+    
+    <div class="section">
+        <h2>1. Authentication Status</h2>
+        <div id="authStatus"></div>
+        <button class="test-button" onclick="testLogin()">Test Login</button>
+        <button class="test-button" onclick="clearAuth()">Clear Auth</button>
+        <div id="authResult" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="section">
+        <h2>2. OCR Engine Settings</h2>
+        <div id="ocrSettings"></div>
+        <button class="test-button" onclick="setEngine('auto')">Set: Hybrid (Auto)</button>
+        <button class="test-button" onclick="setEngine('standard')">Set: Standard</button>
+        <button class="test-button" onclick="setEngine('document_ai')">Set: Document AI</button>
+    </div>
+    
+    <div class="section">
+        <h2>3. API Endpoints Test</h2>
+        <button class="test-button" onclick="testEndpoint('/api/auth/login', 'POST')">Test Login Endpoint</button>
+        <button class="test-button" onclick="testEndpoint('/api/drafts/batch-upload', 'POST')">Test Upload Endpoint</button>
+        <div id="endpointResult" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="section">
+        <h2>4. LocalStorage Inspection</h2>
+        <div id="localStorageInfo"></div>
+        <button class="test-button" onclick="showLocalStorage()">Refresh</button>
+        <button class="test-button" onclick="clearLocalStorage()">Clear All LocalStorage</button>
+    </div>
+    
+    <div class="section">
+        <h2>5. Quick Upload Test</h2>
+        <p>Upload a receipt image to test the complete flow:</p>
+        <input type="file" id="testFileInput" accept="image/*">
+        <button class="test-button" onclick="testUpload()">Test Upload</button>
+        <div id="uploadResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        const BASE_URL = 'http://127.0.0.1:8001';
+        
+        function apiFetch(url, options = {}) {
+            const token = localStorage.getItem('auth_token');
+            if (token && !url.includes('/auth/')) {
+                options.headers = {
+                    ...options.headers,
+                    'Authorization': `Bearer ${token}`
+                };
+            }
+            return fetch(url, options);
+        }
+        
+        function checkAuthStatus() {
+            const token = localStorage.getItem('auth_token');
+            const user = localStorage.getItem('tashiro_user');
+            
+            let html = '';
+            if (token) {
+                html += '<div class="status status-ok">✓ Token Found</div><br><br>';
+                html += `<strong>Token:</strong><br><code style="font-size:11px;">${token.substring(0, 100)}...</code>`;
+                
+                if (user) {
+                    const userData = JSON.parse(user);
+                    html += '<br><br><strong>User Data:</strong><br>';
+                    html += `Name: ${userData.name}<br>`;
+                    html += `Email: ${userData.email || '(none)'}<br>`;
+                    html += `Employee ID: ${userData.employeeId || '(none)'}`;
+                }
+            } else {
+                html += '<div class="status status-error">✗ Not Authenticated</div>';
+                html += '<p>No auth token found in localStorage. Please login first.</p>';
+            }
+            
+            document.getElementById('authStatus').innerHTML = html;
+        }
+        
+        function checkOcrSettings() {
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            const engine = settings.ocrEngine || 'auto';
+            
+            const engineNames = {
+                'auto': 'Hybrid (Auto)',
+                'standard': 'Standard Engines',
+                'document_ai': 'Document AI'
+            };
+            
+            let html = '';
+            html += `<strong>Current Engine:</strong> ${engineNames[engine] || engine}<br>`;
+            html += `<strong>Raw Value:</strong> <code>${engine}</code>`;
+            
+            document.getElementById('ocrSettings').innerHTML = html;
+        }
+        
+        function setEngine(engine) {
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            settings.ocrEngine = engine;
+            localStorage.setItem('tashiro_settings', JSON.stringify(settings));
+            checkOcrSettings();
+            alert(`OCR Engine set to: ${engine}`);
+        }
+        
+        async function testLogin() {
+            const result = document.getElementById('authResult');
+            result.style.display = 'block';
+            result.textContent = 'Testing login...';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'TIW-WJJ5N',
+                        password: 'password123'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    localStorage.setItem('auth_token', data.access_token);
+                    localStorage.setItem('tashiro_user', JSON.stringify({
+                        name: data.user.name,
+                        email: data.user.email,
+                        employeeId: data.user.login_id
+                    }));
+                    
+                    result.textContent = `✓ Login successful!\nUser: ${data.user.name}\nRole: ${data.user.role}`;
+                    checkAuthStatus();
+                } else {
+                    result.textContent = `✗ Login failed: ${data.detail || 'Unknown error'}`;
+                }
+            } catch (error) {
+                result.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+        
+        function clearAuth() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('tashiro_user');
+            checkAuthStatus();
+            alert('Authentication cleared!');
+        }
+        
+        async function testEndpoint(path, method) {
+            const result = document.getElementById('endpointResult');
+            result.style.display = 'block';
+            result.textContent = `Testing ${method} ${path}...`;
+            
+            try {
+                const response = await apiFetch(`${BASE_URL}${path}`, {
+                    method: method
+                });
+                
+                result.textContent = `Status: ${response.status} ${response.statusText}\n`;
+                result.textContent += `Headers: ${JSON.stringify(Object.fromEntries(response.headers), null, 2)}`;
+                
+                if (response.status === 422) {
+                    result.textContent += '\n\n✓ Endpoint accessible (422 = validation error, expected without data)';
+                } else if (response.status === 401) {
+                    result.textContent += '\n\n✗ Authentication required or token invalid';
+                } else {
+                    try {
+                        const data = await response.json();
+                        result.textContent += '\n\nResponse:\n' + JSON.stringify(data, null, 2);
+                    } catch {}
+                }
+            } catch (error) {
+                result.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+        
+        function showLocalStorage() {
+            const keys = Object.keys(localStorage);
+            let html = '<table><thead><tr><th>Key</th><th>Size (bytes)</th><th>Preview</th></tr></thead><tbody>';
+            
+            for (const key of keys) {
+                const value = localStorage.getItem(key);
+                const size = new Blob([value]).size;
+                const preview = value.length > 100 ? value.substring(0, 100) + '...' : value;
+                html += `<tr><td><strong>${key}</strong></td><td>${size}</td><td style="font-size:11px;"><code>${preview}</code></td></tr>`;
+            }
+            
+            html += '</tbody></table>';
+            html += `<br><strong>Total items:</strong> ${keys.length}`;
+            
+            document.getElementById('localStorageInfo').innerHTML = html;
+        }
+        
+        function clearLocalStorage() {
+            if (confirm('Clear ALL localStorage data? This will log you out.')) {
+                localStorage.clear();
+                showLocalStorage();
+                checkAuthStatus();
+                checkOcrSettings();
+                alert('LocalStorage cleared!');
+            }
+        }
+        
+        async function testUpload() {
+            const fileInput = document.getElementById('testFileInput');
+            const result = document.getElementById('uploadResult');
+            
+            if (!fileInput.files.length) {
+                alert('Please select a file first');
+                return;
+            }
+            
+            result.style.display = 'block';
+            result.textContent = 'Uploading...';
+            
+            const file = fileInput.files[0];
+            const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+            const engine = settings.ocrEngine || 'auto';
+            
+            const formData = new FormData();
+            formData.append('files', file);
+            formData.append('ocr_engine', engine);
+            
+            try {
+                const response = await apiFetch(`${BASE_URL}/api/drafts/batch-upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    result.textContent = `✓ Upload successful!\n\nTotal: ${data.total}\nSucceeded: ${data.succeeded}\nFailed: ${data.failed}\n\n` +
+                                        JSON.stringify(data.results, null, 2);
+                } else {
+                    result.textContent = `✗ Upload failed: ${data.detail || 'Unknown error'}`;
+                }
+            } catch (error) {
+                result.textContent = `✗ Error: ${error.message}`;
+            }
+        }
+        
+        // Initialize
+        checkAuthStatus();
+        checkOcrSettings();
+        showLocalStorage();
+    </script>
+</body>
+</html>

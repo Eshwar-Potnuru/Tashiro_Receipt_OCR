@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Receipt OCR — Business Office</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            padding-bottom: 80px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .top-bar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .top-bar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .top-bar-subtitle {
+            font-size: 12px;
+            color: var(--gray-600);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logout-btn:active {
+            opacity: 0.8;
+        }
+
+        /* Filters */
+        .filters-section {
+            background: white;
+            padding: 16px;
+            margin: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filter-chips {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .filter-chip {
+            padding: 8px 16px;
+            border-radius: 20px;
+            border: 1px solid var(--gray-300);
+            background: white;
+            color: var(--gray-700);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .filter-chip.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-600);
+        }
+
+        /* Stats */
+        .stats-row {
+            display: flex;
+            gap: 12px;
+            margin: 16px;
+        }
+
+        .stat-card {
+            flex: 1;
+            background: white;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-600);
+            margin-top: 4px;
+        }
+
+        /* Draft List */
+        .drafts-container {
+            padding: 0 16px;
+        }
+
+        .draft-card {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .draft-card:active {
+            transform: scale(0.98);
+        }
+
+        .draft-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .draft-vendor {
+            font-weight: 600;
+            font-size: 16px;
+            color: var(--gray-900);
+        }
+
+        .draft-status-badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .draft-status-badge.draft {
+            background: var(--warning);
+            color: white;
+        }
+
+        .draft-status-badge.sent {
+            background: var(--success);
+            color: white;
+        }
+
+        .draft-status-badge.error {
+            background: var(--danger);
+            color: white;
+        }
+
+        .draft-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+
+        .draft-detail-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .draft-total {
+            font-weight: 600;
+            color: var(--primary);
+            font-size: 14px;
+        }
+
+        /* Detail Drawer */
+        .drawer-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+        }
+
+        .drawer-overlay.show {
+            display: block;
+        }
+
+        .detail-drawer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            max-height: 85vh;
+            background: white;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -4px 20px rgba(0,0,0,0.2);
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 201;
+            overflow-y: auto;
+        }
+
+        .detail-drawer.show {
+            transform: translateY(0);
+        }
+
+        .drawer-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--gray-300);
+            border-radius: 2px;
+            margin: 12px auto;
+        }
+
+        .drawer-content {
+            padding: 20px;
+        }
+
+        .drawer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .drawer-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .close-drawer-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--gray-600);
+            cursor: pointer;
+        }
+
+        .preview-section {
+            margin-bottom: 20px;
+        }
+
+        .preview-image {
+            width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+            border-radius: 8px;
+            background: var(--gray-100);
+        }
+
+        .no-preview {
+            text-align: center;
+            padding: 40px;
+            background: var(--gray-100);
+            border-radius: 8px;
+            color: var(--gray-600);
+        }
+
+        .detail-section {
+            margin-bottom: 20px;
+        }
+
+        .detail-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 12px;
+        }
+
+        .detail-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+        }
+
+        .detail-label {
+            font-size: 13px;
+            color: var(--gray-600);
+        }
+
+        .detail-value {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        /* Action Buttons */
+        .drawer-actions {
+            display: flex;
+            gap: 12px;
+            padding: 20px;
+            border-top: 1px solid var(--gray-200);
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-primary:disabled,
+        .btn-success:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Loading */
+        .loading-spinner {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            color: var(--gray-600);
+        }
+
+        .spinner {
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            color: var(--gray-300);
+            margin-bottom: 16px;
+        }
+
+        .empty-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 8px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--gray-600);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-900);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 300;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: var(--danger);
+        }
+
+        /* Top actions (refresh, last-updated) */
+        .top-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .top-refresh-btn {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-300);
+            background: white;
+            color: var(--gray-700);
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .last-updated {
+            font-size: 12px;
+            color: var(--gray-600);
+        }
+
+        /* Bulk action bar */
+        .bulk-bar {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            border-top: 1px solid var(--gray-200);
+            padding: 10px 16px;
+            display: none;
+            z-index: 350;
+            box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+        }
+
+        .bulk-bar.show {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .bulk-send-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        /* Fullscreen preview overlay */
+        .fs-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.9);
+            z-index: 500;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .fs-overlay.show {
+            display: flex;
+        }
+
+        .fs-image {
+            max-width: 98%;
+            max-height: 98%;
+            object-fit: contain;
+            border-radius: 6px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.6);
+        }
+
+        /* Forbidden Screen */
+        .forbidden-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: white;
+            z-index: 400;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .forbidden-screen.show {
+            display: flex;
+        }
+
+        .forbidden-icon {
+            font-size: 80px;
+            color: var(--danger);
+            margin-bottom: 24px;
+        }
+
+        .forbidden-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 12px;
+        }
+
+        .forbidden-text {
+            font-size: 16px;
+            color: var(--gray-600);
+            margin-bottom: 32px;
+        }
+
+        .forbidden-btn {
+            padding: 14px 32px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <!-- Forbidden Screen -->
+    <div class="forbidden-screen" id="forbiddenScreen">
+        <div class="forbidden-icon">
+            <i class="fas fa-ban"></i>
+        </div>
+        <div class="forbidden-title">Access Denied</div>
+        <div class="forbidden-text">You don't have permission to access this page.<br>This page is for Business Office staff only.</div>
+        <button class="forbidden-btn" onclick="window.location='/mobile'">
+            <i class="fas fa-arrow-left"></i> Go to Worker Page
+        </button>
+    </div>
+
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-content">
+            <div>
+                <div class="top-bar-title">
+                    <i class="fas fa-building"></i> Receipt OCR — Business Office
+                </div>
+                <div class="top-bar-subtitle">Monitor & Review Mode</div>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="userName">Loading...</span>
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <div class="top-actions">
+            <div class="last-updated">Last updated: <span id="lastUpdated">—</span></div>
+            <div>
+                <button class="top-refresh-btn" id="topRefreshBtn" aria-label="Refresh drafts">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+        </div>
+        <div class="filter-chips">
+            <button class="filter-chip active" data-filter="all" aria-label="Show all">
+                <i class="fas fa-list"></i> All
+            </button>
+            <button class="filter-chip" data-filter="draft" aria-label="Show drafts">
+                <i class="fas fa-edit"></i> Draft
+            </button>
+            <button class="filter-chip" data-filter="sent" aria-label="Show sent">
+                <i class="fas fa-check-circle"></i> Sent
+            </button>
+            <button class="filter-chip" data-filter="error" aria-label="Show errors">
+                <i class="fas fa-exclamation-circle"></i> Errors
+            </button>
+        </div>
+        <div class="search-box">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-input" id="searchInput" placeholder="Search by worker, vendor, invoice..." aria-label="Search drafts">
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+        <div class="stat-card">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statDraft">0</div>
+            <div class="stat-label">Draft</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statSent">0</div>
+            <div class="stat-label">Sent</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="statErrors">0</div>
+            <div class="stat-label">Errors</div>
+        </div>
+    </div>
+
+    <!-- Draft List -->
+    <div class="drafts-container" id="draftsContainer">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+        </div>
+    </div>
+
+    <!-- Bulk Action Bar -->
+    <div class="bulk-bar" id="bulkBar" role="region" aria-live="polite">
+        <div id="selectedCount">0 selected</div>
+        <div>
+            <button class="bulk-send-btn" id="bulkSendBtn" disabled aria-label="Send selected drafts">
+                <i class="fas fa-paper-plane"></i> Send Selected
+            </button>
+        </div>
+    </div>
+
+    <!-- Detail Drawer -->
+    <div class="drawer-overlay" id="drawerOverlay"></div>
+    <div class="detail-drawer" id="detailDrawer">
+        <div class="drawer-handle"></div>
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <div class="drawer-title" id="drawerTitle">Draft Details</div>
+                <button class="close-drawer-btn" id="closeDrawerBtn">&times;</button>
+            </div>
+
+            <div class="preview-section" id="previewSection">
+                <!-- Preview will be inserted here -->
+            </div>
+
+            <div class="detail-section">
+                <div class="detail-section-title">Basic Information</div>
+                <div class="detail-grid" id="basicDetails">
+                    <!-- Details will be inserted here -->
+                </div>
+            </div>
+
+            <div class="detail-section" id="retrySection" style="display:none;">
+                <div class="detail-section-title">Send Status</div>
+                <div class="detail-grid" id="retryDetails">
+                    <!-- Retry info will be inserted here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="drawer-actions">
+            <button class="action-btn btn-secondary" id="refreshBtn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button class="action-btn btn-success" id="sendBtn" disabled>
+                <i class="fas fa-paper-plane"></i> Send
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Fullscreen Preview Overlay -->
+    <div class="fs-overlay" id="fsOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+        <img id="fsImage" class="fs-image" alt="Full screen preview">
+    </div>
+
+    <script>
+        // Global state
+        let allDrafts = [];
+        let filteredDrafts = [];
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let currentDraftId = null;
+        let userRole = null;
+        let selectedDrafts = new Set();
+
+        // DOM elements we'll reference for new UX
+        const lastUpdatedEl = document.getElementById('lastUpdated');
+        const topRefreshBtn = document.getElementById('topRefreshBtn');
+        const bulkBar = document.getElementById('bulkBar');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const bulkSendBtn = document.getElementById('bulkSendBtn');
+        const fsOverlay = document.getElementById('fsOverlay');
+        const fsImage = document.getElementById('fsImage');
+
+        // DOM elements
+        const userName = document.getElementById('userName');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const filterChips = document.querySelectorAll('.filter-chip');
+        const searchInput = document.getElementById('searchInput');
+        const draftsContainer = document.getElementById('draftsContainer');
+        const drawerOverlay = document.getElementById('drawerOverlay');
+        const detailDrawer = document.getElementById('detailDrawer');
+        const closeDrawerBtn = document.getElementById('closeDrawerBtn');
+        const refreshBtn = document.getElementById('refreshBtn');
+        const sendBtn = document.getElementById('sendBtn');
+        const toast = document.getElementById('toast');
+        const forbiddenScreen = document.getElementById('forbiddenScreen');
+
+        // Stats elements
+        const statTotal = document.getElementById('statTotal');
+        const statDraft = document.getElementById('statDraft');
+        const statSent = document.getElementById('statSent');
+        const statErrors = document.getElementById('statErrors');
+
+        // Check auth and role on load
+        async function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            
+            if (!token) {
+                window.location = '/mobile';
+                return false;
+            }
+
+            try {
+                // Decode JWT to get role (basic decode, no verification needed for client-side check)
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                userRole = payload.role;
+                
+                // Hard gate: only ADMIN and HQ can access
+                if (userRole !== 'ADMIN' && userRole !== 'HQ') {
+                    forbiddenScreen.classList.add('show');
+                    setTimeout(() => {
+                        window.location = '/mobile';
+                    }, 3000);
+                    return false;
+                }
+
+                // Display user info
+                userName.textContent = payload.name || payload.email;
+                return true;
+            } catch (error) {
+                console.error('Auth check failed:', error);
+                window.location = '/mobile';
+                return false;
+            }
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toastEl = document.getElementById('toast');
+            toastEl.textContent = message;
+            toastEl.className = `toast ${type} show`;
+            
+            setTimeout(() => {
+                toastEl.classList.remove('show');
+            }, 3000);
+        }
+
+        // Fetch drafts
+        async function fetchDrafts() {
+            const token = localStorage.getItem('auth_token');
+            console.log('[fetchDrafts] Starting fetch with token:', !!token);
+            
+            try {
+                console.log('[fetchDrafts] Calling /api/drafts endpoint...');
+                const response = await fetch('/api/drafts', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    cache: 'no-store'
+                });
+
+                console.log('[fetchDrafts] Response status:', response.status, response.ok);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: Failed to fetch drafts`);
+                }
+
+                const data = await response.json();
+                console.log('[fetchDrafts] Received data:', data.length, 'drafts');
+                allDrafts = data;
+                // Clear selection on new load
+                selectedDrafts.clear();
+                updateBulkBar();
+                updateStats();
+                applyFilters();
+                // Update last-updated timestamp
+                if (lastUpdatedEl) lastUpdatedEl.textContent = new Date().toLocaleTimeString();
+            } catch (error) {
+                console.error('[fetchDrafts] Error:', error.message, error);
+                showToast('Failed to load drafts: ' + error.message, 'error');
+                draftsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                        <div class="empty-title">Error Loading Drafts</div>
+                        <div class="empty-text">${error.message}</div>
+                        <div class="empty-text" style="font-size: 12px; margin-top: 8px; color: var(--gray-600);">Check browser console for details</div>
+                    </div>
+                `;
+            }
+        }
+
+        // Update stats
+        function updateStats() {
+            const draftCount = allDrafts.filter(d => d.status === 'DRAFT').length;
+            const sentCount = allDrafts.filter(d => d.status === 'SENT').length;
+            const errorCount = allDrafts.filter(d => d.last_send_error ? true : false).length;
+
+            statTotal.textContent = allDrafts.length;
+            statDraft.textContent = draftCount;
+            statSent.textContent = sentCount;
+            statErrors.textContent = errorCount;
+        }
+
+        // Apply filters
+        function applyFilters() {
+            filteredDrafts = allDrafts.filter(draft => {
+                // Filter by status
+                if (currentFilter === 'draft' && draft.status !== 'DRAFT') return false;
+                if (currentFilter === 'sent' && draft.status !== 'SENT') return false;
+                // Only show drafts with actual send errors when error filter is active
+                if (currentFilter === 'error' && !draft.last_send_error) return false;
+
+                // Filter by search
+                if (searchQuery) {
+                    const query = searchQuery.toLowerCase();
+                    // Phase 5E.1: Search by vendor, invoice, worker login_id, worker name, or email
+                    const vendorText = draft.vendor || (draft.receipt && (draft.receipt.vendor || draft.receipt.vendor_name)) || '';
+                    const invoiceText = draft.invoice_number || (draft.receipt && (draft.receipt.invoice_number || draft.receipt.invoice)) || '';
+                    const workerLoginId = draft.creator_login_id || '';
+                    const workerName = draft.creator_name || '';
+                    const userEmailText = draft.user_email || '';
+                    
+                    const searchText = [
+                        vendorText,
+                        invoiceText,
+                        workerLoginId,
+                        workerName,
+                        userEmailText
+                    ].join(' ').toLowerCase();
+                    
+                    if (!searchText.includes(query)) return false;
+                }
+
+                return true;
+            });
+
+            renderDrafts();
+        }
+
+        // Render drafts
+        function renderDrafts() {
+            if (filteredDrafts.length === 0) {
+                draftsContainer.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon"><i class="fas fa-inbox"></i></div>
+                        <div class="empty-title">No Drafts Found</div>
+                        <div class="empty-text">Try adjusting your filters or search query</div>
+                    </div>
+                `;
+                return;
+            }
+
+            const html = filteredDrafts.map(draft => {
+                // Ensure status is properly lowercased for CSS class matching
+                const statusValue = draft.status ? draft.status.toUpperCase() : 'DRAFT';
+                const statusClass = statusValue === 'SENT' ? 'sent' : 
+                                   statusValue === 'DRAFT' ? 'draft' : 'draft';
+                // Only mark as error if there's an actual send error message
+                const hasError = draft.last_send_error ? true : false;
+                const displayStatus = hasError ? 'error' : statusClass;
+                const checked = selectedDrafts.has(draft.draft_id) ? 'checked' : '';
+
+                // DEBUG: Log status for troubleshooting
+                if (draft.draft_id && filteredDrafts.indexOf(draft) < 3) {
+                    console.log('Draft status:', { draft_id: draft.draft_id.substring(0, 8), status: draft.status, statusClass, displayStatus, hasError, last_send_error: draft.last_send_error });
+                }
+
+                // Phase 5E.1: Prefer flattened fields, with nested fallback
+                // Vendor: use vendor field, fallback to receipt.vendor
+                const vendorText = draft.vendor || (draft.receipt && (draft.receipt.vendor || draft.receipt.vendor_name)) || 'Unknown Vendor';
+                
+                // Invoice: use invoice_number, fallback to receipt fields
+                const invoiceText = draft.invoice_number || (draft.receipt && (draft.receipt.invoice_number || draft.receipt.invoice)) || 'No Invoice';
+                
+                // Phase 5E.1: Worker identity - use login_id or name, NOT UUID
+                const workerText = draft.creator_login_id || draft.creator_name || draft.user_email || 'Unknown Worker';
+                
+                // Total amount
+                const totalAmount = draft.total_amount != null ? draft.total_amount : (draft.receipt && draft.receipt.total_amount) || 0;
+
+                // Status badge text: capitalize first letter
+                const statusText = hasError ? 'Error' : (draft.status.charAt(0).toUpperCase() + draft.status.slice(1).toLowerCase());
+
+                return `
+                    <div class="draft-card" data-id="${draft.draft_id}">
+                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                            <input type="checkbox" class="draft-select" data-id="${draft.draft_id}" ${checked} aria-label="Select draft ${draft.draft_id}">
+                            <div style="flex:1">
+                                <div class="draft-header">
+                                    <div class="draft-vendor">${vendorText}</div>
+                                    <div class="draft-status-badge ${displayStatus}" style="background-color: ${displayStatus === 'sent' ? '#10b981' : displayStatus === 'error' ? '#ef4444' : '#f59e0b'};">${statusText}</div>
+                                </div>
+                                <div class="draft-details" style="margin-top:8px;">
+                                    <div class="draft-detail-item">
+                                        <i class="fas fa-user"></i>
+                                        <span>${workerText}</span>
+                                    </div>
+                                    <div class="draft-detail-item">
+                                        <i class="fas fa-calendar"></i>
+                                        <span>${new Date(draft.created_at).toLocaleDateString()}</span>
+                                    </div>
+                                    <div class="draft-detail-item">
+                                        <i class="fas fa-file-invoice"></i>
+                                        <span>${invoiceText}</span>
+                                    </div>
+                                    <div class="draft-detail-item draft-total">
+                                        <i class="fas fa-yen-sign"></i>
+                                        <span>¥${(totalAmount || 0).toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            draftsContainer.innerHTML = html;
+
+            // Add click handlers
+            document.querySelectorAll('.draft-card').forEach(card => {
+                card.addEventListener('click', (evt) => {
+                    // Avoid triggering detail open when clicking the checkbox
+                    if (evt.target.closest('.draft-select')) return;
+                    const draftId = card.getAttribute('data-id');
+                    showDraftDetail(draftId);
+                });
+            });
+
+            // Wire up selection checkboxes
+            document.querySelectorAll('.draft-select').forEach(cb => {
+                cb.addEventListener('change', (e) => {
+                    const id = cb.getAttribute('data-id');
+                    if (cb.checked) selectedDrafts.add(id);
+                    else selectedDrafts.delete(id);
+                    updateBulkBar();
+                });
+            });
+        }
+
+        // Show draft detail
+        async function showDraftDetail(draftId) {
+            const draft = allDrafts.find(d => d.draft_id === draftId);
+            if (!draft) return;
+
+            currentDraftId = draftId;
+
+            // Phase 5E.1: Use correct data mapping - vendor from receipt.vendor or receipt.vendor_name
+            const vendorText = draft.vendor || (draft.receipt && (draft.receipt.vendor || draft.receipt.vendor_name)) || 'Unknown Vendor';
+            const invoiceText = draft.invoice_number || (draft.receipt && (draft.receipt.invoice_number || draft.receipt.invoice)) || 'N/A';
+            const dateText = draft.receipt_date || (draft.receipt && (draft.receipt.date || draft.receipt.receipt_date)) || 'N/A';
+            const totalAmt = draft.total_amount != null ? draft.total_amount : (draft.receipt && draft.receipt.total_amount) || 0;
+            const taxAmt = draft.tax_amount != null ? draft.tax_amount : (draft.receipt && draft.receipt.tax_amount) || 0;
+            
+            // Phase 5E.1: Worker identity - use login_id or name, NOT UUID
+            const workerText = draft.creator_login_id || draft.creator_name || draft.user_email || 'Unknown Worker';
+            const emailText = draft.user_email || 'N/A';
+
+            // Update drawer title
+            document.getElementById('drawerTitle').textContent = vendorText;
+
+            // Phase 5E.1: Fetch full draft details with image_data on-demand
+            // List endpoint doesn't include image_data to avoid memory issues
+            // Individual GET endpoint includes image_data for preview
+            const previewSection = document.getElementById('previewSection');
+            previewSection.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: center; padding: 20px;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px; color: var(--primary);"></i>
+                    <span style="margin-left: 10px;">Loading preview...</span>
+                </div>
+            `;
+            
+            // Fetch full draft details with image_data
+            try {
+                const token = localStorage.getItem('auth_token');
+                const response = await fetch(`/api/drafts/${draftId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const fullDraft = await response.json();
+                    
+                    console.log('Draft preview check:', {
+                        draft_id: fullDraft.draft_id.substring(0, 8),
+                        has_image_data: !!fullDraft.image_data,
+                        image_data_type: fullDraft.image_data ? typeof fullDraft.image_data : 'none',
+                        image_data_length: fullDraft.image_data ? fullDraft.image_data.length : 0,
+                        image_data_starts_with: fullDraft.image_data ? fullDraft.image_data.substring(0, 20) : 'none'
+                    });
+                    
+                    if (fullDraft.image_data && fullDraft.image_data.trim().length > 0) {
+                        // Normalize base64: may or may not have data URI prefix
+                        let imageSrc = fullDraft.image_data.trim();
+                        if (!imageSrc.startsWith('data:image/')) {
+                            imageSrc = `data:image/jpeg;base64,${imageSrc}`;
+                        }
+                        previewSection.innerHTML = `
+                            <img class="preview-image" src="${imageSrc}" alt="Receipt preview" onclick="openFullScreenPreview('${imageSrc.replace(/'/g, "\\'")})" style="cursor:pointer; max-width: 100%;">
+                        `;
+                    } else {
+                        previewSection.innerHTML = `
+                            <div class="no-preview">
+                                <i class="fas fa-image" style="font-size: 48px; color: var(--gray-400); margin-bottom: 12px;"></i>
+                                <div>No preview available</div>
+                            </div>
+                        `;
+                    }
+                } else {
+                    console.error('Failed to fetch draft details:', response.status);
+                    previewSection.innerHTML = `
+                        <div class="no-preview">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); margin-bottom: 12px;"></i>
+                            <div>Failed to load preview</div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error fetching draft image:', error);
+                previewSection.innerHTML = `
+                    <div class="no-preview">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); margin-bottom: 12px;"></i>
+                        <div>Error loading preview</div>
+                    </div>
+                `;
+            }
+
+            // Basic details
+            const basicDetails = document.getElementById('basicDetails');
+            basicDetails.innerHTML = `
+                <div class="detail-row">
+                    <span class="detail-label">Vendor</span>
+                    <span class="detail-value">${vendorText}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Invoice Number</span>
+                    <span class="detail-value">${invoiceText}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">${dateText}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Total Amount</span>
+                    <span class="detail-value">¥${(totalAmt || 0).toLocaleString()}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Tax</span>
+                    <span class="detail-value">¥${(taxAmt || 0).toLocaleString()}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Worker</span>
+                    <span class="detail-value">${workerText}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Email</span>
+                    <span class="detail-value">${emailText}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value">${draft.status}</span>
+                </div>
+            `;
+
+            // Retry section
+            const retrySection = document.getElementById('retrySection');
+            const retryDetails = document.getElementById('retryDetails');
+            
+            if (draft.last_send_error || draft.send_attempt_count > 0) {
+                retrySection.style.display = 'block';
+                retryDetails.innerHTML = `
+                    <div class="detail-row">
+                        <span class="detail-label">Send Attempts</span>
+                        <span class="detail-value">${draft.send_attempt_count || 0}</span>
+                    </div>
+                    ${draft.last_send_error ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Last Error</span>
+                            <span class="detail-value" style="color: var(--danger);">${draft.last_send_error}</span>
+                        </div>
+                    ` : ''}
+                `;
+            } else {
+                retrySection.style.display = 'none';
+            }
+
+            // Phase 5E.1: Admin/HQ can send drafts but with clear visual state
+            // Read-only context shown in title bar
+            sendBtn.disabled = draft.status !== 'DRAFT';
+            sendBtn.textContent = draft.status === 'DRAFT' ? ' Send' : ' Already Sent';
+            sendBtn.innerHTML = draft.status === 'DRAFT' 
+                ? '<i class="fas fa-paper-plane"></i> Send'
+                : '<i class="fas fa-check"></i> Already Sent';
+
+            // Show drawer
+            drawerOverlay.classList.add('show');
+            detailDrawer.classList.add('show');
+            // Move focus to close button for accessibility
+            setTimeout(() => { if (closeDrawerBtn) closeDrawerBtn.focus(); }, 200);
+        }
+
+        // Close drawer
+        function closeDrawer() {
+            drawerOverlay.classList.remove('show');
+            detailDrawer.classList.remove('show');
+            currentDraftId = null;
+        }
+
+        // Toggle bulk bar visibility and update selected count
+        function updateBulkBar() {
+            const count = selectedDrafts.size;
+            selectedCountEl.textContent = `${count} selected`;
+            if (count > 0) {
+                bulkBar.classList.add('show');
+                bulkSendBtn.disabled = false;
+            } else {
+                bulkBar.classList.remove('show');
+                bulkSendBtn.disabled = true;
+            }
+        }
+
+        // Send selected drafts in bulk
+        async function sendSelected() {
+            const ids = Array.from(selectedDrafts);
+            if (ids.length === 0) return;
+
+            const token = localStorage.getItem('auth_token');
+            bulkSendBtn.disabled = true;
+            bulkSendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                const response = await fetch('/api/drafts/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ draft_ids: ids })
+                });
+
+                if (!response.ok) throw new Error('Failed to send selected drafts');
+                const result = await response.json();
+                showToast(`Sent ${result.sent}/${result.total} drafts`, 'success');
+                selectedDrafts.clear();
+                updateBulkBar();
+                await fetchDrafts();
+            } catch (error) {
+                console.error('Bulk send failed:', error);
+                showToast('Bulk send failed: ' + error.message, 'error');
+                bulkSendBtn.disabled = false;
+                bulkSendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Selected';
+            }
+        }
+
+        // Fullscreen preview open/close
+        function openFullScreenPreview(src) {
+            if (!fsOverlay || !fsImage) return;
+            fsImage.src = src;
+            fsOverlay.classList.add('show');
+            fsOverlay.setAttribute('aria-hidden', 'false');
+        }
+
+        function closeFullScreenPreview() {
+            if (!fsOverlay || !fsImage) return;
+            fsOverlay.classList.remove('show');
+            fsOverlay.setAttribute('aria-hidden', 'true');
+            fsImage.src = '';
+        }
+
+        // ESC to close drawer or fullscreen
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (fsOverlay && fsOverlay.classList.contains('show')) {
+                    closeFullScreenPreview();
+                } else {
+                    closeDrawer();
+                }
+            }
+        });
+        // Send draft
+        async function sendDraft() {
+            if (!currentDraftId) return;
+
+            const token = localStorage.getItem('auth_token');
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                const response = await fetch('/api/drafts/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ draft_ids: [currentDraftId] })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to send draft');
+                }
+
+                const result = await response.json();
+                // Provide clear feedback showing per-draft results when possible
+                if (result.sent && result.sent > 0) {
+                    showToast('Draft sent successfully!', 'success');
+                } else {
+                    showToast('Draft send returned no successes', 'error');
+                }
+
+                closeDrawer();
+                await fetchDrafts(); // Refresh list
+            } catch (error) {
+                console.error('Error sending draft:', error);
+                showToast('Failed to send draft: ' + error.message, 'error');
+                sendBtn.disabled = false;
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            }
+        }
+
+        filterChips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                filterChips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                currentFilter = chip.getAttribute('data-filter');
+                applyFilters();
+            });
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            applyFilters();
+        });
+
+        closeDrawerBtn.addEventListener('click', closeDrawer);
+        drawerOverlay.addEventListener('click', closeDrawer);
+
+        refreshBtn.addEventListener('click', async () => {
+            refreshBtn.disabled = true;
+            refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+            await fetchDrafts();
+            if (currentDraftId) {
+                showDraftDetail(currentDraftId);
+            }
+            refreshBtn.disabled = false;
+            refreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+        });
+
+        sendBtn.addEventListener('click', sendDraft);
+
+        // Additional listeners for new UX
+        if (topRefreshBtn) {
+            topRefreshBtn.addEventListener('click', async () => {
+                topRefreshBtn.disabled = true;
+                topRefreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+                await fetchDrafts();
+                topRefreshBtn.disabled = false;
+                topRefreshBtn.innerHTML = '<i class="fas fa-sync-alt"></i> Refresh';
+            });
+        }
+
+        if (bulkSendBtn) bulkSendBtn.addEventListener('click', sendSelected);
+        if (fsOverlay) fsOverlay.addEventListener('click', closeFullScreenPreview);
+
+        // Logout button handler
+        logoutBtn.addEventListener('click', () => {
+            // Clear all authentication data
+            localStorage.clear();
+            sessionStorage.clear();
+            // Redirect to home/login
+            location.href = '/';
+        });
+
+        // Initialize
+        (async function init() {
+            const isAuthorized = await checkAuth();
+            if (isAuthorized) {
+                await fetchDrafts();
+            }
+        })();
+
+        // Auto-refresh every 30 seconds
+        setInterval(() => {
+            if (userRole === 'ADMIN' || userRole === 'HQ') {
+                fetchDrafts();
+            }
+        }, 30000);
+    </script>
+</body>
+</html>

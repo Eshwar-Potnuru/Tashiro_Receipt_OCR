@@ -18,6 +18,13 @@ logger = logging.getLogger(__name__)
 
 # OCR Engine imports with error handling
 try:
+    from app.extractors.field_extractors import extract_receipt_fields
+    FIELD_EXTRACTOR_AVAILABLE = True
+except ImportError:
+    FIELD_EXTRACTOR_AVAILABLE = False
+    logger.warning("Field extractor not available")
+
+try:
     from app.ocr.google_vision_ocr import GoogleVisionOCR
     GOOGLE_VISION_AVAILABLE = True
 except Exception as e:
@@ -269,6 +276,41 @@ class MultiEngineOCR:
         else:
             structured_data = {'raw_text': combined_text, 'entities': {}}
 
+        if structured_data:
+            if combined_text:
+                structured_data['raw_text'] = combined_text
+        else:
+            structured_data = {'raw_text': combined_text, 'entities': {}}
+
+        # Extract fields from combined text if no canonical entities from Document AI
+        canonical_entities = structured_data.get('entities', {})
+        has_canonical_fields = any(key in canonical_entities for key in ['vendor', 'date', 'total', 'invoice_number'])
+        
+        if not has_canonical_fields and combined_text and FIELD_EXTRACTOR_AVAILABLE:
+            try:
+                extracted_fields = extract_receipt_fields(combined_text)
+                if extracted_fields:
+                    # Convert extracted fields to entities format
+                    entities = {}
+                    confidence_scores = {}
+                    for field_name, field_value in extracted_fields.items():
+                        if field_value and field_value != 'N/A':
+                            entities[field_name] = {'text': str(field_value), 'source': 'pattern_extraction'}
+                            # Use the actual confidence if available (for categorization), else default to 0.7
+                            if field_name == 'confidence':
+                                # This is the categorization confidence, store it directly
+                                confidence_scores['account_title'] = field_value / 100.0 if field_value > 1 else field_value
+                            elif field_name == 'account_title':
+                                # Category field, confidence comes from 'confidence' key
+                                pass  # Will be handled by the 'confidence' key
+                            else:
+                                confidence_scores[field_name] = 0.7  # Medium confidence for pattern-based extraction
+                    
+                    structured_data['entities'] = entities
+                    structured_data['confidence_scores'] = confidence_scores
+            except Exception as e:
+                logger.error(f"Field extraction failed: {e}")
+
         structured_data = validate_structured_payload(structured_data)
         docai_raw_entities = structured_data.get('docai_raw_entities')
         docai_raw_fields = structured_data.get('docai_raw_fields')
@@ -301,6 +343,7 @@ class MultiEngineOCR:
 
     def _run_document_ai_only(self, image_data: bytes) -> Dict[str, Any]:
         engines_attempted = ['document_ai']
+        logger.info("Document AI only mode invoked")
         structured = self._invoke_document_ai(image_data)
 
         if not structured:
@@ -331,10 +374,12 @@ class MultiEngineOCR:
 
     def _invoke_document_ai(self, image_data: bytes) -> Dict[str, Any]:
         if not self.document_ai or not hasattr(self.document_ai, 'extract_structured_data'):
+            logger.warning("Document AI wrapper missing or not callable")
             return {}
 
         raw_payload = self.document_ai.extract_structured_data(image_data)
         if not raw_payload:
+            logger.warning("Document AI returned empty payload")
             return {}
 
         mapped = map_document_ai_payload(raw_payload)

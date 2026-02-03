@@ -10,7 +10,154 @@
  * - Delete with confirmation
  * - Draft metadata display
  * - Duplicate prevention (backend)
+ * 
+ * Phase 5D-0: JWT Authentication
+ * - All API calls include Authorization header with JWT token
+ * 
+ * Phase 5D-2: Multi-user Isolation
+ * - AuthState as single source of truth
+ * - Draft loading respects user ownership
+ * - Logout functionality
  */
+
+// ============================================================================
+// Phase 5D-2: Auth State Management (Single Source of Truth)
+// ============================================================================
+
+/**
+ * Global auth state - ONLY source of auth info for entire app
+ * Populated on page load by decoding JWT from localStorage
+ */
+window.AuthState = {
+    token: null,
+    user_id: null,
+    email: null,
+    name: null,
+    role: null,
+    ready: false
+};
+
+// Debug flag (set window.DEBUG_DRAFTS = true or localStorage debug_drafts=1)
+const DEBUG_DRAFTS = (window.DEBUG_DRAFTS === true) || (localStorage.getItem('debug_drafts') === '1');
+
+/**
+ * Bootstrap AuthState from localStorage token
+ * Decodes JWT payload (base64 only, no signature verification)
+ */
+function bootstrapAuthState() {
+    const token = localStorage.getItem('auth_token');
+    
+    if (!token) {
+        window.AuthState.ready = true;
+        return;
+    }
+    
+    try {
+        // JWT format: header.payload.signature
+        const parts = token.split('.');
+        if (parts.length !== 3) {
+            console.warn('Invalid JWT format');
+            window.AuthState.ready = true;
+            return;
+        }
+        
+        // Decode payload (base64url → base64 → JSON)
+        const payload = parts[1];
+        const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => 
+            '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)
+        ).join(''));
+        
+        const decoded = JSON.parse(jsonPayload);
+        
+        // Populate AuthState from JWT claims
+        window.AuthState.token = token;
+        window.AuthState.user_id = decoded.sub || decoded.user_id || null;
+        window.AuthState.email = decoded.email || null;
+        window.AuthState.name = decoded.name || null;
+        window.AuthState.role = decoded.role || null;
+        window.AuthState.ready = true;
+        
+        if (DEBUG_DRAFTS) {
+            console.log('✅ AuthState initialized:', {
+                user_id: window.AuthState.user_id,
+                email: window.AuthState.email,
+                role: window.AuthState.role
+            });
+        }
+    } catch (error) {
+        console.error('Failed to decode JWT:', error);
+        window.AuthState.ready = true;
+    }
+}
+
+// Bootstrap on script load
+bootstrapAuthState();
+
+/**
+ * Phase 5D-2.1: Refresh AuthState after login
+ * Call this after successful login to update AuthState without reload
+ */
+window.refreshAuthState = function() {
+    if (DEBUG_DRAFTS) {
+        console.log('🔄 Refreshing AuthState...');
+    }
+    bootstrapAuthState();
+    
+    // Update user indicator if draft modal is open
+    if (document.getElementById('draftModal').style.display === 'block') {
+        displayCurrentUser();
+    }
+};
+
+/**
+ * Logout: Clear auth state and reload page
+ */
+function logout() {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('tashiro_user');
+    window.AuthState = {
+        token: null,
+        user_id: null,
+        email: null,
+        name: null,
+        role: null,
+        ready: true
+    };
+    location.reload();
+}
+
+// Expose logout globally
+window.logout = logout;
+
+// ============================================================================
+// Auth Helpers
+// ============================================================================
+
+// Auth helper for consistent JWT authentication (Phase 5D-0)
+function getAuthHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+/**
+ * Phase 5D-1.2: Get preview source for draft (NO artifact path probing)
+ * Returns null if no preview available (caller shows placeholder)
+ */
+function getDraftPreviewSrc(draft) {
+    // 1) Prefer session cache if present
+    if (window.previewByDraftId && draft.draft_id && window.previewByDraftId[draft.draft_id]) {
+        return window.previewByDraftId[draft.draft_id];
+    }
+    // 2) Use backend image_data if present (base64)
+    if (draft.image_data) {
+        // Normalize: may already have data URI prefix or just base64
+        if (draft.image_data.startsWith('data:image/')) return draft.image_data;
+        return `data:image/jpeg;base64,${draft.image_data}`;
+    }
+    // 3) No preview available
+    return null;
+}
 
 // State
 let allDrafts = [];
@@ -18,12 +165,64 @@ let selectedDraftIds = new Set();
 let currentDraftId = null;
 let isSending = false; // Phase 4D.2: Track send operations
 let isEditing = false; // Phase 4F.2: Track edit mode
+let currentFilter = 'all'; // Phase 5D-0: Track current filter (all, DRAFT, SENT, ERROR)
+
+// Phase 5D-1.2: Expose preview map globally for cross-file access
+window.previewByDraftId = window.previewByDraftId || {};
+let previewByDraftId = window.previewByDraftId;
 
 /**
  * Open the draft modal and load drafts
+ * Phase 5D-2: Wait for AuthState.ready before loading
  */
 function openDraftModal() {
     document.getElementById('draftModal').style.display = 'block';
+    
+    // Phase 5D-2: Wait for AuthState to be ready
+    if (!window.AuthState.ready) {
+        const container = document.getElementById('draftListContainer');
+        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Initializing...</div>';
+        
+        // Poll until ready (should be immediate, but defensive)
+        const checkReady = setInterval(() => {
+            if (window.AuthState.ready) {
+                clearInterval(checkReady);
+                initializeDraftModal();
+            }
+        }, 50);
+        return;
+    }
+    
+    initializeDraftModal();
+}
+
+/**
+ * Initialize draft modal after AuthState is ready
+ * Phase 5D-2: Check token, show user, load drafts
+ */
+function initializeDraftModal() {
+    // Phase 5D-2.1: Refresh AuthState to get latest token (in case user just logged in)
+    if (window.refreshAuthState) {
+        window.refreshAuthState();
+    }
+    
+    // Phase 5D-0: Set up filter event handlers
+    setupFilterHandlers();
+    
+    // Phase 5D-2: Update user indicator from AuthState
+    displayCurrentUser();
+    
+    // Phase 5D-2: Check for valid token
+    if (!window.AuthState.token) {
+        const container = document.getElementById('draftListContainer');
+        container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
+            <div style="font-size: 16px; margin-bottom: 8px;">Not logged in</div>
+            <div style="font-size: 13px; color: #64748b;">Please log in to view drafts.</div>
+        </div>`;
+        return;
+    }
+    
     loadDrafts();
 }
 
@@ -42,11 +241,85 @@ function closeDraftModal() {
     selectedDraftIds.clear();
     currentDraftId = null;
     
-    // Clear detail panel
-    document.getElementById('draftDetailContainer').innerHTML = 
-        '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+    // Clear detail panel (with null check)
+    const detailContainer = document.getElementById('draftDetailContainer');
+    if (detailContainer) {
+        detailContainer.innerHTML = 
+            '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+    }
     
     updateSelectionCount();
+}
+
+/**
+ * Display current user indicator in draft menu
+ * Phase 5D-2: Read from AuthState (single source of truth)
+ */
+function displayCurrentUser() {
+    const userIndicator = document.getElementById('draftUserIndicator');
+    if (!userIndicator) return;
+    
+    // Phase 5D-2: Use AuthState as single source of truth
+    if (window.AuthState.token && window.AuthState.email) {
+        const displayName = window.AuthState.name || window.AuthState.email;
+        const role = window.AuthState.role || 'WORKER';
+        userIndicator.textContent = `Logged in as: ${displayName} (${role})`;
+        userIndicator.style.display = 'block';
+        if (DEBUG_DRAFTS) {
+            console.log('DEBUG: Draft user indicator set:', {
+                user_id: window.AuthState.user_id,
+                email: window.AuthState.email,
+                role: window.AuthState.role
+            });
+        }
+    } else {
+        userIndicator.style.display = 'none';
+    }
+}
+
+/**
+ * Set up filter button event handlers
+ */
+function setupFilterHandlers() {
+    // Phase 5D-1: Remove duplicate handlers by cloning buttons
+    const filterButtons = ['filterAll', 'filterDraft', 'filterSent', 'filterError'];
+    
+    filterButtons.forEach(buttonId => {
+        const button = document.getElementById(buttonId);
+        if (button) {
+            // Clone to remove existing listeners
+            const newButton = button.cloneNode(true);
+            button.parentNode.replaceChild(newButton, button);
+            
+            newButton.addEventListener('click', function() {
+                const filter = this.getAttribute('data-filter');
+                setActiveFilter(filter);
+            });
+        }
+    });
+}
+
+/**
+ * Set active filter and update UI
+ */
+function setActiveFilter(filter) {
+    currentFilter = filter;
+    
+    // Update button styles
+    const buttons = document.querySelectorAll('.draft-filter-btn');
+    buttons.forEach(btn => {
+        const btnFilter = btn.getAttribute('data-filter');
+        if (btnFilter === filter) {
+            btn.style.background = '#3b82f6';
+            btn.style.color = 'white';
+        } else {
+            btn.style.background = '#e2e8f0';
+            btn.style.color = '#475569';
+        }
+    });
+    
+    // Re-render list with filter
+    renderDraftList();
 }
 
 /**
@@ -54,24 +327,90 @@ function closeDraftModal() {
  */
 async function loadDrafts() {
     const container = document.getElementById('draftListContainer');
+    if (!container) {
+        console.error('draftListContainer element not found');
+        return;
+    }
+    
+    if (DEBUG_DRAFTS) {
+        console.log('DEBUG: loadDrafts called, AuthState:', window.AuthState);
+    }
+
+    // Phase 5D-1.2: Check token before making request
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+            <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
+            <div style="font-size: 16px; margin-bottom: 8px;">Session expired</div>
+            <div style="font-size: 13px; color: #64748b;">Please log in again to view drafts.</div>
+        </div>`;
+        return;
+    }
     
     try {
         container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Loading drafts...</div>';
         
-        const response = await fetch('/api/drafts');
-        if (!response.ok) throw new Error('Failed to load drafts');
+        // Phase 5D-3: Debug multi-user isolation
+        if (DEBUG_DRAFTS) {
+            console.log('DEBUG: loadDrafts AuthState:', {
+                user_id: window.AuthState.user_id,
+                email: window.AuthState.email,
+                role: window.AuthState.role,
+                token_present: !!window.AuthState.token
+            });
+        }
         
-        const data = await response.json();
+        // Phase 5D-0: Use JWT authentication
+        const response = await fetch('/api/drafts', { 
+            headers: getAuthHeaders(),
+            cache: 'no-store'
+        });
+        
+        // Phase 5D-1.2: Handle auth errors cleanly
+        if (response.status === 401 || response.status === 403) {
+            container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+                <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
+                <div style="font-size: 16px; margin-bottom: 8px;">Session expired</div>
+                <div style="font-size: 13px; color: #64748b;">Please log in again to view drafts.</div>
+            </div>`;
+            return;
+        }
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: Failed to load drafts`);
+        }
+        
+        // Check if response has content
+        const text = await response.text();
+        if (!text || text.trim() === '') {
+            // Empty response - show empty state
+            allDrafts = [];
+            renderDraftList();
+            return;
+        }
+        
+        const data = JSON.parse(text);
         // Backend returns array directly, not {drafts: [...]}
         allDrafts = Array.isArray(data) ? data : (data.drafts || []);
         
         // Sort by created_at desc (newest first)
         allDrafts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         
+        if (DEBUG_DRAFTS) {
+            console.log(`DEBUG: Loaded ${allDrafts.length} drafts at ${new Date().toISOString()}`);
+        }
+
         renderDraftList();
     } catch (error) {
         console.error('Error loading drafts:', error);
-        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #dc3545;">Failed to load drafts. Please try again.</div>';
+        const errorMsg = error.message || 'Unknown error';
+        container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
+            <div style="font-size: 16px; margin-bottom: 8px;">Failed to load drafts</div>
+            <div style="font-size: 13px; color: #64748b;">${errorMsg}</div>
+            <button onclick="loadDrafts()" style="margin-top: 12px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
+                <i class="fas fa-sync-alt"></i> Retry
+            </button>
+        </div>`;
     }
 }
 
@@ -81,15 +420,33 @@ async function loadDrafts() {
 function renderDraftList() {
     const container = document.getElementById('draftListContainer');
     
-    if (allDrafts.length === 0) {
+    // Phase 5D-1: Filter drafts based on backend truth (draft.status, last_send_error)
+    let filteredDrafts = allDrafts;
+    if (currentFilter !== 'all') {
+        if (currentFilter === 'ERROR') {
+            // Show drafts with send errors OR validation errors
+            filteredDrafts = allDrafts.filter(draft => {
+                const hasSendError = draft.last_send_error != null && draft.last_send_error !== '';
+                const hasValidationError = draft.status === 'DRAFT' && draft.is_valid === false;
+                return hasSendError || hasValidationError;
+            });
+        } else {
+            // Filter by status (DRAFT or SENT)
+            filteredDrafts = allDrafts.filter(draft => draft.status === currentFilter);
+        }
+    }
+    
+    if (filteredDrafts.length === 0) {
         // Phase 4D.2: Improved empty state messaging
+        const filterName = currentFilter === 'all' ? '' : ` ${currentFilter.toLowerCase()}`;
         container.innerHTML = `
             <div style="text-align: center; padding: 40px 20px; color: #64748b;">
                 <div style="font-size: 16px; font-weight: 500; color: #475569; margin-bottom: 8px;">
-                    📋 No receipt drafts found
+                    📋 No${filterName} receipt drafts found
                 </div>
                 <div style="font-size: 14px; line-height: 1.6;">
-                    Drafts are created when you save OCR results without sending.
+                    ${currentFilter === 'all' ? 'Drafts are created when you save OCR results without sending.' : 
+                      `No drafts match the ${currentFilter.toLowerCase()} filter.`}
                 </div>
             </div>
         `;
@@ -109,7 +466,7 @@ function renderDraftList() {
                 </tr>
             </thead>
             <tbody>
-                ${allDrafts.map(draft => {
+                ${filteredDrafts.map(draft => {
                     const isSelected = selectedDraftIds.has(draft.draft_id);
                     const isSent = draft.status === 'SENT';
                     // Phase 4D.2: Disable interactions during send
@@ -188,9 +545,18 @@ function toggleDraftSelection(draftId) {
  */
 function updateSelectionCount() {
     const count = selectedDraftIds.size;
-    document.getElementById('draftSelectionCount').textContent = 
-        `${count} draft${count !== 1 ? 's' : ''} selected`;
-    document.getElementById('sendSelectedDraftsBtn').disabled = count === 0;
+    const countEl = document.getElementById('draftSelectionCount');
+    const sendBtn = document.getElementById('sendSelectedDraftsBtn');
+    
+    if (countEl) {
+        countEl.textContent = `${count} draft${count !== 1 ? 's' : ''} selected`;
+    }
+    if (sendBtn) {
+        const disabled = count === 0;
+        sendBtn.disabled = disabled;
+        sendBtn.style.opacity = disabled ? '0.5' : '1';
+        sendBtn.style.cursor = disabled ? 'not-allowed' : 'pointer';
+    }
 }
 
 /**
@@ -201,18 +567,30 @@ async function loadDraftDetails(draftId) {
     renderDraftList(); // Re-render to highlight selected row
     
     const container = document.getElementById('draftDetailContainer');
+    if (!container) {
+        console.warn('draftDetailContainer not found, skipping detail display');
+        return;
+    }
     container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Loading details...</div>';
     
     try {
         // Find draft in current list (includes validation status)
         const draft = allDrafts.find(d => d.draft_id === draftId);
-        
-        if (!draft) {
-            // Fallback: fetch from API if not in list
-            const draftResponse = await fetch(`/api/drafts/${draftId}`);
+        const previewAvailable = draft ? !!getDraftPreviewSrc(draft) : false;
+        const needsFullDraft = !draft || (!previewAvailable && !draft.image_data);
+
+        if (needsFullDraft) {
+            // Fetch from API if not in list or missing image_data for preview
+            const draftResponse = await fetch(`/api/drafts/${draftId}`, {
+                headers: getAuthHeaders(),
+                cache: 'no-store'
+            });
             if (!draftResponse.ok) throw new Error('Failed to load draft');
             const draftData = await draftResponse.json();
-            renderDraftDetails(draftData, draftData.validation_errors || []);
+            const mergedDraft = draft
+                ? { ...draftData, is_valid: draft.is_valid, validation_errors: draft.validation_errors || [] }
+                : draftData;
+            renderDraftDetails(mergedDraft, mergedDraft.validation_errors || []);
         } else {
             // Use draft from list (already has validation status)
             renderDraftDetails(draft, draft.validation_errors || []);
@@ -228,6 +606,10 @@ async function loadDraftDetails(draftId) {
  */
 async function renderDraftDetails(draft, validationErrors) {
     const container = document.getElementById('draftDetailContainer');
+    if (!container) {
+        console.warn('draftDetailContainer not found, cannot render details');
+        return;
+    }
     const r = draft.receipt;
     
     // Fetch staff name from ID
@@ -328,32 +710,32 @@ async function renderDraftDetails(draft, validationErrors) {
         ` : ''}
         
         <!-- Source Image -->
-        ${draft.image_ref || draft.image_data ? `
-        <div style="margin-bottom: 24px;">
-            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📷 Receipt Image</h4>
-            <div style="position: relative; background: #f8fafc; border-radius: 8px; padding: 12px; text-align: center;">
-                ${draft.image_data ? `
-                    <img id="draftImage_${draft.draft_id}" 
-                         src="data:image/jpeg;base64,${draft.image_data}" 
-                         style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
-                         alt="Receipt Image"
-                         onclick="window.open(this.src, '_blank')">
-                ` : `
-                    <img id="draftImage_${draft.draft_id}" 
-                         src="/artifacts/ocr_results/${draft.image_ref}.${getImageFormat(draft)}" 
-                         style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
-                         alt="Receipt Image"
-                         onclick="window.open(this.src, '_blank')"
-                         onerror="tryAlternativeImageFormats(this, '${draft.image_ref}');">
-                    <div id="imageError_${draft.draft_id}" style="display: none; color: #64748b; font-size: 13px; padding: 20px;">
-                        <i class="fas fa-image" style="font-size: 32px; opacity: 0.3; margin-bottom: 8px;"></i><br>
-                        Image not available<br>
-                        <span style="font-size: 11px; color: #94a3b8;">(${draft.image_ref})</span>
+        ${(() => {
+            // Phase 5D-1.2: Use getDraftPreviewSrc (NO artifact path probing)
+            const previewSrc = getDraftPreviewSrc(draft);
+            if (previewSrc) {
+                return `
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📷 Receipt Image</h4>
+                    <div style="position: relative; background: #f8fafc; border-radius: 8px; padding: 12px; text-align: center;">
+                        <img id="draftImage_${draft.draft_id}" 
+                             src="${previewSrc}" 
+                             style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
+                             alt="Receipt Image"
+                             onclick="window.open(this.src, '_blank')">
                     </div>
-                `}
-            </div>
-        </div>
-        ` : ''}
+                </div>`;
+            } else {
+                return `
+                <div style="margin-bottom: 24px;">
+                    <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📷 Receipt Image</h4>
+                    <div style="position: relative; background: #f8fafc; border-radius: 8px; padding: 40px; text-align: center;">
+                        <i class="fas fa-image" style="font-size: 48px; opacity: 0.2; color: #94a3b8;"></i>
+                        <div style="color: #64748b; font-size: 14px; margin-top: 12px;">No preview available</div>
+                    </div>
+                </div>`;
+            }
+        })()}
     `;
     
     container.innerHTML = detailsHtml;
@@ -370,23 +752,13 @@ async function renderDraftDetails(draft, validationErrors) {
 }
 
 /**
- * Phase 4F Fix 1: Get image format from stored data (avoids 404s)
- */
-function getImageFormat(draft) {
-    // Check if format is stored in receipt diagnostics (from analysis)
-    if (draft.receipt && draft.receipt.diagnostics && draft.receipt.diagnostics.image_format) {
-        return draft.receipt.diagnostics.image_format;
-    }
-    // Fallback to jpg (will try alternatives if this fails)
-    return 'jpg';
-}
-
-/**
  * Helper: Get staff name from ID by fetching from API
  */
 async function getStaffName(location, staffId) {
     try {
-        const response = await fetch(`/api/staff?location=${encodeURIComponent(location)}`);
+        const response = await fetch(`/api/staff?location=${encodeURIComponent(location)}`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) return null;
         
         const data = await response.json();
@@ -396,31 +768,6 @@ async function getStaffName(location, staffId) {
     } catch (error) {
         console.error('Error fetching staff:', error);
         return null;
-    }
-}
-
-/**
- * Helper: Try alternative image formats if jpg fails
- */
-function tryAlternativeImageFormats(img, imageRef) {
-    const formats = ['png', 'jpeg', 'webp'];
-    const currentSrc = img.src;
-    
-    // Check which format failed
-    const lastFormat = currentSrc.split('.').pop();
-    const currentIndex = formats.indexOf(lastFormat);
-    
-    if (currentIndex < formats.length - 1) {
-        // Try next format
-        const nextFormat = formats[currentIndex + 1];
-        img.src = `/artifacts/ocr_results/${imageRef}.${nextFormat}`;
-    } else {
-        // All formats failed, show error message
-        img.style.display = 'none';
-        const errorDiv = document.getElementById(`imageError_${img.id.split('_')[1]}`);
-        if (errorDiv) {
-            errorDiv.style.display = 'block';
-        }
     }
 }
 
@@ -479,7 +826,10 @@ async function sendSelectedDrafts() {
     try {
         const response = await fetch('/api/drafts/send', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({ draft_ids: draftIds })
         });
         
@@ -497,8 +847,11 @@ async function sendSelectedDrafts() {
         // Clear detail panel if current draft was sent
         if (currentDraftId && draftIds.includes(currentDraftId)) {
             currentDraftId = null;
-            document.getElementById('draftDetailContainer').innerHTML = 
-                '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+            const detailContainer = document.getElementById('draftDetailContainer');
+            if (detailContainer) {
+                detailContainer.innerHTML = 
+                    '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+            }
         }
         
     } catch (error) {
@@ -549,6 +902,10 @@ async function enterEditMode(draftId) {
     if (!draft) return;
     
     const container = document.getElementById('draftDetailContainer');
+    if (!container) {
+        console.warn('draftDetailContainer not found, cannot enter edit mode');
+        return;
+    }
     const r = draft.receipt;
     
     // Fetch locations and staff for dropdowns
@@ -556,7 +913,9 @@ async function enterEditMode(draftId) {
     let staffHtml = '<option value="">Select staff...</option>';
     
     try {
-        const locResponse = await fetch('/api/locations');
+        const locResponse = await fetch('/api/locations', {
+            headers: getAuthHeaders()
+        });
         if (locResponse.ok) {
             const locData = await locResponse.json();
             const locations = locData.locations || [];
@@ -567,7 +926,9 @@ async function enterEditMode(draftId) {
         }
         
         if (r.business_location_id) {
-            const staffResponse = await fetch(`/api/staff?location=${encodeURIComponent(r.business_location_id)}`);
+            const staffResponse = await fetch(`/api/staff?location=${encodeURIComponent(r.business_location_id)}`, {
+                headers: getAuthHeaders()
+            });
             if (staffResponse.ok) {
                 const staffData = await staffResponse.json();
                 const staffList = staffData.staff || [];
@@ -666,7 +1027,9 @@ async function loadStaffForEdit(locationId) {
     staffSelect.innerHTML = '<option value="">Loading...</option>';
     
     try {
-        const response = await fetch(`/api/staff?location=${encodeURIComponent(locationId)}`);
+        const response = await fetch(`/api/staff?location=${encodeURIComponent(locationId)}`, {
+            headers: getAuthHeaders()
+        });
         if (!response.ok) throw new Error('Failed to load staff');
         
         const data = await response.json();
@@ -698,7 +1061,10 @@ async function saveDraftEdit(draftId) {
     try {
         const response = await fetch(`/api/drafts/${draftId}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
             body: JSON.stringify({ receipt: updatedReceipt })
         });
         
@@ -741,7 +1107,8 @@ async function confirmDeleteDraft(draftId) {
     
     try {
         const response = await fetch(`/api/drafts/${draftId}`, {
-            method: 'DELETE'
+            method: 'DELETE',
+            headers: getAuthHeaders()
         });
         
         if (!response.ok) throw new Error('Failed to delete draft');
@@ -815,10 +1182,42 @@ document.addEventListener('DOMContentLoaded', function() {
         closeBtn.addEventListener('click', closeDraftModal);
     }
     
+    // Phase 5D-2: Refresh button
+    const refreshBtn = document.getElementById('refreshDraftsBtn');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', () => {
+            if (window.AuthState.ready && window.AuthState.token) {
+                loadDrafts();
+                if (DEBUG_DRAFTS) {
+                    console.log(`DEBUG: Refresh clicked at ${new Date().toISOString()}`);
+                }
+            }
+        });
+    }
+    
     // Send selected button
     const sendBtn = document.getElementById('sendSelectedDraftsBtn');
     if (sendBtn) {
         sendBtn.addEventListener('click', sendSelectedDrafts);
+    }
+    
+    // Phase 5D-2: Select All checkbox
+    const selectAllCheckbox = document.getElementById('selectAllDrafts');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.addEventListener('change', function() {
+            if (this.checked) {
+                // Select all visible drafts
+                allDrafts.forEach(draft => {
+                    if (shouldShowDraft(draft)) {
+                        selectedDraftIds.add(draft.draft_id);
+                    }
+                });
+            } else {
+                selectedDraftIds.clear();
+            }
+            renderDraftList();
+            updateSelectionCount();
+        });
     }
     
     // Close modal on background click
@@ -831,3 +1230,16 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+/**
+ * Helper: Check if draft should be shown based on current filter
+ */
+function shouldShowDraft(draft) {
+    if (currentFilter === 'all') return true;
+    if (currentFilter === 'ERROR') {
+        const hasSendError = draft.last_send_error != null && draft.last_send_error !== '';
+        const hasValidationError = draft.status === 'DRAFT' && draft.is_valid === false;
+        return hasSendError || hasValidationError;
+    }
+    return draft.status === currentFilter;
+}

@@ -35,6 +35,13 @@ class GoogleVisionOCR:
         self.client = None
         self._credential_source = None
         
+        # Load environment variables from .env file if available
+        try:
+            from dotenv import load_dotenv
+            load_dotenv()
+        except ImportError:
+            pass  # dotenv not available, continue
+        
         # Log startup configuration
         logger.info("=" * 60)
         logger.info("Google Vision API Initialization:")

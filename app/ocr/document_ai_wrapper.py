@@ -24,31 +24,37 @@ class DocumentAIUnavailableError(RuntimeError):
 class DocumentAIConfig:
     """Runtime configuration for Document AI requests."""
 
-    project_id: Optional[str] = os.getenv("DOCUMENT_AI_PROJECT_ID")
-    location: str = os.getenv("DOCUMENT_AI_LOCATION", "us")
-    processor_id: Optional[str] = os.getenv("DOCUMENT_AI_PROCESSOR_ID")
-    api_key: Optional[str] = os.getenv("DOCUMENT_AI_API_KEY")
-    endpoint: str = os.getenv(
-        "DOCUMENT_AI_ENDPOINT",
-        "https://us-documentai.googleapis.com/v1"
-    )
+    project_id: Optional[str] = None
+    location: str = "us"
+    processor_id: Optional[str] = None
+    api_key: Optional[str] = None
+    endpoint: str = "https://us-documentai.googleapis.com/v1"
+    
+    def __post_init__(self):
+        """Load configuration from environment variables."""
+        if self.project_id is None:
+            self.project_id = os.getenv("DOCUMENT_AI_PROJECT_ID")
+        if self.location == "us":  # Only override if default
+            self.location = os.getenv("DOCUMENT_AI_LOCATION", "us")
+        if self.processor_id is None:
+            self.processor_id = os.getenv("DOCUMENT_AI_PROCESSOR_ID")
+        if self.api_key is None:
+            self.api_key = os.getenv("DOCUMENT_AI_API_KEY")
+        if self.endpoint == "https://us-documentai.googleapis.com/v1":  # Only override if default
+            self.endpoint = os.getenv("DOCUMENT_AI_ENDPOINT", "https://us-documentai.googleapis.com/v1")
     
     def log_config(self) -> None:
-        """Log Document AI configuration for debugging."""
+        """Log safe Document AI configuration details (debug-level only)."""
         creds_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
-        logger.info("=" * 60)
-        logger.info("Document AI Configuration:")
-        logger.info(f"  Project ID: {self.project_id}")
-        logger.info(f"  Location: {self.location}")
-        logger.info(f"  Processor ID: {self.processor_id}")
-        logger.info(f"  Processor Name: {self.processor_name}")
-        logger.info(f"  API Endpoint: {self.location}-documentai.googleapis.com")
-        if creds_path:
-            logger.info(f"  Credentials: {creds_path}")
-            logger.info(f"  Credentials exist: {Path(creds_path).exists() if creds_path else False}")
-        else:
-            logger.warning("  Credentials: NOT SET (GOOGLE_APPLICATION_CREDENTIALS missing)")
-        logger.info("=" * 60)
+        # Keep details debug-only and avoid printing credential file paths to logs.
+        logger.debug(
+            "Document AI Configuration: project_id=%s location=%s processor_id=%s processor_name=%s",
+            self.project_id,
+            self.location,
+            self.processor_id,
+            self.processor_name,
+        )
+        logger.debug("GOOGLE_APPLICATION_CREDENTIALS set: %s", bool(creds_path))
 
     @property
     def processor_name(self) -> Optional[str]:
@@ -75,7 +81,7 @@ class DocumentAIWrapper:
 
         base_dir = Path(__file__).resolve().parents[2]
         # Shared service account key for both Vision and DocAI
-        fallback_key = base_dir / "config" / "aim-tashiro-poc-09a7f137eb05.json"
+        fallback_key = base_dir / "config" / "aim-tashiro-poc-dec6e8e0cdb7.json"
         legacy_key = base_dir / "config" / "google_vision_key.json"
 
         for candidate in (fallback_key, legacy_key):
@@ -87,18 +93,34 @@ class DocumentAIWrapper:
         return False
 
     def process_document(self, image_path: str) -> Dict[str, object]:
-        """Placeholder for the real Document AI call.
+        """Process an image file using Document AI.
 
-        TODO: Replace this implementation with a call to Document AI once we
-        obtain credentials. For now we raise a descriptive error so the caller
-        can decide whether to fall back to mock data.
+        Accepts a local file path, reads the file, and returns the raw Document AI
+        payload as a plain dictionary. Raises DocumentAIUnavailableError when
+        configuration, credentials, or the SDK are not available so callers can
+        fall back to alternate OCR engines.
         """
+        if not self.has_credentials():
+            raise DocumentAIUnavailableError(
+                "Document AI credentials not configured. Set DOCUMENT_AI_* env vars "
+                "or GOOGLE_APPLICATION_CREDENTIALS to a valid service account JSON file."
+            )
 
-        raise DocumentAIUnavailableError(
-            "Document AI credentials not configured. Configure DOCUMENT_AI_*"
-            " environment variables or GOOGLE_APPLICATION_CREDENTIALS before"
-            " enabling live requests."
-        )
+        try:
+            path = Path(image_path)
+            file_bytes = path.read_bytes()
+        except Exception as exc:
+            logger.error("Failed to read image file '%s': %s", image_path, exc)
+            raise DocumentAIUnavailableError(f"Could not read image file: {image_path}") from exc
+
+        # Determine MIME type for the raw document; default to octet-stream
+        import mimetypes
+
+        mime_type, _ = mimetypes.guess_type(path.name)
+        mime_type = mime_type or "application/octet-stream"
+
+        # Delegate to the helper which handles SDK/credentials checks and the API call
+        return call_document_ai(file_bytes, mime_type) 
 
 
 def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
@@ -113,11 +135,12 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
         from google.cloud import documentai  # type: ignore
         from google.protobuf.json_format import MessageToDict  # type: ignore
     except Exception as exc:  # pragma: no cover - defensive
-        logger.warning("Document AI SDK not available: %s", exc)
+        logger.debug("Document AI SDK import failed: %s", exc)
         raise DocumentAIUnavailableError("google-cloud-documentai is not installed") from exc
 
     config = DocumentAIConfig()
-    config.log_config()
+    # Intentionally do not log configuration here to avoid leaking credential paths or
+    # other sensitive information. Use debug logging in development if needed.
     
     if not config.processor_name:
         logger.error("Document AI processor configuration missing")
@@ -127,14 +150,20 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
     credentials_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
     if not credentials_path:
         logger.error("GOOGLE_APPLICATION_CREDENTIALS not set in environment")
-        logger.error("Expected path: config/aim-tashiro-poc-09a7f137eb05.json")
-        raise DocumentAIUnavailableError("Document AI credentials not configured")
+        raise DocumentAIUnavailableError(
+            "Document AI credentials not configured. Set GOOGLE_APPLICATION_CREDENTIALS "
+            "to a service account JSON file with Document AI access."
+        )
     
     if not Path(credentials_path).exists():
         logger.error(f"Credentials file not found: {credentials_path}")
         raise DocumentAIUnavailableError(f"Credentials file not found: {credentials_path}")
 
-    api_endpoint = f"{config.location}-documentai.googleapis.com"
+    # Determine API endpoint from configuration; prefer explicit endpoint
+    from urllib.parse import urlparse
+    parsed = urlparse(config.endpoint)
+    api_endpoint = parsed.netloc or config.endpoint
+    # client expects host like 'us-documentai.googleapis.com'
 
     try:
         client = documentai.DocumentProcessorServiceClient(
@@ -160,7 +189,6 @@ def call_document_ai(file_bytes: bytes, mime_type: str) -> Dict[str, object]:
         error_str = str(exc)
         if "401" in error_str or "authentication" in error_str.lower():
             logger.error("Authentication failed - check service account credentials")
-            logger.error("Service account: aim-vision-api-dev@aim-tashiro-poc.iam.gserviceaccount.com")
         if "403" in error_str or "permission" in error_str.lower():
             logger.error("Permission denied - service account may be missing IAM roles")
             logger.error("Required roles: roles/documentai.apiUser or roles/documentai.editor")

@@ -1,7 +1,8 @@
-from fastapi import FastAPI, Request, Response
-from fastapi.responses import HTMLResponse, PlainTextResponse
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.responses import HTMLResponse, PlainTextResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from pathlib import Path
@@ -45,6 +46,7 @@ except Exception as e:
 from app.api.routes import router as api_router
 from app.api.drafts import router as drafts_router
 from app.api.audits import router as audits_router  # Phase 5A Step 3
+from app.routes.auth import router as auth_router  # Phase 5B.1: Authentication
 
 
 class BlockTrackerMiddleware(BaseHTTPMiddleware):
@@ -74,6 +76,29 @@ def create_app() -> FastAPI:
             description="API for extracting structured data from receipt images and PDFs.",
             version="0.1.0",
         )
+
+        # Add CORS middleware
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["http://localhost:8001", "http://127.0.0.1:8001", "http://localhost:3000", "http://127.0.0.1:3000"],  # Specific origins
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+        # Add global exception handler to ensure JSON responses for API errors
+        @app.exception_handler(Exception)
+        async def global_exception_handler(request: Request, exc: Exception):
+            """Global exception handler that returns JSON for API requests."""
+            if request.url.path.startswith("/api/"):
+                # Return JSON error for API endpoints
+                return JSONResponse(
+                    status_code=500,
+                    content={"detail": "Internal server error", "type": "server_error"}
+                )
+            else:
+                # Let FastAPI handle non-API errors normally
+                raise exc
 
         # Get the base directory (receipt-ocr)
         base_dir = Path(__file__).parent.parent
@@ -119,7 +144,7 @@ def create_app() -> FastAPI:
         app.mount("/artifacts", StaticFiles(directory=str(artifacts_dir)), name="artifacts")
 
         # Add tracker blocking middleware (Phase 4F Fix 2)
-        app.add_middleware(BlockTrackerMiddleware)
+        # app.add_middleware(BlockTrackerMiddleware)
 
         print("App initialization successful")
 
@@ -136,9 +161,66 @@ def create_app() -> FastAPI:
         def mobile_intake(request: Request) -> HTMLResponse:
             return templates.TemplateResponse("mobile_intake_unified_manual.html", {"request": request})
 
+        from fastapi import Depends, Header
+        from app.auth.dependencies import get_current_user
+        from app.models.user import User
+        from typing import Optional as Opt
+        from jose import jwt, JWTError
+
+        @app.get("/office", response_class=HTMLResponse, tags=["ui"])
+        def office_view(
+            request: Request,
+            authorization: Opt[str] = Header(None)
+        ) -> HTMLResponse:
+            """Phase 5E: Admin/HQ business office operations view
+
+            Backend enforces authentication when Authorization header present.
+            Role-specific enforcement (ADMIN/HQ only) is checked here.
+            
+            This dual-layer approach:
+            - Backend: Blocks unauthenticated/WORKER access when auth header present
+            - Frontend: JavaScript checks localStorage token for browser redirects
+            """
+            # If Authorization header present, verify it
+            if authorization:
+                try:
+                    # Extract and verify JWT token
+                    token = authorization.replace("Bearer ", "").strip()
+                    
+                    # Decode token (using same config as app.auth.jwt)
+                    SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
+                    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                    
+                    # Check role - only ADMIN and HQ allowed
+                    role = payload.get("role")
+                    if role == "WORKER":
+                        raise HTTPException(status_code=403, detail="Forbidden: Workers cannot access office view")
+                    elif role not in ("ADMIN", "HQ"):
+                        raise HTTPException(status_code=403, detail="Forbidden: Invalid role for office view")
+                        
+                except JWTError as e:
+                    raise HTTPException(status_code=401, detail=f"Invalid authentication token: {str(e)}")
+                except HTTPException:
+                    raise  # Re-raise 403 errors
+                except Exception as e:
+                    raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+            
+            # Serve the page (JavaScript will check localStorage token for browser access)
+            return templates.TemplateResponse("office_view_admin.html", {"request": request})
+
+        @app.get("/diagnostics", response_class=HTMLResponse, tags=["ui"])
+        def diagnostics_page(request: Request) -> HTMLResponse:
+            """System diagnostics and testing page"""
+            return templates.TemplateResponse("diagnostics.html", {"request": request})
+
         @app.get("/debug", response_class=HTMLResponse, tags=["ui"])
         def debug_test(request: Request) -> HTMLResponse:
             return templates.TemplateResponse("debug.html", {"request": request})
+
+        @app.get("/diagnostics", response_class=HTMLResponse, tags=["ui"])
+        def diagnostics_page(request: Request) -> HTMLResponse:
+            """System diagnostics page"""
+            return templates.TemplateResponse("diagnostics.html", {"request": request})
 
         @app.get("/drafts", response_class=HTMLResponse, tags=["ui"])
         def draft_management(request: Request) -> HTMLResponse:
@@ -148,6 +230,7 @@ def create_app() -> FastAPI:
         app.include_router(api_router, prefix="/api")
         app.include_router(drafts_router)  # Phase 4B: Draft API endpoints
         app.include_router(audits_router)  # Phase 5A Step 3: Audit API endpoints
+        app.include_router(auth_router)  # Phase 5B.1: Authentication endpoints
 
         return app
 
@@ -158,4 +241,61 @@ def create_app() -> FastAPI:
         raise
 
 
+# Create app instance for uvicorn
 app = create_app()
+# Phase 5D-4: Dev user seeding hook (runs on startup in DEV mode only)
+@app.on_event("startup")
+async def seed_dev_users():
+    """Seed development users from config/users_seed_dev.json if ENV=dev."""
+    import json
+    
+    env = os.getenv("ENV", os.getenv("APP_ENV", "")).lower()
+    
+    if env != "dev":
+        return  # Skip seeding in non-dev environments
+    
+    seed_file = Path(__file__).parent.parent / "config" / "users_seed_dev.json"
+    
+    if not seed_file.exists():
+        print(f"DEV SEED: Seed file not found: {seed_file}")
+        print(f"   Create it using script in config/DEV_USERS_README.md")
+        return
+    
+    try:
+        from app.repositories.user_repository import UserRepository
+        
+        with open(seed_file, 'r') as f:
+            users = json.load(f)
+        
+        repo = UserRepository()
+        worker_count = 0
+        admin_count = 0
+        hq_count = 0
+        
+        for user_data in users:
+            login_id = user_data["login_id"]
+            email = user_data.get("email")  # Optional, can be None
+            
+            repo.upsert_user(
+                login_id=login_id,
+                email=email,
+                plain_password=user_data["password"],
+                role=user_data["role"],
+                display_name=user_data["display_name"]
+            )
+            
+            if user_data["role"] == "WORKER":
+                worker_count += 1
+            elif user_data["role"] == "ADMIN":
+                admin_count += 1
+            elif user_data["role"] == "HQ":
+                hq_count += 1
+        
+        print("=" * 60)
+        print(f"DEV SEED: upserted {len(users)} users (workers:{worker_count} admins:{admin_count} hq:{hq_count})")
+        print("=" * 60)
+        
+    except Exception as e:
+        print(f"DEV SEED ERROR: {e}")
+        import traceback
+        traceback.print_exc()
