@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
 from uuid import UUID
@@ -314,6 +314,40 @@ class DraftRepository:
             
             rows = cursor.fetchall()
             return [self._row_to_draft(row) for row in rows]
+        finally:
+            if should_close:
+                conn.close()
+
+    def delete_drafts_older_than(self, hours: int, statuses: List[str]) -> int:
+        """Delete drafts older than the given age for specific statuses.
+
+        Args:
+            hours: Age threshold in hours.
+            statuses: List of statuses (strings) to delete (e.g., ["DRAFT"]).
+
+        Returns:
+            Number of rows deleted.
+        """
+        if hours <= 0 or not statuses:
+            return 0
+
+        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff_str = cutoff.isoformat()
+
+        placeholders = ",".join("?" * len(statuses))
+        query = f"""
+            DELETE FROM draft_receipts
+            WHERE status IN ({placeholders})
+              AND created_at IS NOT NULL
+              AND created_at < ?
+        """
+
+        conn = self._get_connection()
+        should_close = (self._memory_conn is None)
+        try:
+            cursor = conn.execute(query, [*statuses, cutoff_str])
+            conn.commit()
+            return cursor.rowcount
         finally:
             if should_close:
                 conn.close()

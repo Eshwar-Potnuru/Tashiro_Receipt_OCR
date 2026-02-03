@@ -85,11 +85,21 @@ config/*.json
 app/Data/accumulation/backups/
 *.pdf
 
-# Database files - ignore backups but allow fresh templates
+# Database files - never commit DBs
+app/Data/*.db
 app/Data/*.db.backup
 app/Data/*.db-journal
 app/Data/*.db-wal
 app/Data/*.db-shm
+app/data/*.db
+app/data/*.db.backup
+app/data/*.db-journal
+app/data/*.db-wal
+app/data/*.db-shm
+*.db
+*.db.backup
+*.sqlite
+*.sqlite3
 
 # SSL certificates
 ssl/

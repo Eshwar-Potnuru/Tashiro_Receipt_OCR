@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
 from pathlib import Path
+from datetime import datetime, timedelta
 
 # Load environment variables from .env file
 try:
@@ -306,3 +307,23 @@ async def seed_dev_users():
         print(f"DEV SEED ERROR: {e}")
         import traceback
         traceback.print_exc()
+
+
+# Phase 5E.2: Cleanup old draft data (24h retention for DRAFT only)
+@app.on_event("startup")
+async def cleanup_old_drafts():
+    """Delete DRAFT rows older than 24 hours to keep DB small.
+
+    Safe by design: skips SENT drafts and ignores rows with NULL created_at.
+    Does not touch Excel writers or sent data.
+    """
+    try:
+        from app.repositories.draft_repository import DraftRepository
+
+        repo = DraftRepository()
+        deleted = repo.delete_drafts_older_than(hours=24, statuses=["DRAFT"])
+        cutoff = datetime.utcnow() - timedelta(hours=24)
+        print(f"DRAFT CLEANUP: deleted {deleted} old DRAFT rows (cutoff {cutoff.isoformat()})")
+    except Exception as e:
+        # Must never block startup
+        print(f"DRAFT CLEANUP WARNING: {e}")
