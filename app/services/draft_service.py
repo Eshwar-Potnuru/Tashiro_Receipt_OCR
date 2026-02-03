@@ -932,9 +932,9 @@ class DraftService:
             staff_status = excel_result.get("staff", {}).get("status")
             
             # Phase 4C + 5C-1: Require BOTH outputs to succeed
-            # Only mark as SENT if BOTH branch AND staff were written or no-change.
+            # Only mark as SENT if BOTH branch AND staff were written or already present.
             # If one fails, draft stays DRAFT and can be retried (without Excel writer changes).
-            branch_success = branch_status in ["written", "skipped-no-change"]
+            branch_success = branch_status in ["written", "skipped-no-change", "skipped_duplicate"]
             staff_success = staff_status in ["written", "skipped-no-change"]
             
             success = branch_success and staff_success  # Both must succeed
