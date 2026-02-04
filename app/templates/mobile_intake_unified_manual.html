@@ -4141,7 +4141,23 @@ function updateFieldLabels() {
                         throw new Error(data.detail || data.error || 'Failed to send drafts');
                     }
 
-                    showToast(`Successfully sent ${selectedDraftIds.length} draft(s)`, 'success');
+                    // Check if any failed with validation errors
+                    const validationFailures = data.results?.filter(r => r.status === 'validation_failed') || [];
+                    if (validationFailures.length > 0) {
+                        let errorDetails = 'Some receipts failed validation:\n\n';
+                        validationFailures.forEach(failure => {
+                            errorDetails += `Receipt ${failure.draft_id}:\n`;
+                            if (failure.validation_errors) {
+                                failure.validation_errors.forEach(err => {
+                                    errorDetails += `  • ${err}\n`;
+                                });
+                            }
+                            errorDetails += '\n';
+                        });
+                        alert(errorDetails);
+                    }
+
+                    showToast(`Sent: ${data.sent}, Failed: ${data.failed}`, data.failed > 0 ? 'warning' : 'success');
 
                     // Show results modal
                     displaySendResults(data.results);
@@ -4473,6 +4489,17 @@ function updateFieldLabels() {
             const staffValue = staffMemberSelect.value;
             const taxValue = parseFloat(document.getElementById('fieldTax').value) || 0;
 
+            // ✅ VALIDATION: Ensure location and staff are selected BEFORE sending
+            if (!locationValue) {
+                alert('❌ Please select a Business Location before sending to Excel!');
+                return;
+            }
+            
+            if (!staffValue) {
+                alert('❌ Please select a Staff Member before sending to Excel!');
+                return;
+            }
+
             // Phase 5D Step 1: Update draft with current edits + assignment
             const receiptData = {
                 vendor_name: document.getElementById('fieldVendor').value,
@@ -4563,9 +4590,19 @@ function updateFieldLabels() {
 
                 } else {
                     // Show error with retry metadata
-                    const errorMsg = draftResult?.error || 'Send failed';
+                    let errorMsg = draftResult?.error || 'Send failed';
                     const attemptCount = draftResult?.attempt_count || 0;
-                    showToast(`❌ ${errorMsg} (Attempt: ${attemptCount})`, 'error');
+                    
+                    // Handle validation failures specially - show all validation errors
+                    if (draftResult?.status === 'validation_failed' && draftResult?.validation_errors) {
+                        errorMsg = '❌ Validation Failed:\n' + draftResult.validation_errors.join('\n');
+                        showToast(errorMsg, 'error');
+                        
+                        // Also show in a more prominent alert
+                        alert(`Receipt cannot be sent. Please fix these errors:\n\n${draftResult.validation_errors.join('\n\n')}`);
+                    } else {
+                        showToast(`❌ ${errorMsg} (Attempt: ${attemptCount})`, 'error');
+                    }
                     
                     // Update batch draft with error
                     const index = batchDrafts.findIndex(d => d.draft_id === currentQueueId);
