@@ -923,13 +923,20 @@ class DraftService:
         # summary_result["results"] contains per-receipt write status
         excel_results = summary_result.get("results", [])
         
+        logger.info(f"SEND_DRAFTS: Processing {len(excel_results)} Excel results for {len(drafts_to_send)} drafts")
+        logger.info(f"SEND_DRAFTS: summary_result = {summary_result}")
+        
         for i, draft in enumerate(drafts_to_send):
             # Get corresponding Excel write result
             excel_result = excel_results[i] if i < len(excel_results) else {}
             
+            logger.info(f"SEND_DRAFTS: Draft {draft.draft_id} - excel_result = {excel_result}")
+            
             # Check if Excel write succeeded
             branch_status = excel_result.get("branch", {}).get("status")
             staff_status = excel_result.get("staff", {}).get("status")
+            
+            logger.info(f"SEND_DRAFTS: Draft {draft.draft_id} - branch_status={branch_status}, staff_status={staff_status}")
             
             # Phase 4C + 5C-1: Require BOTH outputs to succeed
             # Only mark as SENT if BOTH branch AND staff were written or already present.
@@ -937,7 +944,11 @@ class DraftService:
             branch_success = branch_status in ["written", "skipped-no-change", "skipped_duplicate"]
             staff_success = staff_status in ["written", "skipped-no-change"]
             
+            logger.info(f"SEND_DRAFTS: Draft {draft.draft_id} - branch_success={branch_success}, staff_success={staff_success}")
+            
             success = branch_success and staff_success  # Both must succeed
+            
+            logger.info(f"SEND_DRAFTS: Draft {draft.draft_id} - final success={success}")
             
             if success:
                 # Mark draft as SENT

@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 from typing import Dict, Iterable, List
+import logging
 
 from app.excel.branch_ledger_writer import BranchLedgerWriter
 from app.excel.staff_ledger_writer import StaffLedgerWriter
+
+logger = logging.getLogger(__name__)
 
 
 class SummaryService:
@@ -28,19 +31,27 @@ class SummaryService:
         writer failures so one target cannot block the other.
         """
 
+        logger.info(f"SUMMARY_SERVICE: send_receipts called with {len(list(receipts)) if receipts else 0} receipts")
+        
         normalized: List = list(self._coerce_iterable(receipts))
         ordered = sorted(
             normalized,
             key=lambda r: (r.receipt_date is None, r.receipt_date or ""),
         )
 
+        logger.info(f"SUMMARY_SERVICE: Processing {len(ordered)} receipts")
+        
         results = []
         counts: Dict[str, int] = {"success": 0, "skipped": 0, "error": 0}
 
-        for receipt in ordered:
+        for i, receipt in enumerate(ordered):
+            logger.info(f"SUMMARY_SERVICE: Processing receipt {i+1}/{len(ordered)} - ID: {getattr(receipt, 'receipt_id', 'N/A')}")
+            
             branch_res = self._safe_write(self.branch_writer.write_receipt, receipt)
             staff_res = self._safe_write(self.staff_writer.write_receipt, receipt)
 
+            logger.info(f"SUMMARY_SERVICE: Receipt {i+1} - branch_res={branch_res}, staff_res={staff_res}")
+            
             self._tally(branch_res, counts)
             self._tally(staff_res, counts)
 
@@ -52,6 +63,7 @@ class SummaryService:
                 }
             )
 
+        logger.info(f"SUMMARY_SERVICE: Completed - counts={counts}")
         return {"processed": len(ordered), "counts": counts, "results": results}
 
     def _coerce_iterable(self, receipts) -> Iterable:
