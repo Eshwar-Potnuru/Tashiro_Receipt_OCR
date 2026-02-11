@@ -47,11 +47,18 @@ class DraftStatus(str, Enum):
         - Receipt has been submitted via bulk send
         - Written to Excel (Format 01 and Format 02)
         - Immutable (read-only, no further edits)
-        - Terminal state (no further transitions)
+        - Can transition to REVIEWED (Phase 5G-C)
+    
+    REVIEWED:
+        - ADMIN/HQ has verified the SENT record
+        - Excel already contains the data
+        - Used for office verification tracking
+        - Terminal state for Phase 5G-C (no HQ transfer yet)
     """
 
     DRAFT = "DRAFT"
     SENT = "SENT"
+    REVIEWED = "REVIEWED"  # Phase 5G-C: Admin verification state
 
 
 class DraftReceipt(BaseModel):
@@ -152,6 +159,19 @@ class DraftReceipt(BaseModel):
         default=None,
         description="Phase 5C-1: Last error message from failed send attempt. "
                     "Cleared on successful send. NULL if no errors or never attempted.",
+    )
+
+    # Phase 5G-C: Review State Fields (ADMIN/HQ verification)
+    reviewed_at: Optional[datetime] = Field(
+        default=None,
+        description="Phase 5G-C: Timestamp when ADMIN/HQ marked this as reviewed. "
+                    "NULL if not yet reviewed. Only applicable when status=REVIEWED.",
+    )
+    
+    reviewed_by_user_id: Optional[str] = Field(
+        default=None,
+        description="Phase 5G-C: User ID (UUID string) of ADMIN/HQ who reviewed this. "
+                    "NULL if not yet reviewed. Links to User.user_id.",
     )
 
     class Config:

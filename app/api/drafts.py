@@ -113,9 +113,24 @@ class DraftResponse(BaseModel):
     user_email: Optional[str] = None
     total_amount: Optional[Decimal] = None
     tax_amount: Optional[Decimal] = None
+    tax_10_amount: Optional[Decimal] = None  # Phase 5G-A: 10% consumption tax
+    tax_8_amount: Optional[Decimal] = None  # Phase 5G-A: 8% consumption tax
     receipt_date: Optional[str] = None
+    staff_name: Optional[str] = None  # Phase 5G-A: Resolved staff name
+    business_location_id: Optional[str] = None  # Phase 5G-A: Business location
     send_attempt_count: int = 0
     last_send_error: Optional[str] = None
+
+    # Phase 5G-B: Verification context fields
+    month_sheet_name: Optional[str] = None  # e.g., "2024年12月"
+    month_key: Optional[str] = None  # e.g., "202412"
+    expected_outputs: List[str] = Field(default_factory=lambda: ["Format① Staff Ledger", "Format② Location Ledger"])
+
+    # Phase 5G-C: Review state fields (ADMIN/HQ verification)
+    reviewed_at: Optional[str] = None  # Timestamp when marked as reviewed
+    reviewed_by_user_id: Optional[str] = None  # UUID of reviewer
+    reviewed_by_login_id: Optional[str] = None  # Login ID of reviewer
+    reviewed_by_name: Optional[str] = None  # Display name of reviewer
 
     is_valid: bool = Field(default=False, description="Whether draft is ready to send")
     validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
@@ -137,11 +152,15 @@ class DraftResponse(BaseModel):
         """
         # Extract common fields from nested receipt if available
         r = draft.receipt
-        vendor = getattr(r, 'vendor', None)
+        # Phase 5G-C: Fix vendor mapping - use vendor_name from Receipt model
+        vendor = getattr(r, 'vendor_name', None) or getattr(r, 'vendor', None)
         invoice_number = getattr(r, 'invoice_number', None) or getattr(r, 'invoice', None)
         total_amount = getattr(r, 'total_amount', None)
         tax_amount = getattr(r, 'tax_amount', None)
+        tax_10_amount = getattr(r, 'tax_10_amount', None)
+        tax_8_amount = getattr(r, 'tax_8_amount', None)
         receipt_date = getattr(r, 'date', None) or getattr(r, 'receipt_date', None)
+        business_location_id = getattr(r, 'business_location_id', None)
 
         # Phase 5E.1: Creator info - lookup user details
         created_by = None
@@ -165,6 +184,67 @@ class DraftResponse(BaseModel):
                 # Graceful fallback if user lookup fails
                 logger.warning(f"Failed to lookup user {draft.creator_user_id}: {e}")
 
+        # Phase 5G-A: Staff name resolution
+        staff_name = None
+        staff_id = getattr(r, 'staff_id', None)
+        if staff_id:
+            try:
+                from app.services.config_service import ConfigService
+                config_service = ConfigService()
+                staff_name = config_service.get_staff_name(staff_id, business_location_id)
+            except Exception as e:
+                # Graceful fallback if staff lookup fails
+                logger.warning(f"Failed to lookup staff {staff_id}: {e}")
+
+        # Phase 5G-B: Compute verification context (month sheet + ledger targets)
+        month_sheet_name = None
+        month_key = None
+        if receipt_date:
+            try:
+                # Parse receipt_date (could be string or datetime)
+                if isinstance(receipt_date, str):
+                    from dateutil import parser
+                    date_obj = parser.parse(receipt_date)
+                elif isinstance(receipt_date, datetime):
+                    date_obj = receipt_date
+                else:
+                    date_obj = None
+                
+                if date_obj:
+                    # Format: "YYYY年MM月" (matches Excel sheet naming)
+                    month_sheet_name = f"{date_obj.year}年{date_obj.month:02d}月"
+                    # Compact format for sorting/search: "YYYYMM"
+                    month_key = f"{date_obj.year}{date_obj.month:02d}"
+            except Exception as e:
+                # Graceful fallback if date parsing fails
+                logger.warning(f"Failed to parse receipt_date {receipt_date}: {e}")
+                month_sheet_name = "Unknown month"
+                month_key = "000000"
+
+        # Phase 5G-C: Reviewer info resolution (if reviewed)
+        reviewed_at_str = None
+        reviewed_by_user_id_str = None
+        reviewed_by_login_id = None
+        reviewed_by_name = None
+        
+        if draft.reviewed_at:
+            reviewed_at_str = draft.reviewed_at.isoformat()
+        
+        if draft.reviewed_by_user_id:
+            reviewed_by_user_id_str = str(draft.reviewed_by_user_id)
+            # Lookup reviewer details
+            try:
+                from uuid import UUID as UUID_Type
+                user_repo = UserRepository()
+                reviewer_uuid = UUID_Type(draft.reviewed_by_user_id) if isinstance(draft.reviewed_by_user_id, str) else draft.reviewed_by_user_id
+                reviewer = user_repo.get_user_by_id(reviewer_uuid)
+                if reviewer:
+                    reviewed_by_login_id = reviewer.login_id
+                    reviewed_by_name = reviewer.name
+            except Exception as e:
+                # Graceful fallback if reviewer lookup fails
+                logger.warning(f"Failed to lookup reviewer {draft.reviewed_by_user_id}: {e}")
+
         return cls(
             draft_id=draft.draft_id,
             receipt=draft.receipt,
@@ -182,9 +262,20 @@ class DraftResponse(BaseModel):
             user_email=user_email,
             total_amount=total_amount,
             tax_amount=tax_amount,
+            tax_10_amount=tax_10_amount,
+            tax_8_amount=tax_8_amount,
             receipt_date=receipt_date.isoformat() if isinstance(receipt_date, datetime) else receipt_date,
+            staff_name=staff_name,
+            business_location_id=business_location_id,
             send_attempt_count=draft.send_attempt_count,
             last_send_error=draft.last_send_error,
+            month_sheet_name=month_sheet_name,
+            month_key=month_key,
+            expected_outputs=["Format① Staff Ledger", "Format② Location Ledger"],
+            reviewed_at=reviewed_at_str,
+            reviewed_by_user_id=reviewed_by_user_id_str,
+            reviewed_by_login_id=reviewed_by_login_id,
+            reviewed_by_name=reviewed_by_name,
             is_valid=is_valid,
             validation_errors=validation_errors or [],
         )
@@ -326,6 +417,310 @@ def list_drafts(
         )
 
 
+@router.get("/sent-records/all", response_model=List[DraftResponse])
+def list_sent_records(
+    current_user: User = Depends(get_current_user)
+) -> List[DraftResponse]:
+    """Phase 5G-A/C: List all SENT and REVIEWED receipts for Admin/HQ verification view.
+    
+    This endpoint is READ-ONLY and shows receipts that have been sent to Excel.
+    Phase 5G-C adds REVIEWED status for office verification tracking.
+    
+    Security:
+        - Only ADMIN and HQ roles can access
+        - WORKER role receives 403 Forbidden
+    
+    Returns:
+        List of SENT and REVIEWED receipts with enriched data:
+        - Receipt details (date, vendor, invoice, total, taxes)
+        - Creator information (name, login_id)
+        - Staff information (name resolved from staff_id)
+        - Business location
+        - Sent timestamp
+        - Review information (if reviewed)
+    
+    Design:
+        - No editing capability
+        - No Excel rewrite
+        - Verification only
+        - Sorted by sent_at (newest first)
+    
+    Example:
+        GET /api/drafts/sent-records/all
+    """
+    # Security: Only ADMIN/HQ can access sent records view
+    if current_user.role not in ["ADMIN", "HQ"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only ADMIN and HQ roles can view sent records.",
+        )
+    
+    service = get_draft_service()
+    
+    try:
+        # Phase 5G-C: Fetch both SENT and REVIEWED drafts (no user filtering for ADMIN/HQ)
+        sent_drafts = service.list_drafts(
+            status=DraftStatus.SENT,
+            user_id=None,  # Admin/HQ see all users
+            include_image_data=False  # Don't include images for list view
+        )
+        
+        reviewed_drafts = service.list_drafts(
+            status=DraftStatus.REVIEWED,
+            user_id=None,
+            include_image_data=False
+        )
+        
+        # Combine and convert to response format
+        all_drafts = sent_drafts + reviewed_drafts
+        responses = []
+        for draft in all_drafts:
+            responses.append(DraftResponse.from_draft(draft, is_valid=True, validation_errors=[]))
+        
+        return responses
+        
+    except Exception as exc:
+        logger.exception("Failed to list sent records: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to list sent records: {str(exc)}",
+        )
+
+
+class MarkReviewedRequest(BaseModel):
+    """Request model for marking drafts as reviewed."""
+    draft_ids: List[UUID] = Field(..., description="List of draft IDs to mark as reviewed")
+
+
+class MarkReviewedResponse(BaseModel):
+    """Response model for mark-reviewed operation."""
+    total: int = Field(..., description="Total drafts requested")
+    reviewed: int = Field(..., description="Number successfully marked as reviewed")
+    failed: int = Field(..., description="Number failed")
+    errors: List[str] = Field(default_factory=list, description="Error messages for failures")
+
+
+@router.post("/mark-reviewed", response_model=MarkReviewedResponse)
+def mark_drafts_as_reviewed(
+    request: MarkReviewedRequest,
+    current_user: User = Depends(get_current_user)
+) -> MarkReviewedResponse:
+    """Phase 5G-C: Mark SENT receipts as REVIEWED (ADMIN/HQ verification workflow).
+    
+    This endpoint allows ADMIN/HQ to mark receipts as reviewed after verifying
+    them in Excel. This is a PREVIEW ONLY feature - no Excel writes occur.
+    
+    Security:
+        - Only ADMIN and HQ roles can access
+        - WORKER role receives 403 Forbidden
+    
+    Rules:
+        - Only drafts with status=SENT can be marked as REVIEWED
+        - Transition: SENT → REVIEWED
+        - No other status transitions allowed
+        - Records reviewer ID and timestamp
+        - No Excel writes (read-only verification)
+    
+    Args:
+        request: MarkReviewedRequest with list of draft_ids
+        current_user: Authenticated user (injected by dependency)
+    
+    Returns:
+        MarkReviewedResponse with counts and errors
+    
+    Example:
+        POST /api/drafts/mark-reviewed
+        {
+          "draft_ids": ["uuid1", "uuid2", "uuid3"]
+        }
+    """
+    # Security: Only ADMIN/HQ can mark receipts as reviewed
+    if current_user.role not in ["ADMIN", "HQ"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only ADMIN and HQ roles can mark receipts as reviewed.",
+        )
+    
+    service = get_draft_service()
+    
+    total = len(request.draft_ids)
+    reviewed_count = 0
+    failed_count = 0
+    errors = []
+    
+    for draft_id in request.draft_ids:
+        try:
+            # Fetch the draft
+            draft = service.get_draft(draft_id)
+            if draft is None:
+                errors.append(f"Draft {draft_id} not found")
+                failed_count += 1
+                continue
+            
+            # Validate: Only SENT drafts can be marked as REVIEWED
+            if draft.status != DraftStatus.SENT:
+                errors.append(f"Draft {draft_id} has status {draft.status.value}, expected SENT")
+                failed_count += 1
+                continue
+            
+            # Mark as reviewed
+            draft.status = DraftStatus.REVIEWED
+            draft.reviewed_at = datetime.utcnow()
+            draft.reviewed_by_user_id = str(current_user.user_id)
+            draft.updated_at = datetime.utcnow()
+            
+            # Save the updated draft
+            # Use service repository to persist changes (DraftService exposes .repository)
+            service.repository.save(draft)
+            reviewed_count += 1
+            
+        except Exception as e:
+            logger.exception(f"Failed to mark draft {draft_id} as reviewed: {e}")
+            errors.append(f"Draft {draft_id}: {str(e)}")
+            failed_count += 1
+    
+    return MarkReviewedResponse(
+        total=total,
+        reviewed=reviewed_count,
+        failed=failed_count,
+        errors=errors,
+    )
+
+
+
+@router.get("/ledger-preview")
+def get_ledger_preview(
+    format: str,
+    month_key: Optional[str] = None,
+    location: Optional[str] = None,
+    staff_id: Optional[str] = None,
+    from_date: Optional[str] = None,
+    to_date: Optional[str] = None,
+    q: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+) -> List[Dict[str, Any]]:
+    """Phase 5G-C: Get Excel-like ledger preview (Format① or Format②).
+    
+    Returns read-only preview of transcribed data in Excel column format.
+    Based on SENT drafts only (already transcribed to Excel).
+    
+    Security:
+        - Only ADMIN and HQ roles can access
+        - WORKER role receives 403 Forbidden
+    
+    Args:
+        format: "staff" (Format①) or "location" (Format②)
+        month_key: Optional filter by month (e.g., "202412")
+        location: Optional filter by business_location_id
+        staff_id: Optional filter by staff_id (Format① only)
+        from_date: Optional date range start (YYYY-MM-DD)
+        to_date: Optional date range end (YYYY-MM-DD)
+        q: Optional text search (vendor, invoice, staff name)
+        current_user: Authenticated user (injected)
+    
+    Returns:
+        List of ledger rows in Excel-like format:
+        - Format① (staff): StaffLedgerRow objects
+        - Format② (location): LocationLedgerRow objects
+    
+    Design:
+        - Preview only (read-only, no editing)
+        - Client-side sorting/filtering recommended
+        - Shows data exactly as written to Excel
+    
+    Example:
+        GET /api/drafts/ledger-preview?format=staff&month_key=202412
+        GET /api/drafts/ledger-preview?format=location&location=Tokyo&q=ABC Corp
+    """
+    # Security: Only ADMIN/HQ can access ledger previews
+    if current_user.role not in ["ADMIN", "HQ"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. Only ADMIN and HQ roles can view ledger previews.",
+        )
+    
+    # Validate format parameter
+    if format not in ["staff", "location"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid format. Must be 'staff' or 'location'.",
+        )
+    
+    service = get_draft_service()
+    
+    try:
+        # Fetch all SENT drafts (preview is based on transcribed data only)
+        sent_drafts = service.list_drafts(
+            status=DraftStatus.SENT,
+            user_id=None,  # Admin/HQ see all users
+            include_image_data=False
+        )
+        
+        # Convert to preview rows
+        rows = []
+        for draft in sent_drafts:
+            # Apply filters
+            r = draft.receipt
+            
+            # Month filter
+            if month_key and hasattr(r, 'receipt_date') and r.receipt_date:
+                try:
+                    from dateutil import parser
+                    date_obj = parser.parse(r.receipt_date) if isinstance(r.receipt_date, str) else r.receipt_date
+                    draft_month_key = f"{date_obj.year}{date_obj.month:02d}"
+                    if draft_month_key != month_key:
+                        continue
+                except Exception:
+                    pass
+            
+            # Location filter
+            if location and r.business_location_id != location:
+                continue
+            
+            # Staff filter (Format① only)
+            if format == "staff" and staff_id and r.staff_id != staff_id:
+                continue
+            
+            # Date range filter
+            if from_date or to_date:
+                try:
+                    from dateutil import parser as date_parser
+                    receipt_date_obj = date_parser.parse(r.receipt_date) if isinstance(r.receipt_date, str) else r.receipt_date
+                    if from_date:
+                        from_date_obj = date_parser.parse(from_date)
+                        if receipt_date_obj < from_date_obj:
+                            continue
+                    if to_date:
+                        to_date_obj = date_parser.parse(to_date)
+                        if receipt_date_obj > to_date_obj:
+                            continue
+                except Exception:
+                    pass
+            
+            # Build row (format-specific)
+            row_data = _build_ledger_row(draft, format, service)
+            
+            # Text search filter (optional, applies after row building)
+            if q:
+                search_text = q.lower()
+                row_json = str(row_data).lower()
+                if search_text not in row_json:
+                    continue
+            
+            rows.append(row_data)
+        
+        # Sort by sent_at descending (most recent first)
+        rows.sort(key=lambda x: x.get('sent_at', ''), reverse=True)
+        
+        return rows
+        
+    except Exception as exc:
+        logger.exception("Failed to generate ledger preview: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate ledger preview: {str(exc)}",
+        )
+
 @router.get("/{draft_id}", response_model=DraftResponse)
 def get_draft(draft_id: UUID) -> DraftResponse:
     """Get a specific draft by ID.
@@ -352,7 +747,6 @@ def get_draft(draft_id: UUID) -> DraftResponse:
         )
     
     return DraftResponse.from_draft(draft)
-
 
 @router.put("/{draft_id}", response_model=DraftResponse)
 def update_draft(draft_id: UUID, request: UpdateDraftRequest) -> DraftResponse:
@@ -477,7 +871,13 @@ async def batch_upload_receipts(
     ocr_engine: str = Form('auto'),
     current_user: User = Depends(get_current_user)
 ) -> dict:
-    """Upload multiple receipt images and create drafts (Phase 5C-2)."""
+    """Upload multiple receipt images and create drafts (Phase 5C-2).
+    
+    NOTE: This endpoint immediately saves to drafts - this is intentional design.
+    Mobile users upload receipts -> drafts created automatically for review.
+    Admin then reviews drafts and clicks 'Send' to write to Excel.
+    This workflow prevents accidental Excel writes and allows correction.
+    """
     logger.info("Batch upload endpoint called: files=%d, engine=%s, user=%s", len(files), ocr_engine, getattr(current_user, 'user_id', None))
     if len(files) > 4:
         logger.warning("Batch upload rejected: too many files (%d)", len(files))
@@ -639,3 +1039,192 @@ def send_drafts(request: SendDraftsRequest) -> SendDraftsResponse:
         )
 
 
+# ============= Phase 5G-C: Excel-Like Ledger Preview Endpoints =============
+
+class StaffLedgerRow(BaseModel):
+    """Format① Staff Ledger preview row (Excel-like structure matching 各個人集計用_2024.xlsx)."""
+    # Excel columns A-O (matching template structure)
+    A_person_in_charge: str = Field(..., description="担当者 (Staff name)")
+    B_date: str = Field(..., description="支払日 (Receipt date)")
+    C_account_title: Optional[str] = Field(None, description="勘定科目 (Account title)")
+    D_description: str = Field(..., description="摘要 (Vendor + memo)")
+    E_blank_col_e: str = Field(default="", description="Column E (blank)")
+    F_blank_col_f: str = Field(default="", description="Column F (blank)")
+    G_expense: str = Field(..., description="支出 (Expense/total amount)")
+    H_blank_col_h: str = Field(default="", description="Column H (blank)")
+    I_invoice_presence: str = Field(..., description="インボイス (Invoice presence: 有/不要)")
+    J_blank_col_j: str = Field(default="", description="Column J (blank)")
+    K_tax_10_amount: str = Field(default="", description="10%税込額 (10% tax inclusive amount)")
+    L_tax_8_amount: str = Field(default="", description="8%税込額 (8% tax inclusive amount)")
+    M_tax_exempt: str = Field(default="", description="非課税額 (Tax exempt amount)")
+    N_tax_inclusive_total: str = Field(..., description="税込合計 (Tax-inclusive total - formula)")
+    O_blank_col_o: str = Field(default="", description="Column O (blank)")
+    
+    # Metadata for filtering/sorting (not displayed in table)
+    draft_id: str
+    month_key: str
+    month_sheet_name: str
+    staff_id: Optional[str]
+    location: str
+    sent_at: str
+    
+    model_config = {"json_encoders": {Decimal: str}}
+
+
+class LocationLedgerRow(BaseModel):
+    """Format② Location Ledger preview row (Excel-like structure matching 事業所集計テーブル.xlsx)."""
+    # Excel columns A-O (matching template exactly)
+    A_date: str = Field(..., description="支払日 (Payment date)")
+    B_work_no: str = Field(default="", description="工番 (Work number)")
+    C_description: str = Field(..., description="摘要 (Description/vendor)")
+    D_person_in_charge: str = Field(..., description="担当者 (Staff name)")
+    E_income: str = Field(default="", description="収入 (Income - always blank)")
+    F_expense: str = Field(..., description="支出 (Expense/total amount)")
+    G_blank_a: str = Field(default="", description="a (Blank indicator column)")
+    H_invoice_presence: str = Field(..., description="インボイス (Invoice presence: 有/不要)")
+    I_account_title: str = Field(default="", description="勘定科目 (Account title)")
+    J_blank_b: str = Field(default="", description="b (Blank indicator column)")
+    K_tax_10_amount: str = Field(..., description="10％税込額 (10% tax inclusive amount)")
+    L_tax_8_amount: str = Field(..., description="8％税込額 (8% tax inclusive amount)")
+    M_tax_exempt: str = Field(default="", description="非課税額 (Tax exempt amount)")
+    N_tax_inclusive_total: str = Field(..., description="税込合計 (Tax-inclusive total - formula)")
+    O_blank_c: str = Field(default="", description="c (Blank indicator column)")
+    
+    # Metadata for filtering/sorting
+    draft_id: str
+    month_key: str
+    month_sheet_name: str
+    staff_id: Optional[str]
+    location: str
+    sent_at: str
+    
+    model_config = {"json_encoders": {Decimal: str}}
+
+
+
+
+def _build_ledger_row(draft: DraftReceipt, format: str, service: DraftService) -> Dict[str, Any]:
+    """Build Excel-like ledger row from draft.
+    
+    Args:
+        draft: DraftReceipt (must be SENT status)
+        format: "staff" or "location"
+        service: DraftService for enrichment
+    
+    Returns:
+        Dictionary with Excel column mappings + metadata
+    """
+    r = draft.receipt
+    
+    # Common enrichment
+    vendor_name = getattr(r, 'vendor_name', None) or '—'
+    invoice_number = getattr(r, 'invoice_number', None)
+    total_amount = getattr(r, 'total_amount', Decimal(0))
+    tax_10_amount = getattr(r, 'tax_10_amount', Decimal(0))
+    tax_8_amount = getattr(r, 'tax_8_amount', Decimal(0))
+    receipt_date = getattr(r, 'receipt_date', None) or '—'
+    account_title = getattr(r, 'account_title', None)
+    memo = getattr(r, 'memo', None)
+    business_location_id = getattr(r, 'business_location_id', None) or '—'
+    staff_id = getattr(r, 'staff_id', None)
+    
+    # Resolve staff name
+    staff_name = '—'
+    if staff_id:
+        try:
+            staff_name = service.config_service.get_staff_name(staff_id, business_location_id) or '—'
+        except Exception:
+            pass
+    
+    # Compute month_key and month_sheet_name
+    month_key = '000000'
+    month_sheet_name = 'Unknown'
+    if receipt_date and receipt_date != '—':
+        try:
+            from dateutil import parser
+            date_obj = parser.parse(receipt_date) if isinstance(receipt_date, str) else receipt_date
+            month_sheet_name = f"{date_obj.year}年{date_obj.month:02d}月"
+            month_key = f"{date_obj.year}{date_obj.month:02d}"
+        except Exception:
+            pass
+    
+    # Format amounts
+    def format_amount(amount):
+        if amount is None:
+            return '¥0'
+        try:
+            return f"¥{int(amount):,}"
+        except Exception:
+            return '¥0'
+    
+    # Invoice presence: 有 (exists) or 不要 (not required/absent)
+    invoice_presence = '有' if invoice_number else '不要'
+    
+    # Account title presence (Location ledger only)
+    account_title_presence = '有' if account_title else '無'
+    
+    # Build description (vendor + memo if exists)
+    description = vendor_name
+    if memo:
+        description = f"{vendor_name} / {memo}"
+    
+    # Calculate tax-inclusive total (sum of all tax amounts for N column)
+    tax_total = Decimal(0)
+    if tax_10_amount:
+        tax_total += tax_10_amount
+    if tax_8_amount:
+        tax_total += tax_8_amount
+    # Note: M_tax_exempt would be added here if it had data
+    
+    if format == "staff":
+        # Format① Staff Ledger (各個人集計用_2024.xlsx structure)
+        return {
+            "A_person_in_charge": staff_name,
+            "B_date": receipt_date,
+            "C_account_title": account_title or "",
+            "D_description": description,
+            "E_blank_col_e": "",
+            "F_blank_col_f": "",
+            "G_expense": format_amount(total_amount),
+            "H_blank_col_h": "",
+            "I_invoice_presence": invoice_presence,
+            "J_blank_col_j": "",
+            "K_tax_10_amount": format_amount(tax_10_amount) if tax_10_amount else "",
+            "L_tax_8_amount": format_amount(tax_8_amount) if tax_8_amount else "",
+            "M_tax_exempt": "",
+            "N_tax_inclusive_total": format_amount(tax_total),  # Sum of K + L + M
+            "O_blank_col_o": "",
+            # Metadata
+            "draft_id": str(draft.draft_id),
+            "month_key": month_key,
+            "month_sheet_name": month_sheet_name,
+            "staff_id": staff_id or "",
+            "location": business_location_id,
+            "sent_at": draft.sent_at.isoformat() if draft.sent_at else "",
+        }
+    else:
+        # Format② Location Ledger (事業所集計テーブル.xlsx structure)
+        return {
+            "A_date": receipt_date,
+            "B_work_no": "",  # Work number - not used in current implementation
+            "C_description": description,
+            "D_person_in_charge": staff_name,
+            "E_income": "",
+            "F_expense": format_amount(total_amount),
+            "G_blank_a": "",
+            "H_invoice_presence": invoice_presence,
+            "I_account_title": account_title or "",
+            "J_blank_b": "",
+            "K_tax_10_amount": format_amount(tax_10_amount) if tax_10_amount else "",
+            "L_tax_8_amount": format_amount(tax_8_amount) if tax_8_amount else "",
+            "M_tax_exempt": "",
+            "N_tax_inclusive_total": format_amount(tax_total),  # Sum of K + L + M
+            "O_blank_c": "",
+            # Metadata
+            "draft_id": str(draft.draft_id),
+            "month_key": month_key,
+            "month_sheet_name": month_sheet_name,
+            "staff_id": staff_id or "",
+            "location": business_location_id,
+            "sent_at": draft.sent_at.isoformat() if draft.sent_at else "",
+        }

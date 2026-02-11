@@ -194,14 +194,34 @@ class DraftService:
         Phase 3 Guarantee:
             - No Excel writes during update
             - Only draft state is modified
+        
+        IMPORTANT: Allows client to SET location and staff IDs for the first time.
+        Once set by user selection in UI, preserves them against accidental overwrites.
+        This allows the workflow: OCR (no location) → User selects location/staff → Save
         """
         draft = self.repository.get_by_id(draft_id)
         
         if draft is None:
             raise ValueError(f"Draft not found: {draft_id}")
         
+        # Save original values to detect if client is trying to clear them
+        original_location_id = draft.receipt.business_location_id
+        original_staff_id = draft.receipt.staff_id
+        
         # Use DraftReceipt's state validation
         draft.update_receipt_data(updated_receipt)
+        
+        # Allow client to SET location and staff for the first time (both were None)
+        # But preserve them if they were already set and client is NOT sending new values
+        if original_location_id is not None and updated_receipt.business_location_id is None:
+            # Original was set, client is trying to clear it → preserve original
+            draft.receipt.business_location_id = original_location_id
+        
+        if original_staff_id is not None and updated_receipt.staff_id is None:
+            # Original was set, client is trying to clear it → preserve original
+            draft.receipt.staff_id = original_staff_id
+        
+        # Client's non-None values are kept (they can set location/staff for first time)
         
         updated_draft = self.repository.save(draft)
         

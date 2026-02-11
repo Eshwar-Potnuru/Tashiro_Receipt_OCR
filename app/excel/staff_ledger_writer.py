@@ -109,37 +109,59 @@ class StaffLedgerWriter:
     def _find_next_empty_row(self, ws) -> int:
         """Find the next empty row in the table to write to.
         
-        Staff sheet has the same structure as location sheet.
-        We just need to find the first empty row and write to it.
-        NO row insertion - just fill existing empty rows.
+        Staff sheet structure:
+        - Row 1-2: Headers  
+        - Row 3+: Data starts here
+        - Last rows: Footer (合計)
+        
+        Logic (CORRECTED - CHECK FOR ACTUAL DATA VALUES):
+        1. Scan forward from row 3
+        2. Check if the row has ANY visible data (not just formulas)
+        3. Find first row where ALL key columns are truly empty
+        4. Stop before footer row
         
         Returns:
             Row number (1-based) of the first empty row ready for data
         """
         data_start = 3  # First data row in staff template
-        key_cols = (1, 2, 4, 7, 9, 10, 12)  # A=staff, B=date, D=vendor, G=invoice, I/J=tax, L=total
+        key_cols = (1, 2, 3, 6, 7, 11, 12, 14)  # 担当者, 支払日, 摘要, invoice, total, tax columns
         
         # Find footer row to know where to stop scanning
         footer_row = None
-        search_limit = min(ws.max_row + 1, data_start + 100)
+        # Scan up to 200 rows minimum to find footer
+        max_search = max(ws.max_row, data_start + 200)
         
-        for row in range(data_start, search_limit):
+        for row in range(data_start, min(max_search, 10000)):
             for col in range(1, min(ws.max_column + 1, 20)):
-                cell_val = ws.cell(row=row, column=col).value
+                cell = ws.cell(row=row, column=col)
+                # Check the actual VALUE not just if cell exists
+                cell_val = cell.value
                 if cell_val and isinstance(cell_val, str):
-                    if "合計" in cell_val:
+                    if "合計" in cell_val or "残高" in cell_val or "計" == cell_val.strip():
                         footer_row = row
+                        self.logger.info(f"Staff: Found footer at row {footer_row}")
                         break
             if footer_row:
                 break
         
-        max_scan = footer_row - 1 if footer_row else min(data_start + 50, ws.max_row)
+        if not footer_row:
+            self.logger.warning(f"Staff: No footer found, using max_row={ws.max_row} + 50")
+            footer_row = ws.max_row + 50
         
-        # Scan from data_start to find first completely empty row
+        # Scan forward from data_start to find first completely empty row
+        # Focus on PRIMARY DATA columns that we write to (staff, date, vendor)
+        # These should be truly empty if row is unused
+        max_scan = footer_row - 1
+        primary_cols = (1, 2, 3)  # Staff name, Date, Description - must be empty for unused row
+        
         for row in range(data_start, max_scan + 1):
             is_empty = True
-            for col in key_cols:
-                val = ws.cell(row=row, column=col).value
+            # Check primary columns that contain actual user data (not formulas)
+            for col in primary_cols:
+                cell = ws.cell(row=row, column=col)
+                val = cell.value
+                
+                # Use same logic as location writer - simple and proven
                 if val not in (None, "", " "):
                     is_empty = False
                     break
@@ -148,15 +170,10 @@ class StaffLedgerWriter:
                 self.logger.info(f"Staff: Found empty row at {row}")
                 return row
         
-        # If no empty row found, use the row right before footer
-        if footer_row:
-            self.logger.warning(f"Staff: No empty rows found, writing at {footer_row - 1} (before footer)")
-            return footer_row - 1
-        
-        # Last resort: write at a reasonable row
-        fallback = data_start + 10
-        self.logger.warning(f"Staff: Could not determine empty row, using fallback {fallback}")
-        return fallback
+        # If no empty row found, write just before footer
+        next_row = footer_row - 1
+        self.logger.warning(f"Staff: No empty rows found, writing at {next_row} (before footer)")
+        return next_row
 
     def _find_totals_row(self, ws) -> Optional[int]:
         for row in range(1, ws.max_row + 1):
@@ -169,25 +186,45 @@ class StaffLedgerWriter:
     def _write_row(self, ws, row_idx: int, receipt: Receipt) -> None:
         staff_display = self._resolve_staff_name(receipt)
         description = self._compose_description(receipt)
-        
-        # Calculate tax-inclusive amounts from tax portions (same as location sheet)
-        tax_10 = float(receipt.tax_10_amount) if receipt.tax_10_amount else 0
-        tax_8 = float(receipt.tax_8_amount) if receipt.tax_8_amount else 0
-        
-        # Calculate tax-inclusive amounts (only if we have tax amounts)
-        tax_10_inclusive = tax_10 * 11 if tax_10 > 0 else None
-        tax_8_inclusive = tax_8 * 13.5 if tax_8 > 0 else None
-        
-        # Map to Excel columns - ONLY write data columns, NEVER formulas
-        mapping = {
-            1: receipt.receipt_date,      # A Payment date
-            2: description,               # B Description/vendor
-            6: receipt.invoice_number,    # F Invoice number
-            8: tax_10_inclusive,          # H 10% tax-inclusive amount
-            9: tax_8_inclusive,           # I 8% tax-inclusive amount
-            11: receipt.total_amount,     # K Tax-included total
-            # N, P, Q, R are FORMULA columns - NEVER write to them
-        }
+
+        # Resolve dynamic column indices by header labels (fallback to expected columns)
+        staff_col = self._find_column_by_header(ws, ["担当者", "担当", "Staff"], default_col=1)
+        date_col = self._find_column_by_header(ws, ["支払日", "支払い日", "日付", "精算日", "Date"], default_col=2)
+        account_col = self._find_column_by_header(ws, ["勘定科目", "科目", "account"], default_col=3)
+        desc_col = self._find_column_by_header(ws, ["摘要", "内容", "Description", "取引先", "店"], default_col=4)
+        invoice_flag_col = self._find_column_by_header(ws, ["インボ", "invoice", "インボイス", "適格"], default_col=8)
+        expense_col = self._find_column_by_header(ws, ["支出", "出金", "金額"], default_col=6)
+        # NOTE: Column N (14) contains formula =IF(K+L+M=0,"",K+L+M) for automatic tax sum
+        # Do NOT look for total_col; let the formula calculate it from K+L+M
+        tax10_col = self._find_column_by_header(ws, ["10%", "１０％", "10％"], default_col=11)  # Column K
+        tax8_col = self._find_column_by_header(ws, ["8%", "８％", "8％", "軽減"], default_col=12)  # Column L
+
+        # Map to Excel columns with raw OCR values (no tax-inclusive computations)
+        mapping = {}
+
+        if staff_col:
+            mapping[staff_col] = staff_display
+        if date_col:
+            mapping[date_col] = receipt.receipt_date
+        if account_col:
+            mapping[account_col] = receipt.account_title
+        if desc_col:
+            mapping[desc_col] = description
+
+        if invoice_flag_col:
+            header_value = self._get_header_value(ws, invoice_flag_col)
+            has_invoice = bool(receipt.invoice_number)
+            mapping[invoice_flag_col] = self._invoice_flag_text(header_value, has_invoice)
+
+        # Column E (収入) and Column G (empty) intentionally left untouched
+
+        if expense_col:
+            mapping[expense_col] = receipt.total_amount
+        # Column N (tax sum formula) is auto-calculated; write K and L for tax amounts
+        if tax10_col:
+            mapping[tax10_col] = receipt.tax_10_amount
+        if tax8_col:
+            mapping[tax8_col] = receipt.tax_8_amount
 
         self.logger.info(f"Writing staff data to row {row_idx}")
         for col_idx, value in mapping.items():
@@ -195,6 +232,38 @@ class StaffLedgerWriter:
                 target_cell = ws.cell(row=row_idx, column=col_idx)
                 target_cell.value = value
                 self._inherit_style(ws, row_idx, col_idx)
+
+    def _get_header_value(self, ws, col: Optional[int]) -> Optional[str]:
+        if not col:
+            return None
+        max_rows = min(ws.max_row, 10)
+        for row in range(1, max_rows + 1):
+            val = ws.cell(row=row, column=col).value
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+        return None
+
+    def _invoice_flag_text(self, header_value: Optional[str], has_invoice: bool) -> str:
+        """Return invoice presence flag.
+        
+        Always returns Japanese: "有" (present) or "無" (absent)
+        This matches Reiha's requirement for staff Excel column I (インボイス).
+        """
+        return "有" if has_invoice else "無"
+
+    def _find_column_by_header(self, ws, candidates, default_col: Optional[int]) -> Optional[int]:
+        """Locate a column by header text (top 10 rows)."""
+
+        max_rows = min(ws.max_row, 10)
+        for row in range(1, max_rows + 1):
+            for col in range(1, ws.max_column + 1):
+                val = ws.cell(row=row, column=col).value
+                if not isinstance(val, str):
+                    continue
+                for cand in candidates:
+                    if cand.lower() in val.lower():
+                        return col
+        return default_col
 
     def _inherit_style(self, ws, row: int, col: int) -> None:
         if row <= 1:

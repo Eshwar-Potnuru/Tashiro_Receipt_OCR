@@ -608,7 +608,9 @@ def _clean_amount(amount: Optional[str]) -> Optional[str]:
         return None
     text = str(amount)
     # Remove common currency symbols and annotations
-    text = text.replace("¥", "").replace("￥", "").replace("\\", "").replace("内", "").replace("(税込)", "").strip()
+    text = text.replace("¥", "").replace("￥", "").replace("円", "").replace("\\", "").replace("内", "").replace("(税込)", "").strip()
+    # Remove ALL types of whitespace (regular space, full-width space, non-breaking space)
+    text = text.replace(" ", "").replace("　", "").replace("\u3000", "").replace("\xa0", "")
     # Remove any surrounding parentheses or trailing non-numeric chars
     text = text.strip("() ")
     # Replace full-width commas/dots
@@ -624,9 +626,10 @@ def _clean_amount(amount: Optional[str]) -> Optional[str]:
         s = cand.replace(',', '')
         # Heuristic: if '.' appears and the group after last '.' is exactly 3 digits, treat '.' as thousands sep
         if '.' in s:
-            last_dot_part = s.split('.')[-1]
-            if len(last_dot_part) == 3 and len(s.split('.')[0]) > 0:
-                s = s.replace('.', '')
+            parts = s.split('.')
+            # If all parts after first are 3 digits, treat '.' as thousands separator
+            if len(parts) > 1 and all(len(p) == 3 for p in parts[1:]):
+                s = ''.join(parts)
         try:
             # Skip candidates that would produce implausibly long integer values (likely IDs/postal codes)
             digits_only = re.sub(r"[^0-9]", "", s)

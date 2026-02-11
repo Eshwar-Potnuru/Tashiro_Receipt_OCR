@@ -47,6 +47,37 @@ class ConfigService:
             self._staff = self._load_staff()
         return self._staff.get(canonical_location, [])
 
+    def get_staff_name(self, staff_id: Optional[str], location: Optional[str] = None) -> Optional[str]:
+        """Resolve staff name from staff_id.
+        
+        Args:
+            staff_id: Staff ID to resolve (e.g., "tok_001")
+            location: Optional canonical location to narrow search
+        
+        Returns:
+            Staff name if found, None otherwise
+        """
+        if not staff_id:
+            return None
+        
+        if self._staff is None:
+            self._staff = self._load_staff()
+        
+        # If location provided, search that location first
+        if location:
+            staff_list = self._staff.get(location, [])
+            for staff in staff_list:
+                if staff.get("id") == staff_id:
+                    return staff.get("name")
+        
+        # Search all locations
+        for loc_staff_list in self._staff.values():
+            for staff in loc_staff_list:
+                if staff.get("id") == staff_id:
+                    return staff.get("name")
+        
+        return None
+
     def get_vendor_canonical(self, vendor_name: Optional[str]) -> Optional[str]:
         """Apply vendor overrides (case-insensitive, first match wins)."""
         if not vendor_name:

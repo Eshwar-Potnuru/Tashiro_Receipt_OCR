@@ -360,6 +360,8 @@ class FieldExtractor:
             'confidence': confidence,
             'subtotal': self._extract_subtotal(lines),
             'tax': self._extract_tax(lines),
+            'tax_10': self._extract_tax_10(lines),
+            'tax_8': self._extract_tax_8(lines),
             'currency': 'JPY'
         }
 
@@ -1282,6 +1284,95 @@ class FieldExtractor:
                         continue
 
         print("No tax amount found")
+        return ''
+
+    def _extract_tax_10(self, lines: list) -> str:
+        """Extract 10% consumption tax amount (Japanese receipts)."""
+        # Strategy: Find line with "10%" and then look for "内消費税" in the NEXT line(s)
+        # This avoids confusing taxable amounts with tax amounts
+        for i, line in enumerate(lines):
+            if '10%' in line:
+                # Found a line with 10%, look for tax amount in next line(s)
+                for j in range(i+1, min(i+3, len(lines))):
+                    if '内消費税' in lines[j]:
+                        # This is the tax line following the 10% indicator
+                        amount_match = re.search(r'[¥\\]?([0-9,]+\.?[0-9]*)', lines[j])
+                        if amount_match:
+                            amount = amount_match.group(1).replace(',', '')
+                            try:
+                                value = float(amount)
+                                if 0 <= value <= 5000:
+                                    print(f"Found 10% tax amount: {amount} in line: {lines[j].strip()}")
+                                    return str(int(value))
+                            except ValueError:
+                                continue
+                        break  # Only check the first 内消費税 line after 10%
+
+        # Fallback: Look for explicit 10% tax patterns where tax is labeled directly
+        tax_10_patterns = [
+            r'消費税\s*10%?\s*[¥\\]?([0-9,]+\.?[0-9]*)',       # 消費税 10% ¥258
+            r'内消費税\s*10%?\s*[¥\\]?([0-9,]+\.?[0-9]*)',     # 内消費税 10% ¥258
+        ]
+
+        for line in lines:
+            for pattern in tax_10_patterns:
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    amount = match.group(1).replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 0 <= value <= 5000:
+                            print(f"Found 10% tax amount: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
+        print("No 10% tax amount found")
+        return ''
+
+    def _extract_tax_8(self, lines: list) -> str:
+        """Extract 8% consumption tax amount (Japanese receipts)."""
+        # Strategy: Find line with "8%" and then look for "内消費税" in the NEXT line(s)
+        # This avoids confusing taxable amounts with tax amounts
+        for i, line in enumerate(lines):
+            if '8%' in line:
+                # Found a line with 8%, look for tax amount in next line(s)
+                for j in range(i+1, min(i+3, len(lines))):
+                    if '内消費税' in lines[j]:
+                        # This is the tax line following the 8% indicator
+                        amount_match = re.search(r'[¥\\]?([0-9,]+\.?[0-9]*)', lines[j])
+                        if amount_match:
+                            amount = amount_match.group(1).replace(',', '')
+                            try:
+                                value = float(amount)
+                                if 0 <= value <= 5000:
+                                    print(f"Found 8% tax amount: {amount} in line: {lines[j].strip()}")
+                                    return str(int(value))
+                            except ValueError:
+                                continue
+                        break  # Only check the first 内消費税 line after 8%
+
+        # Fallback: Look for explicit 8% tax patterns where tax is labeled directly
+        tax_8_patterns = [
+            r'消費税\s*8%?\s*[¥\\]?([0-9,]+\.?[0-9]*)',        # 消費税 8% ¥114
+            r'内消費税\s*8%?\s*[¥\\]?([0-9,]+\.?[0-9]*)',      # 内消費税 8% ¥114
+            r'軽減税率\s*[¥\\]?([0-9,]+\.?[0-9]*)',           # 軽減税率 ¥114
+        ]
+
+        for line in lines:
+            for pattern in tax_8_patterns:
+                match = re.search(pattern, line, re.IGNORECASE)
+                if match:
+                    amount = match.group(1).replace(',', '')
+                    try:
+                        value = float(amount)
+                        if 0 <= value <= 5000:
+                            print(f"Found 8% tax amount: {amount} in line: {line.strip()}")
+                            return str(int(value))
+                    except ValueError:
+                        continue
+
+        print("No 8% tax amount found")
         return ''
 
     def _call_ocr_api(self, image_data: bytes, filename: str, engine: int = 2) -> dict:

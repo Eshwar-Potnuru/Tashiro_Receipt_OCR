@@ -169,6 +169,21 @@ class DraftRepository:
             except sqlite3.OperationalError:
                 pass  # Column already exists
             
+            # Phase 5G-C: Add review state fields (ADMIN/HQ verification)
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN reviewed_at TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN reviewed_by_user_id TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
             conn.commit()
         finally:
             if should_close:
@@ -200,11 +215,16 @@ class DraftRepository:
             if isinstance(creator_user_id_str, UUID):
                 creator_user_id_str = str(creator_user_id_str)
             
+            # Phase 5G-C: Defensive coercion for reviewed_by_user_id
+            reviewed_by_user_id_str = str(draft.reviewed_by_user_id) if draft.reviewed_by_user_id is not None else None
+            if isinstance(reviewed_by_user_id_str, UUID):
+                reviewed_by_user_id_str = str(reviewed_by_user_id_str)
+            
             conn.execute("""
                 INSERT OR REPLACE INTO draft_receipts 
                 (draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
-                 send_attempt_count, last_send_attempt_at, last_send_error)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 str(draft.draft_id),
                 receipt_json,
@@ -218,6 +238,8 @@ class DraftRepository:
                 draft.send_attempt_count,
                 draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,
                 draft.last_send_error,
+                draft.reviewed_at.isoformat() if draft.reviewed_at else None,
+                reviewed_by_user_id_str,
             ))
             conn.commit()
             return draft
@@ -240,7 +262,7 @@ class DraftRepository:
         try:
             cursor = conn.execute("""
                 SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error
+                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                 FROM draft_receipts
                 WHERE draft_id = ?
             """, (str(draft_id),))
@@ -282,14 +304,14 @@ class DraftRepository:
                 # Include image_data for admin views
                 query_parts = ["""
                     SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error
+                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                     FROM draft_receipts
                 """]
             else:
                 # Exclude image_data for list views to reduce payload
                 query_parts = ["""
                     SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error
+                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                     FROM draft_receipts
                 """]
             params = []
@@ -474,6 +496,14 @@ class DraftRepository:
         )
         last_send_error = row["last_send_error"] if "last_send_error" in row.keys() else None
         
+        # Phase 5G-C: Get review state fields (may be None for un-reviewed drafts)
+        reviewed_at = (
+            datetime.fromisoformat(row["reviewed_at"]) 
+            if "reviewed_at" in row.keys() and row["reviewed_at"] 
+            else None
+        )
+        reviewed_by_user_id = row["reviewed_by_user_id"] if "reviewed_by_user_id" in row.keys() else None
+        
         # Create DraftReceipt
         return DraftReceipt(
             draft_id=UUID(row["draft_id"]),
@@ -488,6 +518,8 @@ class DraftRepository:
             send_attempt_count=send_attempt_count,
             last_send_attempt_at=last_send_attempt_at,
             last_send_error=last_send_error,
+            reviewed_at=reviewed_at,
+            reviewed_by_user_id=reviewed_by_user_id,
         )
 
     def count_by_status(self, status: DraftStatus) -> int:

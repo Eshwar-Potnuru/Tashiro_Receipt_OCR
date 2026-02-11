@@ -1570,8 +1570,12 @@
                             <h4>Additional Information</h4>
                             <div class="form-grid">
                                 <div class="form-field">
-                                    <label for="fieldTax">Tax Amount (参考)</label>
-                                    <input type="text" id="fieldTax" name="fieldTax" placeholder="0.00" autocomplete="off" data-field="tax_amount">
+                                    <label for="fieldTax10">Tax Amount (10%)</label>
+                                    <input type="text" id="fieldTax10" name="fieldTax10" placeholder="0.00" autocomplete="off" data-field="tax_10_amount">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldTax8">Tax Amount (8%)</label>
+                                    <input type="text" id="fieldTax8" name="fieldTax8" placeholder="0.00" autocomplete="off" data-field="tax_8_amount">
                                 </div>
                                 <div class="form-field">
                                     <label for="fieldCurrency">Currency</label>
@@ -2317,11 +2321,8 @@ function updateFieldLabels() {
             // Additional info field labels
             const additionalLabels = document.querySelectorAll('.additional-info label');
             console.log('Additional labels found (regular update):', additionalLabels.length);
-            if (additionalLabels.length >= 2) {
-                additionalLabels[0].textContent = t('taxAmountRef');
-                additionalLabels[1].textContent = t('currency');
-                console.log('Additional labels updated (regular):', additionalLabels[1].textContent);
-            }
+            // Note: Labels are now correctly set in HTML (Tax Amount 10%, Tax Amount 8%, Currency)
+            // No longer need to dynamically update them
 
             const assignmentHeader = document.querySelector('.assignment-panel h4');
             if (assignmentHeader) {
@@ -3209,9 +3210,9 @@ function updateFieldLabels() {
                 if (apiResult.status === 'success') {
                     const data = apiResult.extracted_data || {};
                     console.log(`   Draft ID: ${apiResult.draft_id}`);
-                    console.log(`   Vendor: ${data.vendor_name || 'N/A'}`);
-                    console.log(`   Date: ${data.receipt_date || 'N/A'}`);
-                    console.log(`   Total: ${data.total_amount || 0}`);
+                    console.log(`   Vendor: ${data.vendor || data.vendor_name || 'N/A'}`);
+                    console.log(`   Date: ${data.date || data.receipt_date || 'N/A'}`);
+                    console.log(`   Total: ${data.total || data.total_amount || 0}`);
                     console.log(`   Invoice: ${data.invoice_number || 'N/A'}`);
                     console.log(`   Tax Category: ${data.tax_category || 'N/A'}`);
                     console.log(`   Account Title: ${data.account_title || 'N/A'}`);
@@ -3302,7 +3303,7 @@ function updateFieldLabels() {
                             draft_id: errorId,
                             index: index,
                             filename: pendingFiles[index]?.filename || `receipt_${index + 1}`,
-                            receipt: { vendor_name: 'Processing Failed', receipt_date: '', total_amount: 0 },
+                            receipt: { vendor: 'Processing Failed', date: '', total: 0 },
                             ocr_payload: apiResult,
                             status: 'ERROR',
                             created_at: new Date().toISOString(),
@@ -3382,7 +3383,7 @@ function updateFieldLabels() {
                     <div style="display: inline-flex; align-items: center; gap: 8px; padding: 8px 16px; background: #eff6ff; border-radius: 20px; font-size: 13px; color: #1e40af; margin-bottom: 12px;">
                         <i class="fas fa-edit"></i>
                         <span>Editing: Receipt ${currentIndex} of ${window.batchOrder.length}</span>
-                        <span style="font-weight: 600;">• ${receipt.vendor_name || 'Unknown'}</span>
+                        <span style="font-weight: 600;">• ${receipt.vendor || receipt.vendor_name || 'Unknown'}</span>
                     </div>
                 `;
                 editIndicator.style.display = 'block';
@@ -3420,7 +3421,7 @@ function updateFieldLabels() {
                             <img src="${imageUrl}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; margin-bottom: 6px;">
                         ` : `<div style="font-size: 24px; margin-bottom: 4px;">🧾</div>`}
                         <div style="font-size: 12px; font-weight: 600; color: #1e293b; margin-bottom: 4px;">Receipt ${draft.index + 1}</div>
-                        <div style="font-size: 11px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${receipt.vendor_name || 'No vendor'}</div>
+                        <div style="font-size: 11px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${receipt.vendor || receipt.vendor_name || 'No vendor'}</div>
                         <div style="margin-top: 6px; padding: 2px 6px; background: ${statusColor}; color: white; border-radius: 4px; font-size: 10px; font-weight: 600;">${status}</div>
                         ${draft.is_valid === false ? '<div style="margin-top: 4px; color: #ef4444; font-size: 10px;">⚠️</div>' : ''}
                     </div>
@@ -3434,13 +3435,19 @@ function updateFieldLabels() {
             
             // FIXED: Use the same field names as the backend/render expects
             const edits = {
-                receipt_date: document.getElementById('fieldDate')?.value || '',
-                vendor_name: document.getElementById('fieldVendor')?.value || '',
-                total_amount: document.getElementById('fieldTotal')?.value || '',
+                // Store in BOTH formats for compatibility
+                date: document.getElementById('fieldDate')?.value || '',
+                receipt_date: document.getElementById('fieldDate')?.value || '',  // Old format
+                vendor: document.getElementById('fieldVendor')?.value || '',
+                vendor_name: document.getElementById('fieldVendor')?.value || '',  // Old format
+                total: document.getElementById('fieldTotal')?.value || '',
+                total_amount: document.getElementById('fieldTotal')?.value || '',  // Old format
                 invoice_number: document.getElementById('fieldInvoiceNumber')?.value || '',
                 tax_category: document.getElementById('fieldTaxCategory')?.value || '',
                 account_title: document.getElementById('fieldAccountTitle')?.value || '',
-                tax_amount: document.getElementById('fieldTax')?.value || '',
+                tax_10_amount: document.getElementById('fieldTax10')?.value || '',  // 10% tax
+                tax_8_amount: document.getElementById('fieldTax8')?.value || '',    // 8% tax
+                tax_amount: document.getElementById('fieldTax10')?.value || '',     // Default to 10% for backward compat
                 currency: document.getElementById('fieldCurrency')?.value || 'JPY',
                 business_location_id: document.getElementById('businessLocationSelect')?.value || null,
                 staff_id: document.getElementById('staffMemberSelect')?.value || null
@@ -3475,7 +3482,8 @@ function updateFieldLabels() {
                 'fieldVendor': merged.vendor_name || '',
                 'fieldTotal': merged.total_amount || '',
                 'fieldInvoiceNumber': (merged.invoice_number || '').split('\n')[0].trim(), // First line only
-                'fieldTax': merged.tax_amount || merged.tax_10_amount || '',
+                'fieldTax10': merged.tax_10_amount || '',
+                'fieldTax8': merged.tax_8_amount || '',
                 'fieldCurrency': merged.currency || 'JPY',
                 'fieldTaxCategory': merged.tax_category || '',
                 'fieldAccountTitle': merged.account_title || '',
@@ -3658,9 +3666,9 @@ function updateFieldLabels() {
         function loadDraftIntoForm(draft) {
             if (!draft) return;
             
-            // Load from saved edits if available, otherwise from draft
-            const edits = draftEditsById[draft.draft_id];
-            const receipt = edits || draft.receipt || {};
+            // Load from saved edits if available, merged with draft receipt
+            const edits = draftEditsById[draft.draft_id] || {};
+            const receipt = { ...draft.receipt, ...edits };  // Merge edits over receipt
             
             // Update current queue ID for compatibility
             currentQueueId = draft.draft_id;
@@ -3675,10 +3683,11 @@ function updateFieldLabels() {
             const fieldTax = document.getElementById('fieldTax');
             const fieldCurrency = document.getElementById('fieldCurrency');
             
-            if (fieldDate) fieldDate.value = receipt.receipt_date || '';
-            if (fieldVendor) fieldVendor.value = receipt.vendor_name || '';
-            if (fieldTotal) fieldTotal.value = receipt.total_amount || '';
-            if (fieldInvoice) fieldInvoice.value = receipt.invoice_number || '';
+            // Support both old and new field names (backend returns: vendor, date, total, invoice_number)
+            if (fieldDate) fieldDate.value = receipt.date || receipt.receipt_date || '';
+            if (fieldVendor) fieldVendor.value = receipt.vendor || receipt.vendor_name || '';
+            if (fieldTotal) fieldTotal.value = receipt.total || receipt.total_amount || '';
+            if (fieldInvoice) fieldInvoice.value = receipt.invoice_number || receipt.invoice || '';
             if (fieldTaxCategory) fieldTaxCategory.value = receipt.tax_category || '';
             if (fieldAccountTitle) fieldAccountTitle.value = receipt.account_title || '';
             
@@ -3916,7 +3925,8 @@ function updateFieldLabels() {
                 invoice_number: { value: document.getElementById('fieldInvoiceNumber')?.value || '', label: t('invoiceNumberLabel'), type: 'text' },
                 tax_category: { value: document.getElementById('fieldTaxCategory')?.value || '', label: t('taxCategoryLabel'), type: 'select' },
                 account_title: { value: document.getElementById('fieldAccountTitle')?.value || '', label: t('accountTitleLabel'), type: 'select' },
-                tax: { value: document.getElementById('fieldTax')?.value || '', label: t('taxAmountRef'), type: 'number' },
+                tax_10_amount: { value: document.getElementById('fieldTax10')?.value || '', label: 'Tax Amount (10%)', type: 'number' },
+                tax_8_amount: { value: document.getElementById('fieldTax8')?.value || '', label: 'Tax Amount (8%)', type: 'number' },
                 currency: { value: document.getElementById('fieldCurrency')?.value || '', label: t('currency'), type: 'text' }
             };
 
@@ -4710,8 +4720,8 @@ function updateFieldLabels() {
                         receipt_date: merged.receipt_date || '',
                         total_amount: parseFloat(merged.total_amount) || 0,
                         invoice_number: merged.invoice_number || '',
-                        tax_10_amount: parseFloat(merged.tax_amount || merged.tax_10_amount) || 0,
-                        tax_8_amount: 0,
+                        tax_10_amount: parseFloat(merged.tax_10_amount) || 0,
+                        tax_8_amount: parseFloat(merged.tax_8_amount) || 0,
                         tax_category: merged.tax_category || '',
                         account_title: merged.account_title || '',
                         business_location_id: merged.business_location_id || null,
@@ -4755,6 +4765,14 @@ function updateFieldLabels() {
                         if (result.success && result.data && window.batchDraftsById[result.draftId]) {
                             // Update the draft with server response data
                             Object.assign(window.batchDraftsById[result.draftId], result.data);
+                            
+                            // Also update draft.receipt with the saved edits (normalized field names)
+                            const savedEdits = window.draftEditsById[result.draftId];
+                            if (savedEdits) {
+                                window.batchDraftsById[result.draftId].receipt = { ...window.batchDraftsById[result.draftId].receipt, ...savedEdits };
+                                console.log(`✅ Updated draft ${result.draftId} receipt with saved edits`);
+                            }
+                            
                             // Mark as saved - keep as DRAFT status (backend saves as DRAFT)
                             window.batchDraftsById[result.draftId].status = 'DRAFT';  // ✅ FIXED: Keep as DRAFT
                             window.batchDraftsById[result.draftId].saved_at = new Date().toISOString();

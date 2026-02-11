@@ -281,8 +281,12 @@
                                     <input type="text" id="fieldSubtotal" name="subtotal" placeholder="0.00">
                                 </div>
                                 <div class="form-field">
-                                    <label for="fieldTax">Tax Amount</label>
-                                    <input type="text" id="fieldTax" name="tax" placeholder="0.00">
+                                    <label for="fieldTax10">Tax Amount (10%)</label>
+                                    <input type="text" id="fieldTax10" name="tax_10" placeholder="0.00">
+                                </div>
+                                <div class="form-field">
+                                    <label for="fieldTax8">Tax Amount (8%)</label>
+                                    <input type="text" id="fieldTax8" name="tax_8" placeholder="0.00">
                                 </div>
                                 <div class="form-field">
                                     <label for="fieldCurrency">Currency</label>
@@ -576,8 +580,13 @@
                         const subtotalValue = fields.subtotal || '';
                         document.getElementById("fieldSubtotal").value = subtotalValue;
 
-                        const taxValue = fields.tax || '';
-                        document.getElementById("fieldTax").value = taxValue;
+                        const tax10Value = fields.tax_10_amount || fields.tax_10 || '';
+                        document.getElementById("fieldTax10").value = tax10Value;
+                        console.log("Tax 10%:", tax10Value);
+
+                        const tax8Value = fields.tax_8_amount || fields.tax_8 || '';
+                        document.getElementById("fieldTax8").value = tax8Value;
+                        console.log("Tax 8%:", tax8Value);
 
                         const currencyValue = fields.currency || 'JPY';
                         document.getElementById("fieldCurrency").value = currencyValue;
@@ -658,7 +667,8 @@
                         document.getElementById("fieldTaxCategory").value = '';
                         document.getElementById("fieldAccountTitle").value = '';
                         document.getElementById("fieldSubtotal").value = '';
-                        document.getElementById("fieldTax").value = '';
+                        document.getElementById("fieldTax10").value = '';
+                        document.getElementById("fieldTax8").value = '';
                         document.getElementById("fieldCurrency").value = 'JPY';
                     } catch (error) {
                         console.error("Error resetting form fields:", error);
@@ -716,7 +726,8 @@
                         tax_category: document.getElementById("fieldTaxCategory").value,
                         account_title: document.getElementById("fieldAccountTitle").value,
                         subtotal: parseFloat(document.getElementById("fieldSubtotal").value) || 0,
-                        tax: parseFloat(document.getElementById("fieldTax").value) || 0,
+                        tax_10_amount: parseFloat(document.getElementById("fieldTax10").value) || 0,
+                        tax_8_amount: parseFloat(document.getElementById("fieldTax8").value) || 0,
                         currency: document.getElementById("fieldCurrency").value
                     };
 

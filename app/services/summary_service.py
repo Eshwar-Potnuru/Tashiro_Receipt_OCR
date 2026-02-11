@@ -46,6 +46,7 @@ class SummaryService:
 
         for i, receipt in enumerate(ordered):
             logger.info(f"SUMMARY_SERVICE: Processing receipt {i+1}/{len(ordered)} - ID: {getattr(receipt, 'receipt_id', 'N/A')}")
+            logger.info(f"SUMMARY_SERVICE: Receipt details - vendor={receipt.vendor_name}, location={receipt.business_location_id}, staff={receipt.staff_id}, invoice={receipt.invoice_number}")
             
             branch_res = self._safe_write(self.branch_writer.write_receipt, receipt)
             staff_res = self._safe_write(self.staff_writer.write_receipt, receipt)

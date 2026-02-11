@@ -96,6 +96,232 @@
             opacity: 0.8;
         }
 
+        .btn-view-sent {
+            padding: 8px 16px;
+            background: var(--success);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: opacity 0.2s;
+        }
+
+        .btn-view-sent:hover {
+            opacity: 0.9;
+        }
+
+        .btn-view-sent:active {
+            opacity: 0.8;
+        }
+
+        /* Sent Records Modal */
+        .sent-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        .sent-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sent-modal-content {
+            background: white;
+            width: 95%;
+            max-width: 1400px;
+            max-height: 90vh;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .sent-modal-header {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sent-modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sent-modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--gray-600);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+        }
+
+        .sent-modal-close:hover {
+            background: var(--gray-100);
+        }
+
+        .sent-modal-body {
+            flex: 1;
+            overflow: auto;
+            padding: 24px;
+        }
+
+        .sent-search-box {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .sent-search-input {
+            width: 100%;
+            padding: 12px 12px 12px 40px;
+            border: 1px solid var(--gray-300);
+            border-radius: 8px;
+            font-size: 14px;
+        }
+
+        .sent-search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);;
+            color: var(--gray-600);
+        }
+
+        .sent-table-container {
+            background: white;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .sent-table-wrapper {
+            overflow-x: auto;
+        }
+
+        .sent-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .sent-table thead {
+            background: var(--gray-50);
+            border-bottom: 2px solid var(--gray-200);
+        }
+
+        .sent-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-700);
+            white-space: nowrap;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sent-table th:hover {
+            background: var(--gray-100);
+        }
+
+        .sent-table th .sort-icon {
+            margin-left: 4px;
+            font-size: 10px;
+            color: var(--gray-400);
+        }
+
+        .sent-table th.sorted .sort-icon {
+            color: var(--primary);
+        }
+
+        .sent-table tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .sent-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        .sent-table td {
+            padding: 12px 16px;
+            font-size: 13px;
+            color: var(--gray-900);
+        }
+
+        .sent-table .amount {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+        }
+
+        .sent-loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--gray-600);
+        }
+
+        .sent-loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+        }
+
+        .sent-no-data {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-600);
+        }
+
+        .sent-no-data i {
+            font-size: 48px;
+            color: var(--gray-300);
+            margin-bottom: 12px;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
         /* Filters */
         .filters-section {
             background: white;
@@ -621,6 +847,311 @@
             font-weight: 600;
             cursor: pointer;
         }
+
+        /* Phase 5G-D: HQ Preparation Stub */
+        .hq-preparation-stub {
+            margin-top: 32px;
+            padding: 24px;
+            border: 2px dashed #a5b4fc;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #f5f7ff 0%, #e0e7ff 100%);
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.08);
+        }
+
+        .hq-stub-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .hq-stub-icon {
+            font-size: 32px;
+            color: #6366f1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 56px;
+            height: 56px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(99, 102, 241, 0.15);
+        }
+
+        .hq-stub-title {
+            flex: 1;
+        }
+
+        .hq-stub-title h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #4338ca;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hq-stub-title .badge-coming-soon {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 4px 8px;
+            background: #fbbf24;
+            color: #78350f;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .hq-stub-subtitle {
+            font-size: 13px;
+            color: #6366f1;
+            font-weight: 500;
+        }
+
+        .hq-stub-content {
+            margin-bottom: 20px;
+        }
+
+        .hq-info-box {
+            background: white;
+            padding: 16px;
+            border-radius: 8px;
+            border-left: 4px solid #6366f1;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .hq-info-box p {
+            font-size: 14px;
+            color: #4b5563;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .hq-info-box strong {
+            color: #1f2937;
+            font-weight: 600;
+        }
+
+        .hq-workflow-preview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .hq-workflow-step {
+            background: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: 1px solid #c7d2fe;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            color: #4b5563;
+        }
+
+        .hq-workflow-step i {
+            color: #6366f1;
+            font-size: 18px;
+        }
+
+        .hq-workflow-step strong {
+            display: block;
+            color: #1f2937;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .hq-button-container {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .hq-disabled-btn {
+            flex: 0 0 auto;
+            padding: 14px 24px;
+            background: #e5e7eb;
+            color: #9ca3af;
+            border: 2px solid #d1d5db;
+            border-radius: 8px;
+            cursor: not-allowed;
+            font-weight: 600;
+            font-size: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.7;
+        }
+
+        .hq-disabled-btn i {
+            font-size: 16px;
+        }
+
+        .hq-hint-text {
+            flex: 1;
+            font-size: 12px;
+            color: #6b7280;
+            line-height: 1.5;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hq-hint-text i {
+            color: #fbbf24;
+            font-size: 14px;
+        }
+
+        .hq-hint-text strong {
+            color: #374151;
+            font-weight: 600;
+        }
+
+        .hq-tooltip {
+            position: relative;
+            display: inline-flex;
+            cursor: help;
+        }
+
+        .hq-tooltip-icon {
+            width: 20px;
+            height: 20px;
+            background: #6366f1;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .hq-tooltip:hover .hq-tooltip-text {
+            display: block;
+        }
+
+        .hq-tooltip-text {
+            display: none;
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+            padding: 8px 12px;
+            background: #1f2937;
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .hq-tooltip-text::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: #1f2937;
+        }
+
+        /* Filter Item Styling */
+        .filter-item {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .filter-item-label {
+            display: block;
+            font-size: 0.85em;
+            font-weight: 600;
+            margin-bottom: 6px;
+            height: 20px;
+            line-height: 20px;
+        }
+
+        .filter-item-control {
+            flex: 1;
+            display: flex;
+            align-items: stretch;
+        }
+
+        .filter-item-control select,
+        .filter-item-control input,
+        .filter-item-control button {
+            width: 100%;
+            padding: 10px 12px;
+            border-radius: 6px;
+            border: 2px solid;
+            font-weight: 500;
+            font-size: 14px;
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+        }
+
+        .filter-item-control button {
+            cursor: pointer;
+            font-size: 15px;
+            padding: 10px 12px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s ease;
+        }
+
+        /* Location Theme */
+        .location-filter .filter-item-label {
+            color: #856404;
+        }
+
+        .location-filter .filter-item-control select,
+        .location-filter .filter-item-control input {
+            border-color: #ffc107;
+            background: white;
+        }
+
+        .location-filter .filter-item-control button {
+            background: #ffc107;
+            color: #000;
+            border-color: #ff9800;
+            box-shadow: 0 2px 4px rgba(255,193,7,0.2);
+        }
+
+        .location-filter .filter-item-control button:hover {
+            background: #ffb300;
+        }
+
+        /* Staff Theme */
+        .staff-filter .filter-item-label {
+            color: #155724;
+        }
+
+        .staff-filter .filter-item-control select,
+        .staff-filter .filter-item-control input {
+            border-color: #28a745;
+            background: white;
+        }
+
+        .staff-filter .filter-item-control button {
+            background: #28a745;
+            color: white;
+            border-color: #1e7e34;
+            box-shadow: 0 2px 4px rgba(40,167,69,0.2);
+        }
+
+        .staff-filter .filter-item-control button:hover {
+            background: #218838;
+        }
     </style>
 </head>
 <body>
@@ -647,6 +1178,9 @@
             </div>
             <div class="user-info">
                 <span class="user-name" id="userName">Loading...</span>
+                <button class="btn-view-sent" id="viewSentBtn" title="View Sent Records">
+                    <i class="fas fa-check-circle"></i> Sent Records
+                </button>
                 <button class="logout-btn" id="logoutBtn">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -768,7 +1302,354 @@
         <img id="fsImage" class="fs-image" alt="Full screen preview">
     </div>
 
+    <!-- Sent Records Modal -->
+    <div class="sent-modal" id="sentModal">
+        <div class="sent-modal-content">
+            <div class="sent-modal-header">
+                <div class="sent-modal-title">
+                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                    Sent Records - Verification View
+                </div>
+                <button class="sent-modal-close" id="closeSentModal">&times;</button>
+            </div>
+            <div class="sent-modal-body">
+                <!-- Phase 5G-C: 3-Tab Navigation (Receipts | Format② | Format①) -->
+                <div class="ledger-tab-navigation" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 3px solid #e9ecef; padding-bottom: 0;">
+                    <button class="ledger-tab active" data-tab="receipts" style="flex: 1; padding: 12px 16px; background: var(--primary); color: white; border: none; border-bottom: 3px solid var(--primary); margin-bottom: -3px; cursor: pointer; font-weight: 600; font-size: 1em;">
+                        <i class="fas fa-receipt"></i> Receipts View
+                    </button>
+                    <button class="ledger-tab" data-tab="location-ledger" style="flex: 1; padding: 12px 16px; background: #fff3cd; color: #856404; border: 1px solid #ffc107; border-bottom: 3px solid transparent; margin-bottom: -3px; cursor: pointer; font-weight: 600; font-size: 1em;">
+                        <i class="fas fa-building" style="color: #ffa500;"></i> Format② Location Ledger
+                    </button>
+                    <button class="ledger-tab" data-tab="staff-ledger" style="flex: 1; padding: 12px 16px; background: #d4edda; color: #155724; border: 1px solid #28a745; border-bottom: 3px solid transparent; margin-bottom: -3px; cursor: pointer; font-weight: 600; font-size: 1em;">
+                        <i class="fas fa-users" style="color: #28a745;"></i> Format① Staff Ledger
+                    </button>
+                </div>
+                
+                <!-- Tab A: Receipts View (Original SENT records table) -->
+                <div class="tab-content" id="receiptsTabContent" style="display: block;">
+                    <div class="sent-filter-tabs" style="display: flex; gap: 8px; margin-bottom: 12px; border-bottom: 2px solid #e9ecef; padding-bottom: 8px;">
+                        <button class="sent-filter-tab active" data-status="all" style="flex: 1; padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                            All Records
+                        </button>
+                        <button class="sent-filter-tab" data-status="SENT" style="flex: 1; padding: 8px 16px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                            <i class="fas fa-paper-plane"></i> SENT
+                        </button>
+                        <button class="sent-filter-tab" data-status="REVIEWED" style="flex: 1; padding: 8px 16px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                            <i class="fas fa-check-double"></i> REVIEWED
+                        </button>
+                    </div>
+                    
+                    <div class="sent-action-bar" id="sentActionBar" style="display: none; padding: 10px 12px; background: #e7f5ff; border: 1px solid #339af0; border-radius: 4px; margin-bottom: 12px; align-items: center; justify-content: space-between;">
+                        <span id="sentSelectionCount" style="font-weight: 500; color: #1864ab;">0 selected</span>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="markReviewedBtn" style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                                <i class="fas fa-check-double"></i> Mark as Reviewed
+                            </button>
+                            <button id="prepareHQBtn" disabled title="HQ summary Format③ is planned in Phase 9" style="padding: 8px 16px; background: #e9ecef; color: #6c757d; border: 1px solid #ced4da; border-radius: 4px; cursor: not-allowed; font-weight: 500;">
+                                <i class="fas fa-file-export"></i> Prepare for HQ (Coming Soon)
+                            </button>
+                        </div>
+                    </div>
+                
+                    <div class="sent-search-box">
+                        <i class="fas fa-search sent-search-icon"></i>
+                        <input type="text" 
+                               class="sent-search-input" 
+                               id="sentSearchInput" 
+                               placeholder="Search by vendor, invoice, staff name, or month...">
+                    </div>
+                    <div style="padding: 8px 12px; background: #f8f9fa; border-left: 3px solid var(--success); margin-bottom: 12px; font-size: 0.9em; color: #666;">
+                        <i class="fas fa-info-circle" style="color: var(--success); margin-right: 6px;"></i>
+                        <strong>Ledger Targets:</strong> Shows the Excel ledger types that a record is expected to be written to during Send (Format① Staff Ledger, Format② Location Ledger). These are expected targets, not verification marks — use them to open the corresponding month sheet to confirm transcription.
+                    </div>
+                    <div class="sent-table-container">
+                        <div class="sent-table-wrapper">
+                            <table class="sent-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 40px;">
+                                            <input type="checkbox" id="selectAllSent" title="Select all SENT records">
+                                        </th>
+                                        <th style="width: 100px;">Status</th>
+                                        <th class="sortable" data-sort="receipt_date">
+                                            Date <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="vendor">
+                                            Vendor <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="invoice_number">
+                                            Invoice # <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="total_amount">
+                                            Total <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="tax_10_amount">
+                                            Tax 10% <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="tax_8_amount">
+                                            Tax 8% <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="staff_name">
+                                            Staff <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="business_location_id">
+                                            Location <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th class="sortable" data-sort="month_sheet_name">
+                                            Month <i class="fas fa-sort sort-icon"></i>
+                                        </th>
+                                        <th>
+                                            Ledger Targets
+                                        </th>
+                                        <th class="sortable sorted" data-sort="sent_at">
+                                            Sent At <i class="fas fa-sort-down sort-icon"></i>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="sentTableBody">
+                                    <tr>
+                                        <td colspan="13" class="sent-loading">
+                                            <i class="fas fa-spinner"></i>
+                                            <p>Loading sent records...</p>
+                                        </td>
+                                    </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab B: Format② Location Ledger Preview -->
+                <div class="tab-content" id="locationLedgerTabContent" style="display: none;">
+                    <div style="padding: 10px 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 12px; font-size: 0.9em; color: #856404;">
+                        <i class="fas fa-eye" style="margin-right: 6px;"></i>
+                        <strong>Preview Only:</strong> Read-only view of transcribed data in Excel format. Editing is planned for Phase 9.
+                    </div>
+                    
+                    <!-- Filter Controls for Location Ledger -->
+                    <div class="location-filter" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px; padding: 16px; background: linear-gradient(135deg, #fff9e6 0%, #fff3cd 100%); border: 2px solid #ffc107; border-radius: 8px; box-shadow: 0 2px 6px rgba(255,193,7,0.15); align-items: start;">
+                        <div class="filter-item">
+                            <label class="filter-item-label">📅 Month</label>
+                            <div class="filter-item-control">
+                                <select id="locationMonthFilter" class="filter-select">
+                                    <option value="">All Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">🏒 Location</label>
+                            <div class="filter-item-control">
+                                <select id="locationLocationFilter" class="filter-select">
+                                    <option value="">All Locations</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">👤 Staff</label>
+                            <div class="filter-item-control">
+                                <select id="locationStaffFilter" class="filter-select">
+                                    <option value="">All Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">🔍 Search</label>
+                            <div class="filter-item-control">
+                                <input type="text" id="locationSearchInput" placeholder="Search vendor, description or month...">
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">⚙️ Action</label>
+                            <div class="filter-item-control">
+                                <button id="locationRefreshBtn">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Format② Table -->
+                    <div class="ledger-table-container" style="max-height: 600px; overflow: auto; -webkit-overflow-scrolling: touch; border: 2px solid #ffc107; border-radius: 6px; box-shadow: 0 2px 8px rgba(255,193,7,0.2);">
+                        <table class="ledger-table" id="locationLedgerTable" style="width: 100%; min-width: 800px; border-collapse: collapse; font-size: 0.9em;">
+                            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                                <tr>
+                                    <!-- Headers dynamically generated by JavaScript based on columns with data -->
+                                </tr>
+                            </thead>
+                            <tbody id="locationLedgerBody">
+                                <tr>
+                                    <td colspan="15" style="text-align: center; padding: 40px; color: #6c757d;">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading ledger preview...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Tab C: Format① Staff Ledger Preview -->
+                <div class="tab-content" id="staffLedgerTabContent" style="display: none;">
+                    <div style="padding: 10px 12px; background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; margin-bottom: 12px; font-size: 0.9em; color: #856404;">
+                        <i class="fas fa-eye" style="margin-right: 6px;"></i>
+                        <strong>Preview Only:</strong> Read-only view of transcribed data in Excel format. Editing is planned for Phase 9.
+                    </div>
+                    
+                    <!-- Filter Controls for Staff Ledger -->
+                    <div class="staff-filter" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px; padding: 16px; background: linear-gradient(135deg, #d4f4dd 0%, #d4edda 100%); border: 2px solid #28a745; border-radius: 8px; box-shadow: 0 2px 6px rgba(40,167,69,0.15); align-items: start;">
+                        <div class="filter-item">
+                            <label class="filter-item-label">📅 Month</label>
+                            <div class="filter-item-control">
+                                <select id="staffMonthFilter" class="filter-select">
+                                    <option value="">All Months</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">🏒 Location</label>
+                            <div class="filter-item-control">
+                                <select id="staffLocationFilter" class="filter-select">
+                                    <option value="">All Locations</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">👤 Staff</label>
+                            <div class="filter-item-control">
+                                <select id="staffStaffFilter" class="filter-select">
+                                    <option value="">All Staff</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">🔍 Search</label>
+                            <div class="filter-item-control">
+                                <input type="text" id="staffSearchInput" placeholder="Search staff, vendor, description or month...">
+                            </div>
+                        </div>
+                        <div class="filter-item">
+                            <label class="filter-item-label">⚙️ Action</label>
+                            <div class="filter-item-control">
+                                <button id="staffRefreshBtn">
+                                    <i class="fas fa-sync-alt"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Format① Table -->
+                    <div class="ledger-table-container" style="max-height: 600px; overflow: auto; -webkit-overflow-scrolling: touch; border: 2px solid #28a745; border-radius: 6px; box-shadow: 0 2px 8px rgba(40,167,69,0.2);">
+                        <table class="ledger-table" id="staffLedgerTable" style="width: 100%; min-width: 800px; border-collapse: collapse; font-size: 0.9em;">
+                            <thead style="position: sticky; top: 0; background: #f8f9fa; z-index: 10;">
+                                <tr>
+                                    <!-- Headers dynamically generated by JavaScript based on columns with data -->
+                                </tr>
+                            </thead>
+                            <tbody id="staffLedgerBody">
+                                <tr>
+                                    <td colspan="15" style="text-align: center; padding: 40px; color: #6c757d;">
+                                        <i class="fas fa-spinner fa-spin"></i> Loading ledger preview...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Phase 5G-D: HQ Preparation Stub (UI Only) -->
+                <section class="hq-preparation-stub">
+                    <div class="hq-stub-header">
+                        <div class="hq-stub-icon">
+                            <i class="fas fa-building"></i>
+                        </div>
+                        <div class="hq-stub-title">
+                            <h3>
+                                Headquarters Submission
+                                <span class="badge-coming-soon">Next Phase</span>
+                                <span class="hq-tooltip">
+                                    <span class="hq-tooltip-icon">?</span>
+                                    <span class="hq-tooltip-text">Will be implemented in Phase 9 (Additional Development)</span>
+                                </span>
+                            </h3>
+                            <div class="hq-stub-subtitle">📋 Format③ — Monthly Summary for HQ Transfer</div>
+                        </div>
+                    </div>
+
+                    <div class="hq-stub-content">
+                        <div class="hq-info-box">
+                            <p>
+                                <i class="fas fa-info-circle" style="color: #6366f1; margin-right: 6px;"></i>
+                                <strong>Purpose:</strong> This step represents the preparation of branch office data for submission to headquarters. Once enabled, it will generate a monthly summary (Format③) consolidating all reviewed records for seamless transfer to HQ accounting systems.
+                            </p>
+                        </div>
+
+                        <div class="hq-workflow-preview">
+                            <div class="hq-workflow-step">
+                                <i class="fas fa-calendar-check"></i>
+                                <div>
+                                    <strong>Step 1</strong>
+                                    Select month period
+                                </div>
+                            </div>
+                            <div class="hq-workflow-step">
+                                <i class="fas fa-filter"></i>
+                                <div>
+                                    <strong>Step 2</strong>
+                                    Filter reviewed records
+                                </div>
+                            </div>
+                            <div class="hq-workflow-step">
+                                <i class="fas fa-file-excel"></i>
+                                <div>
+                                    <strong>Step 3</strong>
+                                    Generate Format③
+                                </div>
+                            </div>
+                            <div class="hq-workflow-step">
+                                <i class="fas fa-paper-plane"></i>
+                                <div>
+                                    <strong>Step 4</strong>
+                                    Transfer to HQ
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="hq-button-container">
+                        <button class="hq-disabled-btn" disabled title="This feature will be enabled in Phase 9 (Additional Development)">
+                            <i class="fas fa-lock"></i>
+                            Prepare for HQ
+                        </button>
+                        <div class="hq-hint-text">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <span><strong>Format③</strong> summary generation and automated HQ transfer will be implemented as part of <strong>Additional Development</strong> (scheduled post-initial deployment).</span>
+                        </div>
+                    </div>
+                </section>
+                
+            </div>
+        </div>
+    </div>
+
     <script>
+        // ============= URL TOKEN EXTRACTION =============
+        // Extract auth_token from URL query params and save to localStorage
+        // This allows the page to be accessed via /office?auth_token=xxx
+        (function extractTokenFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('auth_token');
+            
+            if (urlToken) {
+                console.log('[Token] Found auth_token in URL, saving to localStorage');
+                localStorage.setItem('auth_token', urlToken);
+                
+                // Clean up URL to remove token (for security)
+                const cleanUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            } else {
+                console.log('[Token] No auth_token in URL, checking localStorage');
+            }
+        })();
+        
         // Global state
         let allDrafts = [];
         let filteredDrafts = [];
@@ -806,6 +1687,20 @@
         const statDraft = document.getElementById('statDraft');
         const statSent = document.getElementById('statSent');
         const statErrors = document.getElementById('statErrors');
+
+        // Sent records modal elements
+        const viewSentBtn = document.getElementById('viewSentBtn');
+        const sentModal = document.getElementById('sentModal');
+        const closeSentModal = document.getElementById('closeSentModal');
+        const sentSearchInput = document.getElementById('sentSearchInput');
+        const sentTableBody = document.getElementById('sentTableBody');
+        let allSentRecords = [];
+        let filteredSentRecords = [];
+        let sentCurrentSort = { field: 'sent_at', order: 'desc' };
+        
+        // Phase 5G-C: Review workflow state
+        let sentStatusFilter = 'all';  // 'all', 'SENT', 'REVIEWED'
+        let selectedSentDrafts = new Set();  // Set of draft_ids
 
         // Check auth and role on load
         async function checkAuth() {
@@ -1380,8 +2275,997 @@
             const isAuthorized = await checkAuth();
             if (isAuthorized) {
                 await fetchDrafts();
+                setupSentRecordsModal();
             }
         })();
+
+        // ============= SENT RECORDS MODAL FUNCTIONS =============
+
+        function setupSentRecordsModal() {
+            // Open modal
+            viewSentBtn.addEventListener('click', () => {
+                sentModal.classList.add('show');
+                loadSentRecords();
+            });
+
+            // Close modal
+            closeSentModal.addEventListener('click', () => {
+                sentModal.classList.remove('show');
+            });
+
+            // Close on backdrop click
+            sentModal.addEventListener('click', (e) => {
+                if (e.target === sentModal) {
+                    sentModal.classList.remove('show');
+                }
+            });
+
+            // Search
+            sentSearchInput.addEventListener('input', (e) => {
+                filterSentRecords(e.target.value);
+            });
+
+            // Sort headers
+            document.querySelectorAll('.sent-table th.sortable').forEach(th => {
+                th.addEventListener('click', () => {
+                    const field = th.dataset.sort;
+                    
+                    if (sentCurrentSort.field === field) {
+                        sentCurrentSort.order = sentCurrentSort.order === 'asc' ? 'desc' : 'asc';
+                    } else {
+                        sentCurrentSort.field = field;
+                        sentCurrentSort.order = 'desc';
+                    }
+
+                    // Update UI
+                    document.querySelectorAll('.sent-table th.sortable').forEach(t => {
+                        t.classList.remove('sorted');
+                        const icon = t.querySelector('.sort-icon');
+                        icon.className = 'fas fa-sort sort-icon';
+                    });
+
+                    th.classList.add('sorted');
+                    const icon = th.querySelector('.sort-icon');
+                    icon.className = sentCurrentSort.order === 'asc' ? 
+                        'fas fa-sort-up sort-icon' : 
+                        'fas fa-sort-down sort-icon';
+
+                    sortAndRenderSentRecords();
+                });
+            });
+            
+            // Phase 5G-C: Filter tabs
+            document.querySelectorAll('.sent-filter-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Update active tab style
+                    document.querySelectorAll('.sent-filter-tab').forEach(t => {
+                        t.classList.remove('active');
+                        t.style.background = '#f8f9fa';
+                        t.style.color = '#495057';
+                        t.style.border = '1px solid #dee2e6';
+                    });
+                    tab.classList.add('active');
+                    tab.style.background = 'var(--primary)';
+                    tab.style.color = 'white';
+                    tab.style.border = 'none';
+                    
+                    // Update filter and re-render
+                    sentStatusFilter = tab.dataset.status;
+                    selectedSentDrafts.clear();
+                    updateSelectionUI();
+                    filterSentRecords(sentSearchInput.value);
+                });
+            });
+            
+            // Phase 5G-C: Select all checkbox
+            document.getElementById('selectAllSent').addEventListener('change', (e) => {
+                const isChecked = e.target.checked;
+                // Only select/deselect SENT records (not REVIEWED)
+                const visibleSentRecords = filteredSentRecords.filter(r => r.status === 'SENT');
+                
+                if (isChecked) {
+                    visibleSentRecords.forEach(r => selectedSentDrafts.add(r.draft_id));
+                } else {
+                    visibleSentRecords.forEach(r => selectedSentDrafts.delete(r.draft_id));
+                }
+                
+                updateSelectionUI();
+                renderSentRecordsTable();
+            });
+            
+            // Phase 5G-C: Mark as Reviewed button
+            document.getElementById('markReviewedBtn').addEventListener('click', async () => {
+                if (selectedSentDrafts.size === 0) return;
+                
+                const confirmed = confirm(`Mark ${selectedSentDrafts.size} record(s) as reviewed?\\n\\nThis will update their status to REVIEWED and cannot be undone.`);
+                if (!confirmed) return;
+                
+                await markDraftsAsReviewed(Array.from(selectedSentDrafts));
+            });
+            
+            // Phase 5G-C: 3-Tab Navigation
+            document.querySelectorAll('.ledger-tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const tabName = tab.dataset.tab;
+                    
+                    // Update active tab style with distinct colors per tab
+                    document.querySelectorAll('.ledger-tab').forEach(t => {
+                        t.classList.remove('active');
+                        const tName = t.dataset.tab;
+                        if (tName === 'receipts') {
+                            t.style.background = '#f8f9fa';
+                            t.style.color = '#495057';
+                            t.style.border = 'none';
+                        } else if (tName === 'location-ledger') {
+                            t.style.background = '#fff3cd';
+                            t.style.color = '#856404';
+                            t.style.border = '1px solid #ffc107';
+                        } else if (tName === 'staff-ledger') {
+                            t.style.background = '#d4edda';
+                            t.style.color = '#155724';
+                            t.style.border = '1px solid #28a745';
+                        }
+                        t.style.borderBottom = '3px solid transparent';
+                    });
+                    
+                    tab.classList.add('active');
+                    if (tabName === 'receipts') {
+                        tab.style.background = 'var(--primary)';
+                        tab.style.color = 'white';
+                        tab.style.border = 'none';
+                        tab.style.borderBottom = '3px solid var(--primary)';
+                    } else if (tabName === 'location-ledger') {
+                        tab.style.background = '#ffc107';
+                        tab.style.color = '#000';
+                        tab.style.border = '2px solid #ff9800';
+                        tab.style.borderBottom = '3px solid #ff9800';
+                    } else if (tabName === 'staff-ledger') {
+                        tab.style.background = '#28a745';
+                        tab.style.color = 'white';
+                        tab.style.border = '2px solid #1e7e34';
+                        tab.style.borderBottom = '3px solid #1e7e34';
+                    }
+                    
+                    // Show corresponding tab content
+                    document.getElementById('receiptsTabContent').style.display = 'none';
+                    document.getElementById('locationLedgerTabContent').style.display = 'none';
+                    document.getElementById('staffLedgerTabContent').style.display = 'none';
+                    
+                    if (tabName === 'receipts') {
+                        document.getElementById('receiptsTabContent').style.display = 'block';
+                    } else if (tabName === 'location-ledger') {
+                        document.getElementById('locationLedgerTabContent').style.display = 'block';
+                        loadLocationLedger(); // Load on first access
+                    } else if (tabName === 'staff-ledger') {
+                        document.getElementById('staffLedgerTabContent').style.display = 'block';
+                        loadStaffLedger(); // Load on first access
+                    }
+                });
+            });
+            
+            // Location Ledger: Refresh button
+            document.getElementById('locationRefreshBtn').addEventListener('click', () => {
+                loadLocationLedger();
+            });
+            
+            // Staff Ledger: Refresh button
+            document.getElementById('staffRefreshBtn').addEventListener('click', () => {
+                loadStaffLedger();
+            });
+            
+            // Location Ledger: Search filter
+            document.getElementById('locationSearchInput').addEventListener('input', (e) => {
+                filterLocationLedger(e.target.value);
+            });
+            
+            // Staff Ledger: Search filter
+            document.getElementById('staffSearchInput').addEventListener('input', (e) => {
+                filterStaffLedger(e.target.value);
+            });
+            
+            // Location Ledger: Month filter
+            document.getElementById('locationMonthFilter').addEventListener('change', () => {
+                filterLocationLedger(document.getElementById('locationSearchInput').value);
+            });
+            
+            // Location Ledger: Location filter
+            document.getElementById('locationLocationFilter').addEventListener('change', () => {
+                filterLocationLedger(document.getElementById('locationSearchInput').value);
+            });
+            
+            // Location Ledger: Staff filter
+            document.getElementById('locationStaffFilter').addEventListener('change', () => {
+                filterLocationLedger(document.getElementById('locationSearchInput').value);
+            });
+            
+            // Staff Ledger: Month filter
+            document.getElementById('staffMonthFilter').addEventListener('change', () => {
+                filterStaffLedger(document.getElementById('staffSearchInput').value);
+            });
+            
+            // Staff Ledger: Location filter
+            document.getElementById('staffLocationFilter').addEventListener('change', () => {
+                filterStaffLedger(document.getElementById('staffSearchInput').value);
+            });
+            
+            // Staff Ledger: Staff filter
+            document.getElementById('staffStaffFilter').addEventListener('change', () => {
+                filterStaffLedger(document.getElementById('staffSearchInput').value);
+            });
+        }
+        
+        // ============= LEDGER PREVIEW FUNCTIONS =============
+        
+        let allLocationLedgerRows = [];
+        let filteredLocationLedgerRows = [];
+        let allStaffLedgerRows = [];
+        let filteredStaffLedgerRows = [];
+        
+        async function loadLocationLedger() {
+            const token = localStorage.getItem('auth_token');
+            const tbody = document.getElementById('locationLedgerBody');
+            
+            try {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="9" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading ledger preview...
+                        </td>
+                    </tr>
+                `;
+                
+                const response = await fetch('/api/drafts/ledger-preview?format=location', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load location ledger');
+                }
+                
+                allLocationLedgerRows = await response.json();
+                
+                // Populate filters
+                populateLocationFilters();
+                
+                // Apply initial filter (no search text)
+                filterLocationLedger('');
+                
+            } catch (error) {
+                console.error('Error loading location ledger:', error);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="15" style="text-align: center; padding: 40px; color: #dc3545;">
+                            <i class="fas fa-exclamation-circle"></i> Failed to load ledger preview. Please try again.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function populateLocationFilters() {
+            // Populate Month filter with improved year grouping
+            const monthFilter = document.getElementById('locationMonthFilter');
+            const monthsData = new Map(); // key: month_key, value: {label, year, month}
+            
+            allLocationLedgerRows.forEach(row => {
+                if (row.month_key && !monthsData.has(row.month_key)) {
+                    const year = parseInt(row.month_key.substring(0, 4));
+                    const month = parseInt(row.month_key.substring(4, 6));
+                    monthsData.set(row.month_key, {
+                        label: row.month_sheet_name || `${year}年${month.toString().padStart(2, '0')}月`,
+                        year: year,
+                        month: month
+                    });
+                }
+            });
+            
+            // Group by year and sort
+            const monthsByYear = new Map();
+            Array.from(monthsData.entries()).forEach(([key, data]) => {
+                if (!monthsByYear.has(data.year)) {
+                    monthsByYear.set(data.year, []);
+                }
+                monthsByYear.get(data.year).push({key, ...data});
+            });
+            
+            // Build options with year grouping
+            monthFilter.innerHTML = '<option value="">📅 All Months</option>';
+            Array.from(monthsByYear.keys()).sort((a, b) => b - a).forEach(year => {
+                const months = monthsByYear.get(year).sort((a, b) => b.month - a.month);
+                monthFilter.innerHTML += `<optgroup label="━━━ ${year}年 ━━━">`;
+                months.forEach(m => {
+                    monthFilter.innerHTML += `<option value="${m.key}">  ${m.label}</option>`;
+                });
+                monthFilter.innerHTML += '</optgroup>';
+            });
+            
+            // Populate Location filter with all configured locations
+            const locationFilter = document.getElementById('locationLocationFilter');
+            const locations = new Set();
+            
+            // Add all configured locations from system (7 locations)
+            const configuredLocations = ['Tokyo', 'Osaka', 'Sagami', 'Aichi', 'Keihin', 'Kashima', 'Takasago'];
+            configuredLocations.forEach(loc => locations.add(loc));
+            
+            // Add any additional locations from actual data
+            allLocationLedgerRows.forEach(row => {
+                if (row.location) locations.add(row.location);
+            });
+            
+            locationFilter.innerHTML = '<option value="">All Locations</option>';
+            Array.from(locations).sort().forEach(location => {
+                locationFilter.innerHTML += `<option value="${location}">${location}</option>`;
+            });
+            
+            // Populate Staff filter for Location Ledger
+            const staffFilter = document.getElementById('locationStaffFilter');
+            const staffMap = new Map();
+            allLocationLedgerRows.forEach(row => {
+                if (row.staff_id && row.D_person_in_charge) {
+                    staffMap.set(row.staff_id, row.D_person_in_charge);
+                }
+            });
+            staffFilter.innerHTML = '<option value="">All Staff</option>';
+            Array.from(staffMap.entries()).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, name]) => {
+                staffFilter.innerHTML += `<option value="${id}">${name}</option>`;
+            });
+        }
+        
+        function filterLocationLedger(searchText) {
+            const rawSearch = (searchText || '').trim();
+            const monthFilter = document.getElementById('locationMonthFilter').value;
+            const locationFilter = document.getElementById('locationLocationFilter').value;
+            const staffFilter = document.getElementById('locationStaffFilter').value;
+            
+            // Check if search is a month shorthand (e.g., "01" or "02/2026" or "12/2025")
+            let searchMonth = null;
+            const monthMatch = rawSearch.match(/^\s*(\d{1,2})(?:\s*[\/\-\s]\s*(\d{4}))?\s*$/);
+            if (monthMatch) {
+                const m = parseInt(monthMatch[1], 10);
+                if (m >= 1 && m <= 12) {
+                    const mm = String(m).padStart(2, '0');
+                    if (monthMatch[2]) {
+                        // Has year: exact month_key match
+                        searchMonth = { type: 'exact', month_key: `${monthMatch[2]}${mm}` };
+                    } else {
+                        // No year: match any year with this month
+                        searchMonth = { type: 'monthOnly', month: mm };
+                    }
+                }
+            }
+            
+            const search = searchMonth ? '' : rawSearch.toLowerCase();
+            
+            filteredLocationLedgerRows = allLocationLedgerRows.filter(row => {
+                // Apply month search shorthand or dropdown filter
+                if (searchMonth) {
+                    if (searchMonth.type === 'exact') {
+                        if (row.month_key !== searchMonth.month_key) return false;
+                    } else if (searchMonth.type === 'monthOnly') {
+                        const rowMonth = row.month_key.substring(4, 6);
+                        if (rowMonth !== searchMonth.month) return false;
+                    }
+                } else if (monthFilter && row.month_key !== monthFilter) {
+                    return false;
+                }
+                
+                if (locationFilter && row.location !== locationFilter) return false;
+                if (staffFilter && row.staff_id !== staffFilter) return false;
+                
+                // Apply text search
+                if (search) {
+                    const rowText = JSON.stringify(row).toLowerCase();
+                    if (!rowText.includes(search)) return false;
+                }
+                
+                return true;
+            });
+            
+            renderLocationLedger();
+        }
+        
+        function renderLocationLedger() {
+            const tbody = document.getElementById('locationLedgerBody');
+            const table = document.getElementById('locationLedgerTable');
+            const thead = table ? table.querySelector('thead tr') : null;
+            if (!tbody) { console.error('renderLocationLedger: tbody not found'); return; }
+            
+            // Define all possible columns with metadata
+            const allColumns = [
+                { field: 'month_sheet_name', label: '月度', align: 'center', format: (v) => v || '—', metadata: true, sticky: true },
+                { field: 'location', label: '事業所', align: 'center', format: (v) => v || '—', metadata: true, sticky: true },
+                { field: 'D_person_in_charge', label: '担当者', align: 'left', format: (v) => v || '—', metadata: true },
+                { field: 'A_date', label: '支払日', align: 'left', format: (v) => v || '—' },
+                { field: 'B_work_no', label: '工番', align: 'left', format: (v) => v || '' },
+                { field: 'C_description', label: '摘要', align: 'left', format: (v) => v || '—' },
+                { field: 'E_income', label: '収入', align: 'right', format: (v) => v || '' },
+                { field: 'F_expense', label: '支出', align: 'right', format: (v) => v || '¥0', bold: true },
+                { field: 'G_blank_a', label: 'a', align: 'center', format: (v) => '', skip: true },
+                { field: 'H_invoice_presence', label: 'インボイス', align: 'center', format: (v, row) => {
+                    const val = v || '—';
+                    const bg = val === '有' ? '#d4edda' : '#f8d7da';
+                    const color = val === '有' ? '#155724' : '#721c24';
+                    return `<span style="display: inline-block; padding: 2px 8px; background: ${bg}; color: ${color}; border-radius: 3px; font-size: 0.85em; font-weight: 600;">${val}</span>`;
+                }},
+                { field: 'I_account_title', label: '勘定科目', align: 'left', format: (v) => v || '' },
+                { field: 'J_blank_b', label: 'b', align: 'center', format: (v) => '', skip: true },
+                { field: 'K_tax_10_amount', label: '10％税込額', align: 'right', format: (v) => v || '' },
+                { field: 'L_tax_8_amount', label: '8％税込額', align: 'right', format: (v) => v || '' },
+                { field: 'M_tax_exempt', label: '非課税額', align: 'right', format: (v) => v || '' },
+                { field: 'N_tax_inclusive_total', label: '税合計', align: 'right', format: (v) => v || '¥0', bold: true, highlight: true },
+                { field: 'O_blank_c', label: 'c', align: 'center', format: (v) => '', skip: true }
+            ];
+            
+            // Analyze which columns have data (ignore blank indicator columns)
+            const visibleColumns = allColumns.filter(col => {
+                if (col.skip) return false; // Skip blank indicator columns
+                return filteredLocationLedgerRows.some(row => {
+                    const val = row[col.field];
+                    return val && val !== '' && val !== '¥0' && val !== '—';
+                });
+            });
+            
+            if (filteredLocationLedgerRows.length === 0) {
+                const colspan = Math.max(visibleColumns.length, 1);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${colspan}" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <i class="fas fa-search"></i> No records match your filters.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Update table header dynamically
+            if (thead) {
+                thead.innerHTML = visibleColumns.map((col, idx) => {
+                    const metadataStyle = col.metadata ? 'background: #17a2b8; font-weight: 700;' : 'background: #ffc107;';
+                    return `<th style="padding: 12px 8px; ${metadataStyle} color: white; text-align: ${col.align}; white-space: nowrap; position: sticky; top: 0; z-index: 10;">${col.label}</th>`;
+                }).join('');
+            }
+            
+            // Render rows with only visible columns
+            tbody.innerHTML = filteredLocationLedgerRows.map(row => `
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    ${visibleColumns.map(col => {
+                        const value = col.format(row[col.field], row);
+                        const metadataStyle = col.metadata ? ' background: #e7f7f9; font-weight: 600;' : '';
+                        const style = `padding: 10px 8px; white-space: nowrap; text-align: ${col.align};${col.bold ? ' font-weight: 600;' : ''}${col.highlight ? ' background: #fff9e6;' : ''}${metadataStyle}`;
+                        return `<td style="${style}">${value}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+        }
+        
+        async function loadStaffLedger() {
+            const token = localStorage.getItem('auth_token');
+            const tbody = document.getElementById('staffLedgerBody');
+            
+            try {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="15" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <i class="fas fa-spinner fa-spin"></i> Loading ledger preview...
+                        </td>
+                    </tr>
+                `;
+                
+                const response = await fetch('/api/drafts/ledger-preview?format=staff', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load staff ledger');
+                }
+                
+                allStaffLedgerRows = await response.json();
+                
+                // Populate filters
+                populateStaffFilters();
+                
+                // Apply initial filter (no search text)
+                filterStaffLedger('');
+                
+            } catch (error) {
+                console.error('Error loading staff ledger:', error);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="15" style="text-align: center; padding: 40px; color: #dc3545;">
+                            <i class="fas fa-exclamation-circle"></i> Failed to load ledger preview. Please try again.
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+        
+        function populateStaffFilters() {
+            // Populate Month filter with improved year grouping
+            const monthFilter = document.getElementById('staffMonthFilter');
+            const monthsData = new Map(); // key: month_key, value: {label, year, month}
+            
+            allStaffLedgerRows.forEach(row => {
+                if (row.month_key && !monthsData.has(row.month_key)) {
+                    const year = parseInt(row.month_key.substring(0, 4));
+                    const month = parseInt(row.month_key.substring(4, 6));
+                    monthsData.set(row.month_key, {
+                        label: row.month_sheet_name || `${year}年${month.toString().padStart(2, '0')}月`,
+                        year: year,
+                        month: month
+                    });
+                }
+            });
+            
+            // Group by year and sort
+            const monthsByYear = new Map();
+            Array.from(monthsData.entries()).forEach(([key, data]) => {
+                if (!monthsByYear.has(data.year)) {
+                    monthsByYear.set(data.year, []);
+                }
+                monthsByYear.get(data.year).push({key, ...data});
+            });
+            
+            // Build options with year grouping
+            monthFilter.innerHTML = '<option value="">📅 All Months</option>';
+            Array.from(monthsByYear.keys()).sort((a, b) => b - a).forEach(year => {
+                const months = monthsByYear.get(year).sort((a, b) => b.month - a.month);
+                monthFilter.innerHTML += `<optgroup label="━━━ ${year}年 ━━━">`;
+                months.forEach(m => {
+                    monthFilter.innerHTML += `<option value="${m.key}">  ${m.label}</option>`;
+                });
+                monthFilter.innerHTML += '</optgroup>';
+            });
+            
+            // Populate Location filter with all configured locations
+            const locationFilter = document.getElementById('staffLocationFilter');
+            const locations = new Set();
+            
+            // Add all configured locations from system (7 locations)
+            const configuredLocations = ['Tokyo', 'Osaka', 'Sagami', 'Aichi', 'Keihin', 'Kashima', 'Takasago'];
+            configuredLocations.forEach(loc => locations.add(loc));
+            
+            // Add any additional locations from actual data
+            allStaffLedgerRows.forEach(row => {
+                if (row.location) locations.add(row.location);
+            });
+            
+            locationFilter.innerHTML = '<option value="">All Locations</option>';
+            Array.from(locations).sort().forEach(location => {
+                locationFilter.innerHTML += `<option value="${location}">${location}</option>`;
+            });
+            
+            // Populate Staff filter with all staff from data
+            const staffFilter = document.getElementById('staffStaffFilter');
+            const staffMap = new Map();
+            allStaffLedgerRows.forEach(row => {
+                if (row.staff_id && row.A_person_in_charge) {
+                    staffMap.set(row.staff_id, row.A_person_in_charge);
+                }
+            });
+            staffFilter.innerHTML = '<option value="">All Staff</option>';
+            Array.from(staffMap.entries()).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, name]) => {
+                staffFilter.innerHTML += `<option value="${id}">${name}</option>`;
+            });
+        }
+        
+        function filterStaffLedger(searchText) {
+            const rawSearch = (searchText || '').trim();
+            const monthFilter = document.getElementById('staffMonthFilter').value;
+            const locationFilter = document.getElementById('staffLocationFilter').value;
+            const staffFilter = document.getElementById('staffStaffFilter').value;
+            
+            // Check if search is a month shorthand (e.g., "01" or "02/2026" or "12/2025")
+            let searchMonth = null;
+            const monthMatch = rawSearch.match(/^\s*(\d{1,2})(?:\s*[\/\-\s]\s*(\d{4}))?\s*$/);
+            if (monthMatch) {
+                const m = parseInt(monthMatch[1], 10);
+                if (m >= 1 && m <= 12) {
+                    const mm = String(m).padStart(2, '0');
+                    if (monthMatch[2]) {
+                        // Has year: exact month_key match
+                        searchMonth = { type: 'exact', month_key: `${monthMatch[2]}${mm}` };
+                    } else {
+                        // No year: match any year with this month
+                        searchMonth = { type: 'monthOnly', month: mm };
+                    }
+                }
+            }
+            
+            const search = searchMonth ? '' : rawSearch.toLowerCase();
+            
+            filteredStaffLedgerRows = allStaffLedgerRows.filter(row => {
+                // Apply month search shorthand or dropdown filter
+                if (searchMonth) {
+                    if (searchMonth.type === 'exact') {
+                        if (row.month_key !== searchMonth.month_key) return false;
+                    } else if (searchMonth.type === 'monthOnly') {
+                        const rowMonth = row.month_key.substring(4, 6);
+                        if (rowMonth !== searchMonth.month) return false;
+                    }
+                } else if (monthFilter && row.month_key !== monthFilter) {
+                    return false;
+                }
+                
+                if (locationFilter && row.location !== locationFilter) return false;
+                if (staffFilter && row.staff_id !== staffFilter) return false;
+                
+                // Apply text search
+                if (search) {
+                    const rowText = JSON.stringify(row).toLowerCase();
+                    if (!rowText.includes(search)) return false;
+                }
+                
+                return true;
+            });
+            
+            renderStaffLedger();
+        }
+        
+        function renderStaffLedger() {
+            const tbody = document.getElementById('staffLedgerBody');
+            const table = document.getElementById('staffLedgerTable');
+            const thead = table ? table.querySelector('thead tr') : null;
+            if (!tbody) { console.error('renderStaffLedger: tbody not found'); return; }
+            
+            // Define all possible columns with metadata
+            const allColumns = [
+                { field: 'month_sheet_name', label: '月度', align: 'center', format: (v) => v || '—', metadata: true, sticky: true },
+                { field: 'A_person_in_charge', label: '担当者', align: 'left', format: (v) => v || '—', metadata: true },
+                { field: 'location', label: '事業所', align: 'center', format: (v) => v || '—', metadata: true },
+                { field: 'B_date', label: '支払日', align: 'left', format: (v) => v || '—' },
+                { field: 'C_account_title', label: '勘定科目', align: 'left', format: (v) => v || '' },
+                { field: 'D_description', label: '摘要', align: 'left', format: (v) => v || '' },
+                { field: 'E_blank_col_e', label: 'E', align: 'center', format: (v) => '', skip: true },
+                { field: 'F_blank_col_f', label: 'F', align: 'center', format: (v) => '', skip: true },
+                { field: 'G_expense', label: '支出', align: 'right', format: (v) => v || '¥0', bold: true },
+                { field: 'H_blank_col_h', label: 'H', align: 'center', format: (v) => '', skip: true },
+                { field: 'I_invoice_presence', label: 'インボイス', align: 'center', format: (v, row) => {
+                    const val = v || '—';
+                    const bg = val === '有' ? '#d4edda' : '#f8d7da';
+                    const color = val === '有' ? '#155724' : '#721c24';
+                    return `<span style="display: inline-block; padding: 2px 8px; background: ${bg}; color: ${color}; border-radius: 3px; font-size: 0.85em; font-weight: 600;">${val}</span>`;
+                }},
+                { field: 'J_blank_col_j', label: 'J', align: 'center', format: (v) => '', skip: true },
+                { field: 'K_tax_10_amount', label: '10％税込額', align: 'right', format: (v) => v || '' },
+                { field: 'L_tax_8_amount', label: '8％税込額', align: 'right', format: (v) => v || '' },
+                { field: 'M_tax_exempt', label: '非課税額', align: 'right', format: (v) => v || '' },
+                { field: 'N_tax_inclusive_total', label: '税合計', align: 'right', format: (v) => v || '¥0', bold: true, highlight: true },
+                { field: 'O_blank_col_o', label: 'O', align: 'center', format: (v) => '', skip: true }
+            ];
+            
+            // Analyze which columns have data (ignore blank indicator columns)
+            const visibleColumns = allColumns.filter(col => {
+                if (col.skip) return false; // Skip blank indicator columns
+                return filteredStaffLedgerRows.some(row => {
+                    const val = row[col.field];
+                    return val && val !== '' && val !== '¥0' && val !== '—';
+                });
+            });
+            
+            if (filteredStaffLedgerRows.length === 0) {
+                const colspan = Math.max(visibleColumns.length, 1);
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="${colspan}" style="text-align: center; padding: 40px; color: #6c757d;">
+                            <i class="fas fa-search"></i> No records match your filters.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Update table header dynamically
+            if (thead) {
+                thead.innerHTML = visibleColumns.map((col, idx) => {
+                    const metadataStyle = col.metadata ? 'background: #28a745; font-weight: 700;' : 'background: #20c997;';
+                    return `<th style="padding: 12px 8px; ${metadataStyle} color: white; text-align: ${col.align}; white-space: nowrap; position: sticky; top: 0; z-index: 10;">${col.label}</th>`;
+                }).join('');
+            }
+            
+            // Render rows with only visible columns
+            tbody.innerHTML = filteredStaffLedgerRows.map(row => `
+                <tr style="border-bottom: 1px solid #dee2e6;">
+                    ${visibleColumns.map(col => {
+                        const value = col.format(row[col.field], row);
+                        const metadataStyle = col.metadata ? ' background: #d4f4dd; font-weight: 600;' : '';
+                        const style = `padding: 10px 8px; white-space: nowrap; text-align: ${col.align};${col.bold ? ' font-weight: 600;' : ''}${col.highlight ? ' background: #e6ffe6;' : ''}${metadataStyle}`;
+                        return `<td style="${style}">${value}</td>`;
+                    }).join('')}
+                </tr>
+            `).join('');
+        }
+
+        async function loadSentRecords() {
+            const token = localStorage.getItem('auth_token');
+            
+            try {
+                sentTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="9" class="sent-loading">
+                            <i class="fas fa-spinner"></i>
+                            <p>Loading sent records...</p>
+                        </td>
+                    </tr>
+                `;
+
+                const response = await fetch('/api/drafts/sent-records/all', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load sent records');
+                }
+
+                allSentRecords = await response.json();
+                // Re-apply active filters/search on load so tabs/search are preserved
+                // Defaults: sentStatusFilter = 'all'
+                filterSentRecords(sentSearchInput.value || '');
+
+            } catch (error) {
+                console.error('Error loading sent records:', error);
+                sentTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="13" class="sent-no-data">
+                            <i class="fas fa-exclamation-circle"></i>
+                            <p>Failed to load sent records. Please try again.</p>
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        function filterSentRecords(searchText) {
+            const search = searchText.toLowerCase();
+            
+            filteredSentRecords = allSentRecords.filter(record => {
+                // Phase 5G-C: Apply status filter first
+                if (sentStatusFilter !== 'all' && record.status !== sentStatusFilter) {
+                    return false;
+                }
+                
+                // Then apply search filter
+                const vendor = (record.vendor || '').toLowerCase();
+                const invoice = (record.invoice_number || '').toLowerCase();
+                const staff = (record.staff_name || '').toLowerCase();
+                const creator = (record.creator_name || '').toLowerCase();
+                const month = (record.month_sheet_name || '').toLowerCase();
+                const monthKey = (record.month_key || '').toLowerCase();
+                
+                const matchesSearch = vendor.includes(search) || 
+                       invoice.includes(search) || 
+                       staff.includes(search) ||
+                       creator.includes(search) ||
+                       month.includes(search) ||
+                       monthKey.includes(search);
+                
+                return matchesSearch || search === '';
+            });
+
+            sortAndRenderSentRecords();
+        }
+
+        function sortSentRecords(field, order) {
+            filteredSentRecords.sort((a, b) => {
+                let valA = a[field] || '';
+                let valB = b[field] || '';
+
+                // Handle numbers
+                if (typeof valA === 'number' && typeof valB === 'number') {
+                    return order === 'asc' ? valA - valB : valB - valA;
+                }
+
+                // Handle dates
+                if (field.includes('_at') || field === 'receipt_date') {
+                    valA = new Date(valA).getTime() || 0;
+                    valB = new Date(valB).getTime() || 0;
+                    return order === 'asc' ? valA - valB : valB - valA;
+                }
+
+                // Handle strings
+                valA = String(valA).toLowerCase();
+                valB = String(valB).toLowerCase();
+                
+                if (valA < valB) return order === 'asc' ? -1 : 1;
+                if (valA > valB) return order === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        function sortAndRenderSentRecords() {
+            sortSentRecords(sentCurrentSort.field, sentCurrentSort.order);
+            renderSentRecordsTable();
+        }
+
+        function renderSentRecordsTable() {
+            if (filteredSentRecords.length === 0) {
+                sentTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="13" class="sent-no-data">
+                            <i class="fas fa-inbox"></i>
+                            <p>${allSentRecords.length === 0 ? 'No sent records found.' : 'No records match your search.'}</p>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            const rows = filteredSentRecords.map(record => {
+                // Phase 5G-C: Checkbox (only for SENT records)
+                const checkbox = record.status === 'SENT' 
+                    ? `<input type="checkbox" class="sent-row-checkbox" data-draft-id="${record.draft_id}" ${selectedSentDrafts.has(record.draft_id) ? 'checked' : ''}>`
+                    : '';
+                
+                // Phase 5G-C: Status badge
+                const statusBadge = record.status === 'SENT'
+                    ? '<span style="background: #ffc107; color: #000; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600;"><i class="fas fa-paper-plane"></i> SENT</span>'
+                    : '<span style="background: #0d6efd; color: white; padding: 4px 8px; border-radius: 4px; font-size: 0.75em; font-weight: 600;"><i class="fas fa-check-double"></i> REVIEWED</span>';
+                
+                const date = record.receipt_date ? formatDate(record.receipt_date) : '—';
+                const vendor = record.vendor || '—';
+                const invoice = record.invoice_number || '—';
+                const total = formatAmount(record.total_amount);
+                const tax10 = formatAmount(record.tax_10_amount);
+                const tax8 = formatAmount(record.tax_8_amount);
+                const staff = record.staff_name || record.creator_name || '—';
+                const location = record.business_location_id || '—';
+                const month = record.month_sheet_name || '—';
+                const outputs = formatExpectedOutputs(record.expected_outputs);
+                const sentAt = formatDateTime(record.sent_at);
+
+                return `
+                    <tr>
+                        <td style="text-align: center;">${checkbox}</td>
+                        <td>${statusBadge}</td>
+                        <td>${date}</td>
+                        <td>${escapeHtml(vendor)}</td>
+                        <td>${escapeHtml(invoice)}</td>
+                        <td class="amount">${total}</td>
+                        <td class="amount">${tax10}</td>
+                        <td class="amount">${tax8}</td>
+                        <td>${escapeHtml(staff)}</td>
+                        <td>${escapeHtml(location)}</td>
+                        <td>${escapeHtml(month)}</td>
+                        <td style="font-size: 0.85em;">${outputs}</td>
+                        <td>${sentAt}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            sentTableBody.innerHTML = rows;
+            
+            // Phase 5G-C: Add checkbox event listeners
+            document.querySelectorAll('.sent-row-checkbox').forEach(checkbox => {
+                checkbox.addEventListener('change', (e) => {
+                    const draftId = e.target.dataset.draftId;
+                    if (e.target.checked) {
+                        selectedSentDrafts.add(draftId);
+                    } else {
+                        selectedSentDrafts.delete(draftId);
+                    }
+                    updateSelectionUI();
+                });
+            });
+        }
+
+        function formatAmount(amount) {
+            if (amount === null || amount === undefined) return '¥0';
+            const num = parseFloat(amount);
+            if (isNaN(num)) return '¥0';
+            return '¥' + num.toLocaleString('ja-JP', { minimumFractionDigits: 0 });
+        }
+
+        function formatDateTime(dateStr) {
+            if (!dateStr) return '—';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '—';
+            const date = new Date(dateStr);
+            if (isNaN(date.getTime())) return dateStr;
+            return date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit'
+            });
+        }
+
+        function formatExpectedOutputs(outputs) {
+            if (!outputs || outputs.length === 0) return '—';
+            // Display ledger targets with checkmarks - these are the Excel files where data was written
+            return outputs.map(output => {
+                return `<div style="margin: 2px 0; font-size: 0.85em;"><i class="fas fa-file-excel" style="color: #217346; margin-right: 4px;"></i>${escapeHtml(output)}</div>`;
+            }).join('');
+        }
+
+        // Phase 5G-C: Update selection UI (action bar and counters)
+        function updateSelectionUI() {
+            const count = selectedSentDrafts.size;
+            const actionBar = document.getElementById('sentActionBar');
+            const selectionCount = document.getElementById('sentSelectionCount');
+            
+            if (count > 0) {
+                actionBar.style.display = 'flex';
+                selectionCount.textContent = `${count} selected`;
+            } else {
+                actionBar.style.display = 'none';
+            }
+            
+            // Update "select all" checkbox state
+            const selectAllCheckbox = document.getElementById('selectAllSent');
+            const visibleSentRecords = filteredSentRecords.filter(r => r.status === 'SENT');
+            const allVisibleSelectedSent = visibleSentRecords.every(r => selectedSentDrafts.has(r.draft_id));
+            selectAllCheckbox.checked = visibleSentRecords.length > 0 && allVisibleSelectedSent;
+        }
+
+        // Phase 5G-C: Mark selected drafts as reviewed
+        async function markDraftsAsReviewed(draftIds) {
+            const token = localStorage.getItem('auth_token');
+            const markBtn = document.getElementById('markReviewedBtn');
+            
+            try {
+                markBtn.disabled = true;
+                markBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Marking...';
+                
+                const response = await fetch('/api/drafts/mark-reviewed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ draft_ids: draftIds })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const result = await response.json();
+                
+                // Show success message
+                if (result.reviewed > 0) {
+                    showToast(`✓ Successfully marked ${result.reviewed} record(s) as REVIEWED`, 'success');
+                }
+                
+                // Show errors if any
+                if (result.errors && result.errors.length > 0) {
+                    console.error('Mark reviewed errors:', result.errors);
+                    showToast(`⚠ ${result.failed} record(s) failed. Check console for details.`, 'warning');
+                }
+                
+                // Clear selection and reload
+                selectedSentDrafts.clear();
+                updateSelectionUI();
+                await loadSentRecords();
+                
+            } catch (error) {
+                console.error('Failed to mark as reviewed:', error);
+                showToast('✗ Failed to mark records as reviewed. Please try again.', 'error');
+            } finally {
+                markBtn.disabled = false;
+                markBtn.innerHTML = '<i class="fas fa-check-double"></i> Mark as Reviewed';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
 
         // Auto-refresh every 30 seconds
         setInterval(() => {

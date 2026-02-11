@@ -167,11 +167,10 @@ class ReceiptBuilder:
         payload: Dict[str, Any] = ocr_payload or {}
 
         # Prefer direct fields, then fall back to common nested containers used by the standard stack.
-        structured: Dict[str, Any] = (
-            payload.get("structured_data")
-            or payload.get("entities")
-            or {}
-        )
+        # Preserve the full normalized structure instead of collapsing to entities only.
+        # Previously this fallback set structured = payload.get("entities"), which stripped
+        # raw_text/totals/confidence data and left us with an empty vendor/date/total set.
+        structured: Dict[str, Any] = payload.get("structured_data") or payload or {}
 
         # Raw text preference: explicit arg > payload > structured blob.
         raw_text_value = raw_text or payload.get("raw_text") or structured.get("raw_text") or ""
@@ -197,15 +196,14 @@ class ReceiptBuilder:
                 for k, v in fields_confidence.items()
                 if (not isinstance(v, dict)) or (isinstance(v.get("confidence"), (int, float))) or isinstance(v, (int, float))
             }
-        if isinstance(fields_confidence, dict):
-            fields_confidence = {
-                k: (v.get("confidence") if isinstance(v, dict) else v)
-                for k, v in fields_confidence.items()
-                if (not isinstance(v, dict)) or (isinstance(v.get("confidence"), (int, float))) or isinstance(v, (int, float))
-            }
 
         # Extract entities and confidence scores
-        entities = structured.get("entities", {})
+        entities = structured.get("entities") or {}
+        if not entities:
+            # Fallback: treat top-level canonical keys as entities when Document AI
+            # returned a flattened payload without an 'entities' map.
+            canonical_keys = ("vendor", "date", "invoice_number", "currency", "subtotal", "tax", "total")
+            entities = {k: {"text": structured.get(k)} for k in canonical_keys if structured.get(k) is not None}
         confidence_scores = structured.get("confidence_scores", {})
 
         # Extract field values from entities
@@ -213,9 +211,13 @@ class ReceiptBuilder:
         date = _extract_entity_text(entities, "date")
         invoice_number = _extract_entity_text(entities, "invoice_number")
         currency = _extract_entity_text(entities, "currency")
-        subtotal = _extract_entity_text(entities, "subtotal")
-        tax = _extract_entity_text(entities, "tax")
-        total = _extract_entity_text(entities, "total")
+        
+        # For numeric fields (subtotal, tax, total), prefer the 'totals' dict first
+        # because entity text may have OCR errors (e.g., comma misread as decimal: "3.763" vs "3,763")
+        totals_dict = structured.get("totals", {})
+        subtotal = totals_dict.get("subtotal") or _extract_entity_text(entities, "subtotal")
+        tax = totals_dict.get("tax") or _extract_entity_text(entities, "tax")
+        total = totals_dict.get("total") or _extract_entity_text(entities, "total")
 
         # Fallback to direct payload fields if entities don't have them
         vendor_raw = vendor_raw or payload.get("vendor") or structured.get("vendor")
@@ -264,6 +266,8 @@ class ReceiptBuilder:
         date = date or payload.get("date") or structured.get("date")
         invoice_number = invoice_number or payload.get("invoice_number") or structured.get("invoice_number")
         currency = currency or payload.get("currency") or structured.get("currency")
+        
+        # Fallback to payload/structured for numeric fields (totals_dict was already checked above)
         subtotal = subtotal or payload.get("subtotal") or structured.get("subtotal")
         tax = tax or payload.get("tax") or structured.get("tax")
         total = total or payload.get("total") or structured.get("total")
@@ -368,6 +372,30 @@ class ReceiptBuilder:
                         total_parsed = amt
                         break
 
+        # EXTRACT 10% AND 8% TAX SEPARATELY FOR JAPANESE RECEIPTS
+        tax_10_parsed = None
+        tax_8_parsed = None
+        
+        if raw_text_value:
+            # Pattern for 10% tax: "消費税 10% ¥258" or "内消費税(10%) ¥258"
+            tax_10_match = re.search(r'(?:消費税|内消費税)\s*(?:\()?10%?(?:\))?\s*[¥￥]?\s*([\d,]+)', raw_text_value)
+            if tax_10_match:
+                try:
+                    tax_10_parsed = float(tax_10_match.group(1).replace(',', ''))
+                except (ValueError, AttributeError):
+                    pass
+            
+            # Pattern for 8% tax: "消費税 8% ¥114" or "内消費税(8%) ¥114" or "軽減税率 ¥114"
+            tax_8_match = re.search(r'(?:消費税|内消費税)\s*(?:\()?8%?(?:\))?\s*[¥￥]?\s*([\d,]+)', raw_text_value)
+            if not tax_8_match:
+                tax_8_match = re.search(r'軽減税率\s*[¥￥]?\s*([\d,]+)', raw_text_value)
+            
+            if tax_8_match:
+                try:
+                    tax_8_parsed = float(tax_8_match.group(1).replace(',', ''))
+                except (ValueError, AttributeError):
+                    pass
+        
         # TODO: Map vendor/date/currency/subtotal/tax/total/line_items from structured payload once contract is finalized.
         return ExtractionResult(
             receipt_id=uuid4(),
@@ -377,6 +405,8 @@ class ReceiptBuilder:
             currency=currency,
             subtotal=subtotal_parsed,
             tax=tax_parsed,
+            tax_10=tax_10_parsed,
+            tax_8=tax_8_parsed,
             total=total_parsed,
             line_items=line_items,
             raw_text=raw_text_value,
@@ -412,12 +442,10 @@ class ReceiptBuilder:
         """
         payload: Dict[str, Any] = docai_payload or {}
 
-        # Prefer direct fields, then nested docai structures.
-        structured: Dict[str, Any] = (
-            payload.get("structured_data")
-            or payload.get("entities")
-            or {}
-        )
+        # Prefer direct fields and keep the full normalized structure (raw_text, totals, confidences).
+        # Previously this collapsed to payload.get("entities"), which discarded vendor/date/total when
+        # Document AI returned a flat payload.
+        structured: Dict[str, Any] = payload.get("structured_data") or payload or {}
 
         # Raw text preference: explicit arg > payload > structured blob.
         raw_text_value = raw_text or payload.get("raw_text") or structured.get("raw_text") or ""
@@ -446,7 +474,10 @@ class ReceiptBuilder:
 
         # Extract entities - Document AI returns entities in canonical format
         # e.g., {"vendor": {"text": "店名", "confidence": 0.9}, "total": {"text": "110", "confidence": 0.85}}
-        entities = structured.get("entities", {})
+        entities = structured.get("entities") or {}
+        if not entities:
+            canonical_keys = ("vendor", "date", "invoice_number", "currency", "subtotal", "tax", "total")
+            entities = {k: {"text": structured.get(k)} for k in canonical_keys if structured.get(k) is not None}
         
         # Helper to extract text from entity dict or return as-is if string
         def _extract_entity_text(entity):
@@ -470,8 +501,10 @@ class ReceiptBuilder:
             vendor = vendor_raw
             logger.info(f"Using raw vendor (not generic): {vendor}")
         
-        # If vendor is generic or missing, try to extract real company name from raw text
-        if not vendor or vendor in generic_headers:
+        # If vendor is generic or missing, or looks like OCR garbage, try to extract from raw text
+        vendor_looks_garbled = vendor and any(c in vendor for c in ['※', '財', '布', '細'])
+        
+        if not vendor or vendor in generic_headers or vendor_looks_garbled:
             if raw_text_value:
                 # Pattern 1: Look for 株式会社 (Corporation)
                 corp_match = re.search(r'([^\s]+株式会社|株式会社[^\s]+)', raw_text_value)
@@ -480,11 +513,12 @@ class ReceiptBuilder:
                     logger.info(f"Extracted corporation vendor: {vendor}")
                 
                 # Pattern 2: Look for store names with specific patterns
-                if not vendor or vendor in generic_headers:
+                if not vendor or vendor in generic_headers or vendor_looks_garbled:
                     # Common patterns: MEGAドン・キホーテ, ローソン, セブンイレブン, etc.
                     store_patterns = [
-                        r'((?:MEGA)?ドン・キホーテ[^\n]+店)',
-                        r'(ローソン[^\n]+店?)',
+                        r'(MEGAドン[･・]キホーテ[^\n]*店)',
+                        r'(ドン[･・]キホーテ[^\n]*店)',
+                        r'(ローソン[^\n]*店?)',
                         r'(セブン(?:-)?イレブン[^\n]+店?)',
                         r'(ファミリーマート[^\n]+店?)',
                         r'([^\n]*郵便局)',
@@ -513,14 +547,37 @@ class ReceiptBuilder:
         date = _extract_entity_text(entities.get("date")) or payload.get("date") or structured.get("date")
         invoice_number = _extract_entity_text(entities.get("invoice_number")) or payload.get("invoice_number") or structured.get("invoice_number")
         currency = _extract_entity_text(entities.get("currency")) or payload.get("currency") or structured.get("currency")
-        subtotal = _extract_entity_text(entities.get("subtotal")) or payload.get("subtotal") or structured.get("subtotal")
-        tax = _extract_entity_text(entities.get("tax")) or payload.get("tax") or structured.get("tax")
-        total = _extract_entity_text(entities.get("total")) or payload.get("total") or structured.get("total")
+        
+        # For monetary amounts, prefer the 'totals' dict which has correctly parsed numeric values
+        # over entity text which may have OCR errors (e.g., comma misread as decimal point: "3.763" instead of "3,763")
+        # The totals dict from document_ai_mapping has already properly parsed the amounts
+        totals_dict = structured.get("totals", {})
+        subtotal = totals_dict.get("subtotal") or payload.get("subtotal") or structured.get("subtotal") or _extract_entity_text(entities.get("subtotal"))
+        tax = totals_dict.get("tax") or payload.get("tax") or structured.get("tax") or _extract_entity_text(entities.get("tax"))
+        total = totals_dict.get("total") or payload.get("total") or structured.get("total") or _extract_entity_text(entities.get("total"))
 
         # Parse numeric amounts to remove currency symbols
         subtotal_parsed = _parse_amount(subtotal)
         tax_parsed = _parse_amount(tax)
         total_parsed = _parse_amount(total)
+        
+        # Initialize separate tax amounts (will be extracted from raw text if available)
+        tax_10_parsed = None
+        tax_8_parsed = None
+        
+        # Validate total - if it's suspiciously small (< 100 yen), try extracting from raw text
+        if total_parsed and total_parsed < 100 and raw_text_value:
+            # Look for amounts near "合計" or receipt total indicators
+            total_match = re.search(r'[¥￥\\]\s*([\d,\s　]+)\s*-', raw_text_value)
+            if total_match:
+                total_str = total_match.group(1).replace(',', '').replace(' ', '').replace('　', '').replace('\\', '')
+                try:
+                    fallback_total = float(total_str)
+                    if fallback_total > total_parsed:  # Only use if larger
+                        logger.info(f"Using fallback total from raw text: ¥{fallback_total} (Document AI returned ¥{total_parsed})")
+                        total_parsed = fallback_total
+                except ValueError:
+                    pass
         
         # ENHANCED TOTAL AMOUNT EXTRACTION for Japanese receipts
         if total_parsed is None and raw_text_value:
@@ -587,34 +644,265 @@ class ReceiptBuilder:
         
         # ENHANCED TAX EXTRACTION: Parse from raw text if entities missing
         if tax_parsed is None and raw_text_value:
-            # Pattern 1: "内消費税等(10%) ¥10" or "(内消費税等(10%) ¥10)"
-            tax_match = re.search(r'\(\s*内消費税等?\s*\(\s*(\d+)%\s*\)\s*[¥￥]?\s*([\d,]+)\s*\)', raw_text_value)
-            if not tax_match:
-                tax_match = re.search(r'内消費税等?\s*\(\s*(\d+)%\s*\)\s*[¥￥]?\s*([\d,]+)', raw_text_value)
-            
+            # Pattern 1: "(消費税等 ¥300)" or "(消費税等\n¥300)"
+            tax_match = re.search(r'\(?\s*消費税等?\s*\\?[¥￥]?\s*([\d,\s　]+)\s*\)?', raw_text_value)
             if tax_match:
-                tax_rate = int(tax_match.group(1))
-                tax_amount_str = tax_match.group(2).replace(',', '')
-                tax_parsed = float(tax_amount_str)
-                logger.info(f"Extracted tax from raw text: {tax_rate}% = ¥{tax_parsed}")
-            
-            # Pattern 2: "消費税 10% ¥10" or "消費税等 ¥10"
-            if not tax_parsed:
-                tax_match2 = re.search(r'消費税等?\s*(?:\d+%)?\s*[¥￥]?\s*([\d,]+)', raw_text_value)
-                if tax_match2:
-                    tax_amount_str = tax_match2.group(1).replace(',', '')
+                tax_amount_str = tax_match.group(1).replace(',', '').replace(' ', '').replace('　', '').replace('\\', '')
+                try:
                     tax_parsed = float(tax_amount_str)
-                    logger.info(f"Extracted tax from alternative pattern: ¥{tax_parsed}")
+                    logger.info(f"Extracted tax from bracketed format: ¥{tax_parsed}")
+                except ValueError:
+                    pass
             
-            # Pattern 3: "課税計(10%) ¥110" with tax embedded
+            # Pattern 2: "(税額合計 ¥300)"
             if not tax_parsed:
-                taxed_match = re.search(r'課税計\s*\(\s*(\d+)%\s*\)\s*[¥￥]?\s*([\d,]+)', raw_text_value)
-                if taxed_match and total_parsed:
-                    tax_rate = int(taxed_match.group(1)) / 100
-                    taxed_amount = float(taxed_match.group(2).replace(',', ''))
-                    # Calculate tax from taxed amount
-                    tax_parsed = round(taxed_amount * tax_rate / (1 + tax_rate), 2)
-                    logger.info(f"Calculated tax from taxed amount: ¥{tax_parsed}")
+                tax_match2 = re.search(r'\(?\s*税額合計\s*\\?[¥￥]?\s*([\d,\s　]+)\s*\)?', raw_text_value)
+                if tax_match2:
+                    tax_amount_str = tax_match2.group(1).replace(',', '').replace(' ', '').replace('　', '').replace('\\', '')
+                    try:
+                        tax_parsed = float(tax_amount_str)
+                        logger.info(f"Extracted tax from total format: ¥{tax_parsed}")
+                    except ValueError:
+                        pass
+            
+            # Pattern 3: Calculate from 8% and 10% tax amounts (most common)
+            if not tax_parsed:
+                # Look for "8%税額 ¥183" and "10%税額 ¥117"
+                tax_8_match = re.search(r'8%税額\s*\\?[¥￥]?\s*([\d,\s　]+)', raw_text_value)
+                tax_10_match = re.search(r'10%税額\s*\\?[¥￥]?\s*([\d,\s　]+)', raw_text_value)
+                
+                tax_8_val = 0
+                tax_10_val = 0
+                
+                if tax_8_match:
+                    tax_8_str = tax_8_match.group(1).replace(',', '').replace(' ', '').replace('　', '').replace('\\', '')
+                    try:
+                        tax_8_val = float(tax_8_str)
+                    except ValueError:
+                        pass
+                
+                if tax_10_match:
+                    tax_10_str = tax_10_match.group(1).replace(',', '').replace(' ', '').replace('　', '').replace('\\', '')
+                    try:
+                        tax_10_val = float(tax_10_str)
+                    except ValueError:
+                        pass
+                
+                if tax_8_val > 0 or tax_10_val > 0:
+                    tax_parsed = tax_8_val + tax_10_val
+                    logger.info(f"Calculated tax from breakdown: 8%={tax_8_val} + 10%={tax_10_val} = ¥{tax_parsed}")
+            
+            # Pattern 4: "内消費税額 ¥50" or "(内消費税等 \ 50)" or "(內消費稅等(10%) ¥10)" (traditional characters)
+            if not tax_parsed:
+                # Match both simplified (内) and traditional (內) characters
+                tax_match4 = re.search(r'\(?\s*[内內]消[費费][稅税][額等]?\s*(?:\(\s*\d+%\s*\))?\s*\\?\s*([¥￥\\])?\s*([\d,\s　]+)\s*\)?', raw_text_value)
+                if tax_match4:
+                    tax_amount_str = tax_match4.group(2).replace(',', '').replace(' ', '').replace('　', '').replace('\\', '').strip()
+                    # Skip if it's just whitespace/newlines
+                    if tax_amount_str and tax_amount_str != '' and '\n' not in tax_amount_str:
+                        try:
+                            tax_parsed = float(tax_amount_str)
+                            logger.info(f"Extracted tax from consumption tax format: ¥{tax_parsed}")
+                        except ValueError:
+                            pass
+            
+            # Pattern 4b: Special case for "(內消費稅等(10%) ¥10)" where amount comes after multiple lines
+            # This handles the Japan Post format where tax value is at end: "(內消費稅等(10%)\n...\n¥10)"
+            if not tax_parsed:
+                multi_line_tax = re.search(r'\([内內]消[費费][稅税][額等]?\([^)]+\)[^\)]*[¥￥\\]\s*(\d+)\s*\)', raw_text_value, re.DOTALL)
+                if multi_line_tax:
+                    try:
+                        tax_parsed = float(multi_line_tax.group(1))
+                        logger.info(f"Extracted tax from multi-line format: ¥{tax_parsed}")
+                    except ValueError:
+                        pass
+            
+            # Pattern 5: For receipts with multiple tax entries, sum them
+            # Look for "(内消費税額① \ 50)" or "(內消費稅等 ¥10)" patterns where ① is a circled number
+            if not tax_parsed:
+                # Match both simplified and traditional characters
+                tax_entries = re.findall(r'\(?\s*[内內]消[費费][稅税][額等]?[①②③④⑤]?\s*(?:\(\s*\d+%\s*\))?\s*\\?\s*([¥￥\\])?\s*([\d,\s　]+)\s*\)?', raw_text_value)
+                if tax_entries:
+                    total_tax = 0
+                    for entry in tax_entries:
+                        tax_str = entry[1].replace(',', '').replace(' ', '').replace('　', '').replace('\\', '').strip()
+                        # Skip if it's just whitespace/newlines
+                        if tax_str and tax_str != '' and '\n' not in tax_str:
+                            try:
+                                total_tax += float(tax_str)
+                            except ValueError:
+                                pass
+                    if total_tax > 0:
+                        tax_parsed = total_tax
+                        logger.info(f"Extracted tax from multiple entries: ¥{tax_parsed}")
+
+        # EXTRACT 10% AND 8% TAX SEPARATELY FOR JAPANESE RECEIPTS
+        # Use context-aware strategy that finds the percentage line then extracts from subsequent lines
+        # This handles multiple receipt formats:
+        # Format 1: "10%対象 - ¥3" followed by "(内消費税額 - ¥0)" on same or next line
+        # Format 2: Multiple lines with labels followed by amounts several lines later
+        tax_10_parsed = None
+        tax_8_parsed = None
+        
+        if raw_text_value:
+            lines = raw_text_value.split('\n') if raw_text_value else []
+            
+            # Strategy 1: Try to find explicit patterns like "10%税額 ¥X" or inline amounts
+            for i, line in enumerate(lines):
+                # Pattern 1a: "10%税額" with amount on NEXT line (Don Quijote style)
+                if tax_10_parsed is None and '10%税額' in line:
+                    # Amount is on the next line
+                    if i+1 < len(lines):
+                        amount_match = re.search(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)', lines[i+1])
+                        if amount_match:
+                            amount = amount_match.group(1).replace(',', '')
+                            try:
+                                value = float(amount)
+                                if 0 <= value <= 10000:
+                                    logger.info(f"Document AI: Found 10% tax (税額 next line): ¥{value} at line {i+1}: {lines[i+1].strip()}")
+                                    tax_10_parsed = value
+                            except ValueError:
+                                pass
+                
+                # Pattern 1b: "8%税額" with amount on NEXT line (Don Quijote style)
+                if tax_8_parsed is None and '8%税額' in line:
+                    # Amount is on the next line
+                    if i+1 < len(lines):
+                        amount_match = re.search(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)', lines[i+1])
+                        if amount_match:
+                            amount = amount_match.group(1).replace(',', '')
+                            try:
+                                value = float(amount)
+                                if 0 <= value <= 10000:
+                                    logger.info(f"Document AI: Found 8% tax (税額 next line): ¥{value} at line {i+1}: {lines[i+1].strip()}")
+                                    tax_8_parsed = value
+                            except ValueError:
+                                pass
+                
+                # Pattern 1c: "10%税額 ¥X" (amount on SAME line - rare but possible)
+                if tax_10_parsed is None and '10%' in line and '税額' in line:
+                    amount_match = re.search(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)', line)
+                    if amount_match:
+                        amount = amount_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 0 <= value <= 10000:
+                                logger.info(f"Document AI: Found 10% tax (税額 inline): ¥{value} in line: {line.strip()}")
+                                tax_10_parsed = value
+                        except ValueError:
+                            pass
+                
+                # Pattern 1d: "8%税額 ¥X" (amount on SAME line - rare but possible)
+                if tax_8_parsed is None and '8%' in line and '税額' in line:
+                    amount_match = re.search(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)', line)
+                    if amount_match:
+                        amount = amount_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 0 <= value <= 10000:
+                                logger.info(f"Document AI: Found 8% tax (税額 inline): ¥{value} in line: {line.strip()}")
+                                tax_8_parsed = value
+                        except ValueError:
+                            pass
+                
+                # Pattern 1e: "(内消費税等10% ¥X)" or "(內消費稅等10% ¥X)" (traditional Chinese) - amount on same line
+                if tax_10_parsed is None and '10%' in line and ('内消費税' in line or '內消費稅' in line or '内消費稅' in line):
+                    amount_match = re.search(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)', line)
+                    if amount_match:
+                        amount = amount_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 0 <= value <= 10000:
+                                logger.info(f"Document AI: Found 10% tax (内消費税 inline): ¥{value}")
+                                tax_10_parsed = value
+                        except ValueError:
+                            pass
+                
+                # Pattern 1f: "(内消費税等 8% ¥X)" or "(內消費稅等 8% ¥X)" - amount on same line
+                if tax_8_parsed is None and '8%' in line and ('内消費税' in line or '內消費稅' in line or '内消費稅' in line):
+                    amount_match = re.search(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)', line)
+                    if amount_match:
+                        amount = amount_match.group(1).replace(',', '')
+                        try:
+                            value = float(amount)
+                            if 0 <= value <= 10000:
+                                logger.info(f"Document AI: Found 8% tax (内消費税 inline): ¥{value}")
+                                tax_8_parsed = value
+                        except ValueError:
+                            pass
+            
+            # Strategy 2: Multi-line format for Lawson-style and Japan Post receipts
+            # Pattern: Find "10%対象" or "10%" line, then find first "内消費税" or "內消費稅" without ①, collect amounts after it
+            if tax_10_parsed is None:
+                for i, line in enumerate(lines):
+                    if '10%' in line and ('対象' in line or '課税' in line or '稅' in line or '税' in line):
+                        # Found 10% indicator, find first "内消費税" or "內消費稅" (traditional) without circle numbers
+                        for j in range(i+1, min(i+10, len(lines))):
+                            if ('内消費税' in lines[j] or '內消費稅' in lines[j] or '内消費稅' in lines[j]) and not any(c in lines[j] for c in ['①', '②', '③', '④', '⑤']):
+                                # Found 10% tax label, collect all amounts in next lines
+                                amounts_found = []
+                                for k in range(j+1, min(j+10, len(lines))):
+                                    amount_matches = re.findall(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)\s*\)', lines[k])
+                                    if amount_matches:
+                                        for amt_str in amount_matches:
+                                            try:
+                                                val = float(amt_str.replace(',', ''))
+                                                if 0 <= val <= 10000:
+                                                    amounts_found.append((val, k, lines[k].strip()))
+                                            except ValueError:
+                                                pass
+                                    # Stop if we hit another tax indicator
+                                    if ('内消費税' in lines[k] or '內消費稅' in lines[k]) and k > j:
+                                        break
+                                
+                                # For 10% tax: For Japan Post, amount might be the first one
+                                # For Lawson, typically the 3rd amount (skip total_tax, taxable_amount, then TAX_AMOUNT)
+                                if len(amounts_found) >= 3:
+                                    tax_10_parsed = amounts_found[2][0]  # Take 3rd amount (Lawson style)
+                                    logger.info(f"Document AI: Found 10% tax (pattern 3rd): ¥{tax_10_parsed} at line {amounts_found[2][1]}")
+                                elif len(amounts_found) >= 1:
+                                    tax_10_parsed = amounts_found[0][0]  # Take 1st amount (Japan Post style)
+                                    logger.info(f"Document AI: Found 10% tax (single): ¥{tax_10_parsed} at line {amounts_found[0][1]}")
+                                break
+                        break
+            
+            # Strategy 3: Same for 8% tax - look for one with circle number or after 8%対象
+            if tax_8_parsed is None:
+                for i, line in enumerate(lines):
+                    if '8%' in line and ('対象' in line or '課税' in line or '軽減' in line):
+                        # Found 8% indicator, find "内消費税" that might have ① or comes after this
+                        for j in range(i+1, min(i+10, len(lines))):
+                            if '内消費税' in lines[j]:
+                                # Found 8% tax label, collect amounts
+                                amounts_found = []
+                                for k in range(j+1, min(j+10, len(lines))):
+                                    amount_matches = re.findall(r'[¥￥\\]\s*([0-9,]+\.?[0-9]*)\s*\)', lines[k])
+                                    if amount_matches:
+                                        for amt_str in amount_matches:
+                                            try:
+                                                val = float(amt_str.replace(',', ''))
+                                                if 0 <= val <= 10000:
+                                                    amounts_found.append((val, k, lines[k].strip()))
+                                            except ValueError:
+                                                pass
+                                    # Stop at next section
+                                    if ('但し' in lines[k] or '非課税' in lines[k]) and k > j+3:
+                                        break
+                                
+                                # For 8% tax: Since amounts are [total_tax, 10%_taxable, 10%_tax, 8%_taxable, 8%_TAX]
+                                # We want the LAST amount in the sequence (which is 8% tax)
+                                if len(amounts_found) >= 5:
+                                    tax_8_parsed = amounts_found[4][0]  # Take 5th amount (index 4)
+                                    logger.info(f"Document AI: Found 8% tax (pattern 5th): ¥{tax_8_parsed} at line {amounts_found[4][1]}")
+                                elif len(amounts_found) >= 2:
+                                    # Fallback: take last amount
+                                    tax_8_parsed = amounts_found[-1][0]
+                                    logger.info(f"Document AI: Found 8% tax (last): ¥{tax_8_parsed} at line {amounts_found[-1][1]}")
+                                elif len(amounts_found) == 1:
+                                    tax_8_parsed = amounts_found[0][0]
+                                    logger.info(f"Document AI: Found 8% tax (single): ¥{tax_8_parsed} at line {amounts_found[0][1]}")
+                                break
+                        break
 
         # --- Infer tax classification and expense category heuristics ---
         def _parse_amount_for_builder(val: any) -> Optional[float]:
@@ -692,6 +980,8 @@ class ReceiptBuilder:
             currency=currency,
             subtotal=subtotal_parsed,
             tax=tax_parsed,
+            tax_10=tax_10_parsed,
+            tax_8=tax_8_parsed,
             total=total_parsed,
             line_items=line_items,
             raw_text=raw_text_value,
@@ -737,6 +1027,8 @@ class ReceiptBuilder:
         currency = pick(getattr(docai_result, "currency", None), getattr(standard_result, "currency", None))
         subtotal = pick(getattr(docai_result, "subtotal", None), getattr(standard_result, "subtotal", None))
         tax = pick(getattr(docai_result, "tax", None), getattr(standard_result, "tax", None))
+        tax_10 = pick(getattr(docai_result, "tax_10", None), getattr(standard_result, "tax_10", None))
+        tax_8 = pick(getattr(docai_result, "tax_8", None), getattr(standard_result, "tax_8", None))
         total = pick(getattr(docai_result, "total", None), getattr(standard_result, "total", None))
 
         # Line items: prefer docai list when populated, otherwise standard.
@@ -803,6 +1095,8 @@ class ReceiptBuilder:
             currency=currency,
             subtotal=subtotal,
             tax=tax,
+            tax_10=tax_10,
+            tax_8=tax_8,
             total=total,
             line_items=line_items,
             raw_text=raw_text,

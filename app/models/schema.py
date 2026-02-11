@@ -50,6 +50,14 @@ class ExtractionResult(BaseModel):
     currency: Optional[str]
     subtotal: Optional[float]
     tax: Optional[float]
+    tax_10: Optional[float] = Field(
+        default=None,
+        description="10% consumption tax amount (Japanese receipts).",
+    )
+    tax_8: Optional[float] = Field(
+        default=None,
+        description="8% consumption tax amount (Japanese receipts).",
+    )
     total: Optional[float]
     normalized_currency: Optional[str] = Field(
         default=None,
