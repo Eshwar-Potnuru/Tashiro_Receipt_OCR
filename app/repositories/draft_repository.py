@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional
@@ -49,6 +50,10 @@ class DraftRepository:
         - Add indexes for performance
         - Migrate to PostgreSQL for production scale
     """
+
+    # Retry configuration for write lock handling
+    MAX_RETRIES = 5
+    RETRY_DELAY_MS = 120  # milliseconds
 
     def __init__(self, db_path: Optional[str] = None):
         """Initialize repository with database path.
@@ -83,7 +88,11 @@ class DraftRepository:
         """
         if self._memory_conn is not None:
             return self._memory_conn
-        return sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=15.0)
+        conn.execute("PRAGMA busy_timeout = 15000")
+        conn.execute("PRAGMA journal_mode = WAL")
+        conn.execute("PRAGMA synchronous = NORMAL")
+        return conn
 
     def _init_schema(self) -> None:
         """Create draft_receipts table if it doesn't exist.
@@ -114,6 +123,11 @@ class DraftRepository:
                     created_at TEXT NOT NULL,
                     updated_at TEXT NOT NULL,
                     sent_at TEXT,
+                    sent_by_user_id TEXT,
+                    sent_by_role TEXT,
+                    hq_status TEXT DEFAULT 'PENDING',
+                    hq_batch_id TEXT,
+                    hq_transferred_at TEXT,
                     image_ref TEXT,
                     image_data TEXT,
                     creator_user_id TEXT,
@@ -183,6 +197,91 @@ class DraftRepository:
                 """)
             except sqlite3.OperationalError:
                 pass  # Column already exists
+
+            # Phase 6A-5: Add SEND audit metadata + HQ placeholders
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN sent_by_user_id TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN sent_by_role TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN hq_status TEXT DEFAULT 'PENDING'
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN hq_batch_id TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN hq_transferred_at TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            # Performance optimization: Create indexes for common query patterns
+            # These indexes dramatically improve query performance when the table has many rows
+            try:
+                # Index for filtering by status (used in list_drafts)
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_draft_status 
+                    ON draft_receipts(status)
+                """)
+            except sqlite3.OperationalError:
+                pass  # Index already exists
+            
+            try:
+                # Index for sorting by created_at (used in list_drafts ORDER BY)
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_draft_created_at 
+                    ON draft_receipts(created_at DESC)
+                """)
+            except sqlite3.OperationalError:
+                pass  # Index already exists
+            
+            try:
+                # Index for filtering by creator_user_id (used in WORKER isolation)
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_draft_creator 
+                    ON draft_receipts(creator_user_id)
+                """)
+            except sqlite3.OperationalError:
+                pass  # Index already exists
+            
+            try:
+                # Composite index for common query pattern: status + created_at
+                # This covers "WHERE status = ? ORDER BY created_at DESC LIMIT ?"
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_draft_status_created 
+                    ON draft_receipts(status, created_at DESC)
+                """)
+            except sqlite3.OperationalError:
+                pass  # Index already exists
+            
+            try:
+                # Composite index for WORKER queries: creator_user_id + status + created_at
+                # This covers "WHERE creator_user_id = ? AND status = ? ORDER BY created_at DESC"
+                conn.execute("""
+                    CREATE INDEX IF NOT EXISTS idx_draft_creator_status_created 
+                    ON draft_receipts(creator_user_id, status, created_at DESC)
+                """)
+            except sqlite3.OperationalError:
+                pass  # Index already exists
             
             conn.commit()
         finally:
@@ -204,48 +303,74 @@ class DraftRepository:
             This is a pure persistence operation. State validation should
             be done by DraftService before calling this method.
         """
-        conn = self._get_connection()
-        should_close = (self._memory_conn is None)
-        try:
-            # Serialize receipt to JSON
-            receipt_json = json.dumps(draft.receipt.model_dump(mode="json"))
-            
-            # Phase 5D-1.1: Defensive coercion - ensure creator_user_id is string before SQL insert
-            creator_user_id_str = str(draft.creator_user_id) if draft.creator_user_id is not None else None
-            if isinstance(creator_user_id_str, UUID):
-                creator_user_id_str = str(creator_user_id_str)
-            
-            # Phase 5G-C: Defensive coercion for reviewed_by_user_id
-            reviewed_by_user_id_str = str(draft.reviewed_by_user_id) if draft.reviewed_by_user_id is not None else None
-            if isinstance(reviewed_by_user_id_str, UUID):
-                reviewed_by_user_id_str = str(reviewed_by_user_id_str)
-            
-            conn.execute("""
-                INSERT OR REPLACE INTO draft_receipts 
-                (draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
-                 send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                str(draft.draft_id),
-                receipt_json,
-                draft.status.value,
-                draft.created_at.isoformat(),
-                draft.updated_at.isoformat(),
-                draft.sent_at.isoformat() if draft.sent_at else None,
-                draft.image_ref,
-                draft.image_data,
-                creator_user_id_str,
-                draft.send_attempt_count,
-                draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,
-                draft.last_send_error,
-                draft.reviewed_at.isoformat() if draft.reviewed_at else None,
-                reviewed_by_user_id_str,
-            ))
-            conn.commit()
-            return draft
-        finally:
-            if should_close:
-                conn.close()
+        # Serialize receipt to JSON
+        receipt_json = json.dumps(draft.receipt.model_dump(mode="json"))
+        
+        # Phase 5D-1.1: Defensive coercion - ensure creator_user_id is string before SQL insert
+        creator_user_id_str = str(draft.creator_user_id) if draft.creator_user_id is not None else None
+        if isinstance(creator_user_id_str, UUID):
+            creator_user_id_str = str(creator_user_id_str)
+        
+        # Phase 5G-C: Defensive coercion for reviewed_by_user_id
+        reviewed_by_user_id_str = str(draft.reviewed_by_user_id) if draft.reviewed_by_user_id is not None else None
+        if isinstance(reviewed_by_user_id_str, UUID):
+            reviewed_by_user_id_str = str(reviewed_by_user_id_str)
+
+        # Phase 6A-5: Defensive coercion for send audit/HQ fields
+        sent_by_user_id_str = str(draft.sent_by_user_id) if draft.sent_by_user_id is not None else None
+        if isinstance(sent_by_user_id_str, UUID):
+            sent_by_user_id_str = str(sent_by_user_id_str)
+
+        last_error = None
+        for attempt in range(self.MAX_RETRIES):
+            conn = self._get_connection()
+            should_close = (self._memory_conn is None)
+            try:
+                conn.execute("""
+                    INSERT OR REPLACE INTO draft_receipts 
+                    (draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                     hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                     send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    str(draft.draft_id),
+                    receipt_json,
+                    draft.status.value,
+                    draft.created_at.isoformat(),
+                    draft.updated_at.isoformat(),
+                    draft.sent_at.isoformat() if draft.sent_at else None,
+                    sent_by_user_id_str,
+                    draft.sent_by_role,
+                    draft.hq_status,
+                    draft.hq_batch_id,
+                    draft.hq_transferred_at.isoformat() if draft.hq_transferred_at else None,
+                    draft.image_ref,
+                    draft.image_data,
+                    creator_user_id_str,
+                    draft.send_attempt_count,
+                    draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,
+                    draft.last_send_error,
+                    draft.reviewed_at.isoformat() if draft.reviewed_at else None,
+                    reviewed_by_user_id_str,
+                ))
+                conn.commit()
+                return draft
+            except sqlite3.OperationalError as exc:
+                if "locked" in str(exc).lower() and attempt < self.MAX_RETRIES - 1:
+                    last_error = exc
+                    time.sleep(self.RETRY_DELAY_MS / 1000.0)
+                    continue
+                raise
+            finally:
+                if should_close:
+                    conn.close()
+
+        if last_error:
+            raise sqlite3.OperationalError(
+                f"Database locked after {self.MAX_RETRIES} attempts: {last_error}"
+            ) from last_error
+
+        return draft
 
     def get_by_id(self, draft_id: UUID) -> Optional[DraftReceipt]:
         """Retrieve a draft by its ID.
@@ -261,7 +386,8 @@ class DraftRepository:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                  SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
                        send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                 FROM draft_receipts
                 WHERE draft_id = ?
@@ -276,7 +402,7 @@ class DraftRepository:
             if should_close:
                 conn.close()
 
-    def list_all(self, status: Optional[DraftStatus] = None, user_id: Optional[str] = None, include_image_data: bool = False) -> List[DraftReceipt]:
+    def list_all(self, status: Optional[DraftStatus] = None, user_id: Optional[str] = None, include_image_data: bool = False, limit: Optional[int] = 1000) -> List[DraftReceipt]:
         """List all drafts, optionally filtered by status and user.
         
         By default, excludes image_data field to keep response payload small.
@@ -290,10 +416,12 @@ class DraftRepository:
             include_image_data: If True, includes base64 image_data in response.
                                Use for admin views that need image previews.
                                Default False to keep payload small.
+            limit: Maximum number of drafts to return. Default 1000 to prevent
+                  performance issues with large datasets. Set to None for no limit.
         
         Returns:
             List of DraftReceipt objects, ordered by created_at descending
-            (most recent first)
+            (most recent first), limited to `limit` rows
         """
         conn = self._get_connection()
         should_close = (self._memory_conn is None)
@@ -303,14 +431,16 @@ class DraftRepository:
             if include_image_data:
                 # Include image_data for admin views
                 query_parts = ["""
-                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
+                          SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                              hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
                        send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                     FROM draft_receipts
                 """]
             else:
                 # Exclude image_data for list views to reduce payload
                 query_parts = ["""
-                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, creator_user_id,
+                          SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                              hq_status, hq_batch_id, hq_transferred_at, image_ref, creator_user_id,
                        send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                     FROM draft_receipts
                 """]
@@ -330,6 +460,11 @@ class DraftRepository:
             
             # Add ORDER BY
             query_parts.append("ORDER BY created_at DESC")
+            
+            # Add LIMIT for performance
+            if limit is not None:
+                query_parts.append("LIMIT ?")
+                params.append(limit)
             
             query = "\n".join(query_parts)
             cursor = conn.execute(query, params)
@@ -412,8 +547,9 @@ class DraftRepository:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error
+                  SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                      send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                 FROM draft_receipts
                 WHERE image_ref = ?
                 ORDER BY created_at DESC
@@ -448,8 +584,9 @@ class DraftRepository:
             # Create placeholders for IN clause
             placeholders = ",".join("?" * len(draft_ids))
             cursor = conn.execute(f"""
-                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, image_ref, image_data, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error
+                  SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                      send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
                 FROM draft_receipts
                 WHERE draft_id IN ({placeholders})
             """, [str(draft_id) for draft_id in draft_ids])
@@ -477,6 +614,17 @@ class DraftRepository:
         created_at = datetime.fromisoformat(row["created_at"])
         updated_at = datetime.fromisoformat(row["updated_at"])
         sent_at = datetime.fromisoformat(row["sent_at"]) if row["sent_at"] else None
+
+        # Phase 6A-5: SEND audit metadata + HQ placeholders
+        sent_by_user_id = row["sent_by_user_id"] if "sent_by_user_id" in row.keys() else None
+        sent_by_role = row["sent_by_role"] if "sent_by_role" in row.keys() else None
+        hq_status = row["hq_status"] if "hq_status" in row.keys() else None
+        hq_batch_id = row["hq_batch_id"] if "hq_batch_id" in row.keys() else None
+        hq_transferred_at = (
+            datetime.fromisoformat(row["hq_transferred_at"])
+            if "hq_transferred_at" in row.keys() and row["hq_transferred_at"]
+            else None
+        )
         
         # Get image_ref (may be None for legacy drafts created before Phase 4C-3)
         image_ref = row["image_ref"] if "image_ref" in row.keys() else None
@@ -512,6 +660,11 @@ class DraftRepository:
             created_at=created_at,
             updated_at=updated_at,
             sent_at=sent_at,
+            sent_by_user_id=sent_by_user_id,
+            sent_by_role=sent_by_role,
+            hq_status=hq_status,
+            hq_batch_id=hq_batch_id,
+            hq_transferred_at=hq_transferred_at,
             image_ref=image_ref,
             image_data=image_data,
             creator_user_id=creator_user_id,

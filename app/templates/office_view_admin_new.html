@@ -49,6 +49,8 @@
             color: var(--gray-800);
             padding-bottom: 80px;
             line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* ─── Forbidden Screen ─── */
@@ -189,17 +191,25 @@
         .btn-view-sent:hover { background: var(--primary-dark); }
         .btn-manual-entry {
             padding: 8px 16px;
-            background: var(--gray-100);
-            color: var(--gray-400);
-            border: 1px dashed var(--gray-300);
+            background: var(--primary-50);
+            color: var(--primary);
+            border: 1px solid var(--primary-100);
             border-radius: var(--radius-sm);
             font-size: 13px;
-            font-weight: 500;
-            cursor: not-allowed;
+            font-weight: 600;
+            cursor: pointer;
             display: flex;
             align-items: center;
             gap: 6px;
+            transition: all 0.15s;
             font-family: inherit;
+        }
+        .btn-manual-entry:hover { background: var(--primary-100); }
+        .btn-manual-entry:disabled {
+            background: var(--gray-100);
+            color: var(--gray-400);
+            border: 1px dashed var(--gray-300);
+            cursor: not-allowed;
         }
         .logout-btn {
             padding: 8px 14px;
@@ -623,6 +633,158 @@
             object-fit: contain;
         }
 
+        /* ─── Manual Entry Modal ─── */
+        .manual-entry-modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+        }
+        .manual-entry-modal.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .manual-entry-content {
+            background: white;
+            width: 92%;
+            max-width: 760px;
+            max-height: 90vh;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .manual-entry-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .manual-entry-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+        .manual-entry-close {
+            width: 32px;
+            height: 32px;
+            border: none;
+            background: var(--gray-100);
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            color: var(--gray-600);
+        }
+        .manual-entry-close:hover { background: var(--gray-200); }
+        .manual-entry-body {
+            padding: 18px 20px;
+            overflow: auto;
+        }
+        .manual-entry-note {
+            font-size: 13px;
+            color: var(--gray-600);
+            background: var(--info-light);
+            border: 1px solid #BAE6FD;
+            border-radius: var(--radius-sm);
+            padding: 10px 12px;
+            margin-bottom: 14px;
+        }
+        .manual-section {
+            border: 1px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            margin-bottom: 12px;
+            background: #fff;
+        }
+        .manual-section-title {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--gray-700);
+            margin-bottom: 10px;
+        }
+        .manual-form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 12px;
+        }
+        .manual-form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .manual-form-field.full { grid-column: 1 / -1; }
+        .manual-form-field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--gray-600);
+        }
+        .manual-input,
+        .manual-textarea,
+        .manual-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            font-family: inherit;
+            background: white;
+        }
+        .manual-input:focus,
+        .manual-textarea:focus,
+        .manual-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-50);
+        }
+        .manual-textarea {
+            min-height: 88px;
+            resize: vertical;
+        }
+        .manual-entry-actions {
+            padding: 14px 20px;
+            border-top: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: white;
+        }
+        .manual-entry-btn {
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--gray-300);
+            background: white;
+            color: var(--gray-700);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .manual-entry-btn:hover { background: var(--gray-50); }
+        .manual-entry-btn.primary {
+            border: none;
+            background: var(--primary);
+            color: white;
+        }
+        .manual-entry-btn.primary:hover { background: var(--primary-dark); }
+        .manual-entry-btn.secondary {
+            border: none;
+            background: var(--success);
+            color: white;
+        }
+        .manual-entry-btn.secondary:hover { background: #047857; }
+        .manual-entry-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+        .manual-hint {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
         /* ─── Sent Modal ─── */
         .sent-modal {
             display: none;
@@ -843,6 +1005,7 @@
             overflow: auto;
             border: 1px solid var(--gray-200);
             border-radius: var(--radius-sm);
+            -webkit-overflow-scrolling: touch;
         }
         .ledger-table {
             width: 100%;
@@ -991,15 +1154,65 @@
         }
 
         /* ─── Responsive ─── */
+        @media (max-width: 1024px) {
+            .top-bar-content { padding: 0 16px; }
+            .stats-row { padding: 12px 16px 0; }
+            .drafts-container { padding: 12px 16px; }
+            .filters-section { margin: 8px 16px 0; }
+            .location-filter, .staff-filter { padding: 12px !important; }
+        }
+
         @media (max-width: 768px) {
-            .top-bar-content { padding: 0 12px; }
+            .top-bar-content { padding: 0 12px; height: 56px; }
+            .top-bar-brand { gap: 8px; }
+            .brand-icon { width: 32px; height: 32px; font-size: 14px; }
+            .top-bar-title { font-size: 13px; }
+            .top-bar-subtitle { font-size: 9px; }
             .filters-section { margin: 8px 12px 0; }
-            .stats-row { grid-template-columns: repeat(2, 1fr); padding: 8px 12px 0; }
+            .stats-row { grid-template-columns: repeat(2, 1fr); padding: 8px 12px 0; gap: 8px; }
+            .stat-card { padding: 12px 16px; border-radius: 8px; }
+            .stat-value { font-size: 22px; }
+            .stat-label { font-size: 11px; }
             .drafts-container { padding: 8px 12px; }
+            .draft-card { padding: 12px 14px; margin-bottom: 8px; border-radius: 8px; }
             .user-name { display: none; }
             .btn-manual-entry { display: none; }
-            .location-filter, .staff-filter { grid-template-columns: repeat(2, 1fr); }
-            .hq-workflow-preview { grid-template-columns: repeat(2, 1fr); }
+            .location-filter, .staff-filter { grid-template-columns: repeat(2, 1fr) !important; gap: 8px !important; padding: 8px !important; }
+            .hq-workflow-preview { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+            .ledger-table { font-size: 0.85em; }
+            .ledger-table-container { max-height: 400px !important; }
+            .search-input { font-size: 12px; padding: 8px 12px 8px 32px; }
+            .search-icon { font-size: 12px; }
+            button { font-size: 12px; padding: 8px 12px; }
+            .tab-btn { font-size: 11px; padding: 8px 12px; }
+        }
+
+        @media (max-width: 480px) {
+            body { font-size: 14px; }
+            .top-bar-content { padding: 0 10px; height: 52px; }
+            .top-bar-brand { gap: 6px; }
+            .brand-icon { width: 28px; height: 28px; font-size: 12px; }
+            .top-bar-title { font-size: 12px; }
+            .top-bar-subtitle { display: none; }
+            .stats-row { grid-template-columns: 1fr; padding: 6px 10px 0; gap: 6px; }
+            .stat-card { padding: 10px 12px; border-radius: 6px; }
+            .stat-value { font-size: 18px; }
+            .stat-label { font-size: 10px; }
+            .drafts-container { padding: 6px 10px; }
+            .draft-card { padding: 10px 12px; margin-bottom: 6px; border-radius: 6px; font-size: 13px; }
+            .filters-section { margin: 6px 10px 0; }
+            .location-filter, .staff-filter { grid-template-columns: 1fr !important; gap: 6px !important; padding: 6px !important; }
+            .hq-workflow-preview { grid-template-columns: 1fr; gap: 6px; }
+            .ledger-table-container { max-height: 300px !important; padding: 0 !important; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+            .ledger-table { font-size: 0.8em; min-width: 600px !important; }
+            .search-input { font-size: 11px; padding: 6px 10px 6px 28px; }
+            .search-icon { font-size: 11px; }
+            button { font-size: 11px; padding: 6px 10px; border-radius: 4px; }
+            .tab-btn { font-size: 10px; padding: 6px 10px; border-radius: 4px; }
+            .dialog-content { padding: 12px !important; }
+            .forbidden-btn { padding: 10px 20px; font-size: 13px; }
+            .forbidden-icon { font-size: 48px; }
+            .forbidden-title { font-size: 18px; }
         }
     </style>
 </head>
@@ -1020,7 +1233,7 @@
             <div class="top-bar-brand">
                 <div class="brand-icon"><i class="fas fa-clipboard-list"></i></div>
                 <div>
-                    <div class="top-bar-title">Receipt OCR System</div>
+                    <div class="top-bar-title" data-i18n="system_title">Receipt OCR System</div>
                     <div class="top-bar-subtitle" data-i18n="admin_subtitle">事業所管理ワークスペース</div>
                 </div>
             </div>
@@ -1030,7 +1243,7 @@
                     <button class="lang-btn" data-lang="en" onclick="switchAdminLang('en')">EN</button>
                 </div>
                 <span class="user-name" id="userName">Loading...</span>
-                <button class="btn-manual-entry" title="Phase 8 — Manual Entry (Coming Soon)" disabled>
+                <button class="btn-manual-entry" id="manualEntryBtn" title="Office Manual Entry">
                     <i class="fas fa-pen"></i> <span data-i18n="manual_entry">手入力</span>
                 </button>
                 <button class="btn-view-sent" id="viewSentBtn">
@@ -1111,31 +1324,138 @@
         <div class="drawer-handle"></div>
         <div class="drawer-content">
             <div class="drawer-header">
-                <div class="drawer-title" id="drawerTitle">Draft Details</div>
+                <div class="drawer-title" id="drawerTitle" data-i18n="drawer_title">下書き詳細</div>
                 <button class="close-drawer-btn" id="closeDrawerBtn">&times;</button>
             </div>
             <div class="preview-section" id="previewSection"></div>
             <div class="detail-section">
-                <div class="detail-section-title">Basic Information</div>
+                <div class="detail-section-title" data-i18n="basic_info">基本情報</div>
                 <div class="detail-grid" id="basicDetails"></div>
             </div>
             <div class="detail-section" id="retrySection" style="display:none;">
-                <div class="detail-section-title">Send Status</div>
+                <div class="detail-section-title" data-i18n="send_status">送信ステータス</div>
                 <div class="detail-grid" id="retryDetails"></div>
             </div>
         </div>
         <div class="drawer-actions">
             <button class="action-btn btn-secondary" id="refreshBtn">
-                <i class="fas fa-sync-alt"></i> Refresh
+                <i class="fas fa-sync-alt"></i> <span data-i18n="btn_refresh">更新</span>
+            </button>
+            <button class="action-btn btn-secondary" id="editManualBtn" style="display:none;">
+                <i class="fas fa-pen"></i> <span data-i18n="btn_edit">手動下書きを編集</span>
             </button>
             <button class="action-btn btn-success" id="sendBtn" disabled>
-                <i class="fas fa-paper-plane"></i> Send
+                <i class="fas fa-paper-plane"></i> <span data-i18n="btn_send">送信</span>
             </button>
         </div>
     </div>
 
     <!-- Toast -->
     <div class="toast" id="toast"></div>
+
+    <!-- Manual Entry Modal -->
+    <div class="manual-entry-modal" id="manualEntryModal">
+        <div class="manual-entry-content">
+            <div class="manual-entry-header">
+                <div class="manual-entry-title" data-i18n="manual_modal_title">事務所手入力（OCRなし）</div>
+                <button class="manual-entry-close" id="manualEntryCloseBtn">&times;</button>
+            </div>
+            <div class="manual-entry-body">
+                <div class="manual-entry-note" data-i18n="manual_note">保存すると下書きが作成されます。送信するとExcel（Format①/②）に書き込まれます。</div>
+                <form id="manualEntryForm">
+                    <div class="manual-section">
+                        <div class="manual-section-title" data-i18n="section_receipt">セクション1：領収書フィールド</div>
+                        <div class="manual-form-grid">
+                            <div class="manual-form-field">
+                                <label for="manualReceiptDate" data-i18n="receipt_date">日付 *</label>
+                                <input class="manual-input" id="manualReceiptDate" type="date" required>
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualVendorName" data-i18n="store_name">店名 *</label>
+                                <input class="manual-input" id="manualVendorName" type="text" required>
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualTotalAmount" data-i18n="total_amount">金額（¥）*</label>
+                                <input class="manual-input" id="manualTotalAmount" type="number" min="1" step="1" required>
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualInvoiceNumber" data-i18n="invoice_number">インボイス番号</label>
+                                <input class="manual-input" id="manualInvoiceNumber" type="text">
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualTaxCategory" data-i18n="tax_category">税区分 *</label>
+                                <select class="manual-select" id="manualTaxCategory" required>
+                                    <option value="" data-i18n="select_tax">税区分を選択</option>
+                                </select>
+                                <div class="manual-hint" id="manualTaxCategoryHint" data-i18n="tax_hint">税区分を選択すると税額ガイダンスが表示されます。</div>
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualAccountTitle" data-i18n="account_title">勘定科目 *</label>
+                                <select class="manual-select" id="manualAccountTitle" required>
+                                    <option value="" data-i18n="select_account">勘定科目を選択</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-section">
+                        <div class="manual-section-title" data-i18n="section_additional">セクション2：追加情報</div>
+                        <div class="manual-form-grid">
+                            <div class="manual-form-field">
+                                <label for="manualTax10" data-i18n="tax_10_amount">税額（10%）</label>
+                                <input class="manual-input" id="manualTax10" type="number" min="0" step="1">
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualTax8" data-i18n="tax_8_amount">税額（8%）</label>
+                                <input class="manual-input" id="manualTax8" type="number" min="0" step="1">
+                            </div>
+                            <div class="manual-form-field full">
+                                <label for="manualCurrency" data-i18n="currency_label">通貨</label>
+                                <input class="manual-input" id="manualCurrency" type="text" value="JPY" disabled>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-section">
+                        <div class="manual-section-title" data-i18n="section_location">セクション3：事業所・担当者の割り当て</div>
+                        <div class="manual-form-grid">
+                            <div class="manual-form-field">
+                                <label for="manualLocation" data-i18n="business_location">事業所 *</label>
+                                <select class="manual-select" id="manualLocation" required>
+                                    <option value="" data-i18n="selectLocation">事業所を選択</option>
+                                </select>
+                            </div>
+                            <div class="manual-form-field">
+                                <label for="manualStaff" data-i18n="staff_select">担当者 *</label>
+                                <select class="manual-select" id="manualStaff" required disabled>
+                                    <option value="" data-i18n="select_location_first">先に事業所を選択</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="manual-section">
+                        <div class="manual-section-title" data-i18n="section_memo">セクション4：メモ（任意）</div>
+                        <div class="manual-form-grid">
+                            <div class="manual-form-field full">
+                                <label for="manualMemo" data-i18n="memo_label">メモ</label>
+                                <textarea class="manual-textarea" id="manualMemo"></textarea>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="manual-entry-actions">
+                <button class="manual-entry-btn" id="manualEntryCancelBtn" type="button" data-i18n="btn_cancel">キャンセル</button>
+                <button class="manual-entry-btn primary" id="manualEntrySendBtn" type="button">
+                    <i class="fas fa-paper-plane"></i> <span data-i18n="btn_send">送信</span>
+                </button>
+                <button class="manual-entry-btn secondary" id="manualEntrySaveBtn" type="button">
+                    <i class="fas fa-save"></i> <span data-i18n="btn_save_draft">下書きとして保存</span>
+                </button>
+            </div>
+        </div>
+    </div>
 
     <!-- Fullscreen Preview -->
     <div class="fs-overlay" id="fsOverlay" role="dialog" aria-modal="true" aria-hidden="true">
@@ -1173,15 +1493,15 @@
                             <span data-i18n="status_all">全レコード</span>
                         </button>
                         <button class="sent-filter-tab" data-status="SENT" style="flex: 1; padding: 8px 16px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-paper-plane"></i> SENT
+                            <i class="fas fa-paper-plane"></i> <span data-i18n="badge_sent">SENT</span>
                         </button>
                         <button class="sent-filter-tab" data-status="REVIEWED" style="flex: 1; padding: 8px 16px; background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; border-radius: 4px; cursor: pointer; font-weight: 500;">
-                            <i class="fas fa-check-double"></i> REVIEWED
+                            <i class="fas fa-check-double"></i> <span data-i18n="badge_reviewed">REVIEWED</span>
                         </button>
                     </div>
 
                     <div class="sent-action-bar" id="sentActionBar" style="display: none; padding: 10px 12px; background: var(--primary-50); border: 1px solid var(--primary); border-radius: 4px; margin-bottom: 12px; align-items: center; justify-content: space-between;">
-                        <span id="sentSelectionCount" style="font-weight: 500; color: var(--primary-dark);">0 selected</span>
+                        <span id="sentSelectionCount" style="font-weight: 500; color: var(--primary-dark);" data-i18n="selected_default">0 selected</span>
                         <div style="display: flex; gap: 8px;">
                             <button id="markReviewedBtn" style="padding: 8px 16px; background: var(--primary); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
                                 <i class="fas fa-check-double"></i> <span data-i18n="mark_reviewed">確認済みにする</span>
@@ -1207,22 +1527,22 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 40px;"><input type="checkbox" id="selectAllSent" title="Select all SENT records"></th>
-                                        <th style="width: 100px;">Status</th>
-                                        <th class="sortable" data-sort="receipt_date">Date <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="vendor">Vendor <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="invoice_number">Invoice # <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="total_amount">Total <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="tax_10_amount">Tax 10% <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="tax_8_amount">Tax 8% <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="staff_name">Staff <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="business_location_id">Location <i class="fas fa-sort sort-icon"></i></th>
-                                        <th class="sortable" data-sort="month_sheet_name">Month <i class="fas fa-sort sort-icon"></i></th>
-                                        <th>Ledger Targets</th>
-                                        <th class="sortable sorted" data-sort="sent_at">Sent At <i class="fas fa-sort-down sort-icon"></i></th>
+                                        <th style="width: 100px;" data-i18n="th_status">Status</th>
+                                        <th class="sortable" data-sort="receipt_date"><span data-i18n="th_date">Date</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="vendor"><span data-i18n="th_vendor">Vendor</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="invoice_number"><span data-i18n="th_invoice">Invoice #</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="total_amount"><span data-i18n="th_amount">Total</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="tax_10_amount"><span data-i18n="th_tax10">Tax 10%</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="tax_8_amount"><span data-i18n="th_tax8">Tax 8%</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="staff_name"><span data-i18n="th_staff">Staff</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="business_location_id"><span data-i18n="th_location">Location</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th class="sortable" data-sort="month_sheet_name"><span data-i18n="th_month">Month</span> <i class="fas fa-sort sort-icon"></i></th>
+                                        <th data-i18n="th_ledger_targets">Ledger Targets</th>
+                                        <th class="sortable sorted" data-sort="sent_at"><span data-i18n="th_sent_at">Sent At</span> <i class="fas fa-sort-down sort-icon"></i></th>
                                     </tr>
                                 </thead>
                                 <tbody id="sentTableBody">
-                                    <tr><td colspan="13" class="sent-loading"><i class="fas fa-spinner"></i><p>Loading...</p></td></tr>
+                                    <tr><td colspan="13" class="sent-loading"><i class="fas fa-spinner"></i><p data-i18n="loading_text">Loading...</p></td></tr>
                                 </tbody>
                             </table>
                         </div>
@@ -1238,24 +1558,24 @@
                     </div>
                     <div class="location-filter" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px; padding: 16px; background: #FFFBEB; border: 1px solid #FCD34D; border-radius: 8px; align-items: start;">
                         <div class="filter-item">
-                            <label class="filter-item-label">📅 <span data-i18n="month_label">月度</span></label>
+                            <label class="filter-item-label" for="locationMonthFilter">📅 <span data-i18n="month_label">月度</span></label>
                             <div class="filter-item-control"><select id="locationMonthFilter" class="filter-select"><option value="">All Months</option></select></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">🏢 <span data-i18n="location_label">事業所</span></label>
+                            <label class="filter-item-label" for="locationLocationFilter">🏢 <span data-i18n="location_label">事業所</span></label>
                             <div class="filter-item-control"><select id="locationLocationFilter" class="filter-select"><option value="">All Locations</option></select></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">👤 <span data-i18n="staff_label">担当者</span></label>
+                            <label class="filter-item-label" for="locationStaffFilter">👤 <span data-i18n="staff_label">担当者</span></label>
                             <div class="filter-item-control"><select id="locationStaffFilter" class="filter-select"><option value="">All Staff</option></select></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">🔍 <span data-i18n="search_label">検索</span></label>
+                            <label class="filter-item-label" for="locationSearchInput">🔍 <span data-i18n="search_label">検索</span></label>
                             <div class="filter-item-control"><input type="text" id="locationSearchInput" placeholder="Search vendor, description or month..."></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">⚙️ Action</label>
-                            <div class="filter-item-control"><button id="locationRefreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button></div>
+                            <div class="filter-item-label">⚙️ <span data-i18n="action_label">Action</span></div>
+                            <div class="filter-item-control"><button id="locationRefreshBtn"><i class="fas fa-sync-alt"></i> <span data-i18n="refresh_btn">Refresh</span></button></div>
                         </div>
                     </div>
                     <div class="ledger-table-container" style="max-height: 600px; overflow: auto; border: 1px solid #FCD34D; border-radius: 6px;">
@@ -1277,24 +1597,24 @@
                     </div>
                     <div class="staff-filter" style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 12px; padding: 16px; background: #ECFDF5; border: 1px solid #6EE7B7; border-radius: 8px; align-items: start;">
                         <div class="filter-item">
-                            <label class="filter-item-label">📅 <span data-i18n="month_label">月度</span></label>
+                            <label class="filter-item-label" for="staffMonthFilter">📅 <span data-i18n="month_label">月度</span></label>
                             <div class="filter-item-control"><select id="staffMonthFilter" class="filter-select"><option value="">All Months</option></select></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">🏢 <span data-i18n="location_label">事業所</span></label>
+                            <label class="filter-item-label" for="staffLocationFilter">🏢 <span data-i18n="location_label">事業所</span></label>
                             <div class="filter-item-control"><select id="staffLocationFilter" class="filter-select"><option value="">All Locations</option></select></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">👤 <span data-i18n="staff_label">担当者</span></label>
+                            <label class="filter-item-label" for="staffStaffFilter">👤 <span data-i18n="staff_label">担当者</span></label>
                             <div class="filter-item-control"><select id="staffStaffFilter" class="filter-select"><option value="">All Staff</option></select></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">🔍 <span data-i18n="search_label">検索</span></label>
+                            <label class="filter-item-label" for="staffSearchInput">🔍 <span data-i18n="search_label">検索</span></label>
                             <div class="filter-item-control"><input type="text" id="staffSearchInput" placeholder="Search staff, vendor, description..."></div>
                         </div>
                         <div class="filter-item">
-                            <label class="filter-item-label">⚙️ Action</label>
-                            <div class="filter-item-control"><button id="staffRefreshBtn"><i class="fas fa-sync-alt"></i> Refresh</button></div>
+                            <div class="filter-item-label">⚙️ <span data-i18n="action_label">Action</span></div>
+                            <div class="filter-item-control"><button id="staffRefreshBtn"><i class="fas fa-sync-alt"></i> <span data-i18n="refresh_btn">Refresh</span></button></div>
                         </div>
                     </div>
                     <div class="ledger-table-container" style="max-height: 600px; overflow: auto; border: 1px solid #6EE7B7; border-radius: 6px;">
@@ -1434,6 +1754,116 @@
             hq_step4:          { ja: '本部へ転送', en: 'Transfer to HQ' },
             hq_send_btn:       { ja: '本部へ送信', en: 'Send to HQ' },
             hq_hint:           { ja: '月次送信機能はPhase 9（追加開発）で実装予定です。', en: 'Monthly send feature will be implemented in Phase 9 (additional development).' },
+            
+            // Manual Entry Modal
+            manual_modal_title:{ ja: '事務所手入力（OCRなし）', en: 'Office Manual Entry (No OCR)' },
+            manual_note:       { ja: '保存すると下書きが作成されます。送信するとExcel（Format①/②）に書き込まれます。', en: 'Save creates a draft only. Send writes to Excel (Format①/②).' },
+            section_receipt:   { ja: 'セクション1：領収書フィールド', en: 'Section 1: Receipt Fields' },
+            section_additional:{ ja: 'セクション2：追加情報', en: 'Section 2: Additional Information' },
+            section_location:  { ja: 'セクション3：事業所・担当者の割り当て', en: 'Section 3: Location & Staff Assignment' },
+            section_memo:      { ja: 'セクション4：メモ（任意）', en: 'Section 4: Memo (optional)' },
+            receipt_date:      { ja: '日付 *', en: 'Receipt Date *' },
+            store_name:        { ja: '店名 *', en: 'Store Name *' },
+            total_amount:      { ja: '金額（¥）*', en: 'Total Amount (¥) *' },
+            invoice_number:    { ja: 'インボイス番号', en: 'Invoice Number' },
+            tax_category:      { ja: '税区分 *', en: 'Tax Category *' },
+            account_title:     { ja: '勘定科目 *', en: 'Account Title *' },
+            select_tax:        { ja: '税区分を選択', en: 'Select tax category' },
+            select_account:    { ja: '勘定科目を選択', en: 'Select account title' },
+            tax_hint:          { ja: '税区分を選択すると税額ガイダンスが表示されます。', en: 'Select tax category to see tax amount guidance.' },
+            tax_10_amount:     { ja: '税額（10%）', en: 'Tax Amount (10%)' },
+            tax_8_amount:      { ja: '税額（8%）', en: 'Tax Amount (8%)' },
+            currency_label:    { ja: '通貨', en: 'Currency' },
+            business_location: { ja: '事業所 *', en: 'Business Location *' },
+            staff_select:      { ja: '担当者 *', en: 'Staff *' },
+            select_location_first: { ja: '先に事業所を選択', en: 'Select location first' },
+            memo_label:        { ja: 'メモ', en: 'Memo' },
+            btn_cancel:        { ja: 'キャンセル', en: 'Cancel' },
+            btn_save_send:     { ja: '保存して送信', en: 'Save & Send' },
+            btn_save_draft:    { ja: '下書きとして保存', en: 'Save as Draft' },
+            
+            // Drawer
+            drawer_title:      { ja: '下書き詳細', en: 'Draft Details' },
+            basic_info:        { ja: '基本情報', en: 'Basic Information' },
+            send_status:       { ja: '送信ステータス', en: 'Send Status' },
+            btn_refresh:       { ja: '更新', en: 'Refresh' },
+            btn_edit:          { ja: '手動下書きを編集', en: 'Edit Manual Draft' },
+            btn_send:          { ja: '送信', en: 'Send' },
+            
+            // Empty/Loading States
+            loading_text:      { ja: '読み込み中...', en: 'Loading...' },
+            empty_title:       { ja: '下書きがありません', en: 'No drafts found' },
+            empty_text:        { ja: '担当ワーカーがレシートをアップロードすると、ここに表示されます。', en: 'When workers upload receipts, they will appear here.' },
+            no_data:           { ja: 'データがありません', en: 'No data' },
+            
+            // Toast Messages
+            toast_saved:       { ja: '下書きを保存しました', en: 'Draft saved successfully' },
+            toast_sent:        { ja: 'Excelに送信しました！', en: 'Sent to Excel successfully!' },
+            toast_error:       { ja: 'エラーが発生しました', en: 'An error occurred' },
+            toast_select_location:{ ja: '事業所を選択してください', en: 'Please select a location' },
+            toast_select_staff:{ ja: '担当者を選択してください', en: 'Please select a staff member' },
+            toast_fill_required:{ ja: '必須項目を入力してください', en: 'Please fill in required fields' },
+            toast_send_success:{ ja: '{count}件を送信しました', en: '{count} item(s) sent' },
+            toast_send_fail:   { ja: '送信に失敗しました', en: 'Failed to send' },
+            
+            // Table Headers
+            th_date:           { ja: '日付', en: 'Date' },
+            th_vendor:         { ja: '取引先', en: 'Vendor' },
+            th_amount:         { ja: '金額', en: 'Amount' },
+            th_staff:          { ja: '担当者', en: 'Staff' },
+            th_status:         { ja: 'ステータス', en: 'Status' },
+            th_invoice:        { ja: 'インボイス', en: 'Invoice' },
+            th_tax10:          { ja: '10%税込', en: 'Tax 10%' },
+            th_tax8:           { ja: '8%税込', en: 'Tax 8%' },
+            th_location:       { ja: '事業所', en: 'Location' },
+            th_created:        { ja: '作成日時', en: 'Created' },
+            
+            // Badges  
+            badge_draft:       { ja: '下書き', en: 'DRAFT' },
+            badge_sent:        { ja: '送信済', en: 'SENT' },
+            badge_error:       { ja: 'エラー', en: 'ERROR' },
+            badge_manual:      { ja: '手入力', en: 'Manual' },
+            badge_ocr:         { ja: 'OCR', en: 'OCR' },
+            
+            // Selected count
+            selected_count:    { ja: '{count}件選択中', en: '{count} selected' },
+            
+            // Confirm dialogs
+            confirm_send:      { ja: '選択した下書きを送信しますか？', en: 'Send selected drafts?' },
+            confirm_yes:       { ja: 'はい', en: 'Yes' },
+            confirm_no:        { ja: 'いいえ', en: 'No' },
+            
+            // System Title
+            system_title:      { ja: 'Receipt OCR システム', en: 'Receipt OCR System' },
+            
+            // Sent Records additional table headers
+            th_month:          { ja: '月度', en: 'Month' },
+            th_ledger_targets: { ja: '台帳出力先', en: 'Ledger Targets' },
+            th_sent_at:        { ja: '送信日時', en: 'Sent At' },
+            
+            // SENT/REVIEWED filter badges
+            badge_reviewed:    { ja: '確認済み', en: 'REVIEWED' },
+            // Default selection text
+            selected_default:  { ja: '0件選択中', en: '0 selected' },
+
+            // Ledger filter labels
+            action_label:      { ja: '操作', en: 'Action' },
+            refresh_btn:       { ja: '更新', en: 'Refresh' },
+
+            // Receipt detail labels
+            detail_vendor:     { ja: '取引先', en: 'Vendor' },
+            detail_invoice:    { ja: '請求書番号', en: 'Invoice Number' },
+            detail_date:       { ja: '日付', en: 'Date' },
+            detail_total:      { ja: '合計金額', en: 'Total Amount' },
+            detail_tax:        { ja: '税額', en: 'Tax' },
+            detail_worker:     { ja: '担当者', en: 'Worker' },
+            detail_email:      { ja: 'メール', en: 'Email' },
+            detail_status:     { ja: 'ステータス', en: 'Status' },
+            detail_send_attempts: { ja: '送信試行回数', en: 'Send Attempts' },
+            detail_last_error: { ja: '最後のエラー', en: 'Last Error' },
+            detail_no_preview: { ja: 'プレビューなし', en: 'No preview available' },
+            detail_failed_preview: { ja: 'プレビュー読み込み失敗', en: 'Failed to load preview' },
+            detail_error_preview:  { ja: 'プレビュー読み込みエラー', en: 'Error loading preview' },
         };
 
         let adminLang = localStorage.getItem('appLang') || 'ja';
@@ -1445,7 +1875,22 @@
         function applyAdminLanguage() {
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.getAttribute('data-i18n');
-                if (adminI18n[key]) el.textContent = adminI18n[key][adminLang];
+                if (adminI18n[key]) {
+                    const textVal = adminI18n[key][adminLang];
+                    // Preserve child elements (like sort icons) by only updating text spans
+                    if (el.children.length > 0 && el.tagName !== 'SPAN' && el.tagName !== 'P' && el.tagName !== 'DIV') {
+                        el.childNodes.forEach(node => {
+                            if (node.nodeType === 3) node.textContent = '';
+                        });
+                        if (el.firstChild && el.firstChild.nodeType === 3) {
+                            el.firstChild.textContent = textVal;
+                        } else {
+                            el.insertBefore(document.createTextNode(textVal), el.firstChild);
+                        }
+                    } else {
+                        el.textContent = textVal;
+                    }
+                }
             });
             document.querySelectorAll('[data-i18n-ph]').forEach(el => {
                 const key = el.getAttribute('data-i18n-ph');
@@ -1474,6 +1919,18 @@
         let currentDraftId = null;
         let userRole = null;
         let selectedDrafts = new Set();
+        let draftRenderRafId = null;
+        const ADMIN_DRAFT_LOAD_LIMIT = 120;
+
+        function scheduleDraftRender() {
+            if (draftRenderRafId !== null) {
+                cancelAnimationFrame(draftRenderRafId);
+            }
+            draftRenderRafId = requestAnimationFrame(() => {
+                draftRenderRafId = null;
+                renderDrafts();
+            });
+        }
 
         // DOM elements we'll reference for new UX
         const lastUpdatedEl = document.getElementById('lastUpdated');
@@ -1494,6 +1951,7 @@
         const detailDrawer = document.getElementById('detailDrawer');
         const closeDrawerBtn = document.getElementById('closeDrawerBtn');
         const refreshBtn = document.getElementById('refreshBtn');
+        const editManualBtn = document.getElementById('editManualBtn');
         const sendBtn = document.getElementById('sendBtn');
         const toast = document.getElementById('toast');
         const forbiddenScreen = document.getElementById('forbiddenScreen');
@@ -1503,6 +1961,40 @@
         const statDraft = document.getElementById('statDraft');
         const statSent = document.getElementById('statSent');
         const statErrors = document.getElementById('statErrors');
+
+        // Manual entry modal elements/state
+        const manualEntryBtn = document.getElementById('manualEntryBtn');
+        const manualEntryModal = document.getElementById('manualEntryModal');
+        const manualEntryCloseBtn = document.getElementById('manualEntryCloseBtn');
+        const manualEntryCancelBtn = document.getElementById('manualEntryCancelBtn');
+        const manualEntrySendBtn = document.getElementById('manualEntrySendBtn');
+        const manualEntrySaveBtn = document.getElementById('manualEntrySaveBtn');
+        const manualEntryForm = document.getElementById('manualEntryForm');
+        const manualReceiptDateInput = document.getElementById('manualReceiptDate');
+        const manualVendorNameInput = document.getElementById('manualVendorName');
+        const manualInvoiceNumberInput = document.getElementById('manualInvoiceNumber');
+        const manualTaxCategoryInput = document.getElementById('manualTaxCategory');
+        const manualTaxCategoryHint = document.getElementById('manualTaxCategoryHint');
+        const manualTotalAmountInput = document.getElementById('manualTotalAmount');
+        const manualTax10Input = document.getElementById('manualTax10');
+        const manualTax8Input = document.getElementById('manualTax8');
+        const manualAccountTitleInput = document.getElementById('manualAccountTitle');
+        const manualMemoInput = document.getElementById('manualMemo');
+        const manualLocationSelect = document.getElementById('manualLocation');
+        const manualStaffSelect = document.getElementById('manualStaff');
+        let manualReferenceData = { business_locations: [], staff: [] };
+        let manualLocationIds = new Set();
+        let manualStaffIds = new Set();
+        let manualEditingDraftId = null;
+        const manualTaxCategories = [
+            { value: '軽減税率', label: '軽減税率 (Reduced Tax Rate 8%)' },
+            { value: '標準税率', label: '標準税率 (Standard Tax Rate 10%)' },
+            { value: '非課税', label: '非課税 (Non-taxable)' }
+        ];
+        const manualAccountTitles = [
+            '食費', '交通費', '通信費', '宿泊費', '接待交際費', '消耗品費', '会議費',
+            '研修費', '福利厚生費', '広告宣伝費', '車両費', '保険料', '租税公課', 'その他'
+        ];
 
         // Sent records modal elements
         const viewSentBtn = document.getElementById('viewSentBtn');
@@ -1534,8 +2026,8 @@
                 const payload = JSON.parse(atob(token.split('.')[1]));
                 userRole = payload.role;
                 
-                // Hard gate: only ADMIN can access
-                if (userRole !== 'ADMIN') {
+                // Hard gate: only ADMIN and HQ can access
+                if (userRole !== 'ADMIN' && userRole !== 'HQ') {
                     forbiddenScreen.classList.add('show');
                     setTimeout(() => {
                         window.location = '/mobile';
@@ -1564,10 +2056,408 @@
             }, 3000);
         }
 
+        function resetManualEntryForm() {
+            if (manualEntryForm) manualEntryForm.reset();
+            if (manualLocationSelect) manualLocationSelect.value = '';
+            populateManualStaffOptions('');
+            manualEditingDraftId = null;
+            if (manualTaxCategoryHint) {
+                manualTaxCategoryHint.textContent = 'Select tax category to see tax amount guidance.';
+            }
+            if (manualEntrySaveBtn) {
+                manualEntrySaveBtn.disabled = false;
+                manualEntrySaveBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+            }
+            if (manualEntrySendBtn) {
+                manualEntrySendBtn.disabled = false;
+                manualEntrySendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            }
+        }
+
+        function closeManualEntryModal() {
+            manualEntryModal.classList.remove('show');
+            resetManualEntryForm();
+        }
+
+        async function loadManualReferenceData() {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch('/api/drafts/config/reference-data', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                cache: 'no-store'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to load location/staff data (HTTP ${response.status})`);
+            }
+
+            manualReferenceData = await response.json();
+            const locations = Array.isArray(manualReferenceData.business_locations) ? manualReferenceData.business_locations : [];
+            manualLocationIds = new Set();
+
+            const normalizedLocations = locations.filter(location => {
+                return location && typeof location.id === 'string' && location.id.trim() !== '';
+            }).map(location => ({
+                id: location.id.trim(),
+                name: (location.name || location.id || '').toString().trim() || location.id.trim(),
+            }));
+
+            manualLocationSelect.innerHTML = '<option value="">Select location</option>';
+            normalizedLocations.forEach(location => {
+                manualLocationIds.add(location.id);
+                const option = document.createElement('option');
+                option.value = location.id;
+                option.textContent = location.name || location.id;
+                manualLocationSelect.appendChild(option);
+            });
+
+            manualTaxCategoryInput.innerHTML = '<option value="">Select tax category</option>';
+            manualTaxCategories.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item.value;
+                option.textContent = item.label;
+                manualTaxCategoryInput.appendChild(option);
+            });
+
+            manualAccountTitleInput.innerHTML = '<option value="">Select account title</option>';
+            manualAccountTitles.forEach(item => {
+                const option = document.createElement('option');
+                option.value = item;
+                option.textContent = item;
+                manualAccountTitleInput.appendChild(option);
+            });
+
+            populateManualStaffOptions(manualLocationSelect.value || '');
+        }
+
+        function populateManualStaffOptions(locationId) {
+            const staffList = Array.isArray(manualReferenceData.staff) ? manualReferenceData.staff : [];
+            const filtered = locationId
+                ? staffList.filter(staff => {
+                    return staff && String(staff.business_location_id || '').trim() === locationId;
+                })
+                : staffList;
+
+            manualStaffIds = new Set();
+
+            manualStaffSelect.innerHTML = '<option value="">Select staff</option>';
+            manualStaffSelect.disabled = !locationId;
+            if (!locationId) {
+                manualStaffSelect.innerHTML = '<option value="">Select location first</option>';
+            }
+            filtered.forEach(staff => {
+                const staffId = String(staff && staff.staff_id ? staff.staff_id : '').trim();
+                if (!staffId) return;
+
+                const option = document.createElement('option');
+                option.value = staffId;
+                option.textContent = `${staff.name || staffId} (${staffId})`;
+                manualStaffSelect.appendChild(option);
+                manualStaffIds.add(staffId);
+            });
+        }
+
+        function getServerErrorMessage(errorBody, fallbackMessage) {
+            if (!errorBody) return fallbackMessage;
+
+            if (typeof errorBody === 'string') {
+                const text = errorBody.trim();
+                return text || fallbackMessage;
+            }
+
+            if (Array.isArray(errorBody)) {
+                const parts = errorBody
+                    .map(item => {
+                        if (typeof item === 'string') return item;
+                        if (item && typeof item === 'object') {
+                            if (item.msg) return String(item.msg);
+                            if (item.message) return String(item.message);
+                            if (item.detail) return String(item.detail);
+                        }
+                        return null;
+                    })
+                    .filter(Boolean);
+                return parts.length > 0 ? parts.join('; ') : fallbackMessage;
+            }
+
+            if (typeof errorBody === 'object') {
+                const detail = errorBody.detail;
+                if (typeof detail === 'string' && detail.trim()) return detail.trim();
+                if (Array.isArray(detail)) {
+                    const items = detail
+                        .map(item => {
+                            if (typeof item === 'string') return item;
+                            if (item && typeof item === 'object') {
+                                const loc = Array.isArray(item.loc) ? item.loc.join('.') : null;
+                                if (item.msg && loc) return `${loc}: ${item.msg}`;
+                                if (item.msg) return String(item.msg);
+                                if (item.message) return String(item.message);
+                            }
+                            return null;
+                        })
+                        .filter(Boolean);
+                    if (items.length > 0) return items.join('; ');
+                }
+
+                if (typeof errorBody.message === 'string' && errorBody.message.trim()) {
+                    return errorBody.message.trim();
+                }
+            }
+
+            return fallbackMessage;
+        }
+
+        function updateTaxCategoryHint() {
+            const selected = manualTaxCategoryInput ? manualTaxCategoryInput.value : '';
+            if (!manualTaxCategoryHint) return;
+            if (selected === '標準税率') {
+                manualTaxCategoryHint.textContent = 'Guidance: This category typically uses 10% tax amount.';
+            } else if (selected === '軽減税率') {
+                manualTaxCategoryHint.textContent = 'Guidance: This category typically uses 8% tax amount.';
+            } else if (selected === '非課税') {
+                manualTaxCategoryHint.textContent = 'Guidance: This category is generally non-taxable.';
+            } else {
+                manualTaxCategoryHint.textContent = 'Select tax category to see tax amount guidance.';
+            }
+        }
+
+        async function openManualEntryModal() {
+            try {
+                await loadManualReferenceData();
+                manualEditingDraftId = null;
+                const title = document.querySelector('.manual-entry-title');
+                if (title) title.textContent = 'Office Manual Entry (No OCR)';
+                manualEntryModal.classList.add('show');
+            } catch (error) {
+                console.error('Failed to open manual entry modal:', error);
+                showToast(error.message || 'Failed to load manual entry form', 'error');
+            }
+        }
+
+        async function openManualDraftForEdit(draft) {
+            if (!draft || draft.status !== 'DRAFT') return;
+            if (draft.image_ref) {
+                showToast('Only manual-entry drafts can be edited.', 'error');
+                return;
+            }
+
+            try {
+                await loadManualReferenceData();
+                manualEditingDraftId = draft.draft_id;
+
+                const receipt = draft.receipt || {};
+                manualReceiptDateInput.value = draft.receipt_date || receipt.receipt_date || '';
+                manualVendorNameInput.value = draft.vendor || receipt.vendor_name || '';
+                manualInvoiceNumberInput.value = draft.invoice_number || receipt.invoice_number || '';
+                manualTaxCategoryInput.value = draft.tax_category || receipt.tax_category || '';
+                manualTotalAmountInput.value = draft.total_amount ?? receipt.total_amount ?? '';
+                manualTax10Input.value = draft.tax_10_amount ?? receipt.tax_10_amount ?? '';
+                manualTax8Input.value = draft.tax_8_amount ?? receipt.tax_8_amount ?? '';
+                manualAccountTitleInput.value = draft.account_title || receipt.account_title || '';
+                manualMemoInput.value = draft.memo || receipt.memo || '';
+
+                const locationValue = draft.business_location_id || receipt.business_location_id || '';
+                manualLocationSelect.value = locationValue;
+                populateManualStaffOptions(locationValue);
+
+                const staffValue = draft.staff_id || receipt.staff_id || '';
+                manualStaffSelect.value = staffValue;
+
+                updateTaxCategoryHint();
+
+                const title = document.querySelector('.manual-entry-title');
+                if (title) title.textContent = 'Edit Manual Draft (No OCR)';
+                manualEntryModal.classList.add('show');
+            } catch (error) {
+                console.error('Failed to open edit modal:', error);
+                showToast(error.message || 'Failed to open manual draft editor', 'error');
+            }
+        }
+
+        function parseOptionalNumber(value) {
+            if (value === null || value === undefined) return null;
+            const text = String(value).trim();
+            if (!text) return null;
+            const num = Number(text);
+            return Number.isFinite(num) ? num : null;
+        }
+
+        function validateManualDraftInput(values) {
+            if (!values.receipt_date) return 'Receipt date is required';
+            if (!values.vendor_name) return 'Vendor name is required';
+            if (!values.tax_category) return 'Tax category is required';
+            if (!values.account_title) return 'Account title is required';
+            if (!values.business_location_id) return 'Business location is required';
+            if (!values.staff_id) return 'Staff is required';
+
+            const totalAmount = Number(values.total_amount);
+            if (!Number.isFinite(totalAmount) || totalAmount <= 0) {
+                return 'Total amount must be greater than 0';
+            }
+
+            if (values.tax_10_amount !== null && values.tax_10_amount < 0) {
+                return 'Tax 10% amount must be 0 or greater';
+            }
+            if (values.tax_8_amount !== null && values.tax_8_amount < 0) {
+                return 'Tax 8% amount must be 0 or greater';
+            }
+
+            return null;
+        }
+
+        async function persistManualDraft() {
+            const token = localStorage.getItem('auth_token');
+
+            const formValues = {
+                receipt_date: (manualReceiptDateInput.value || '').trim(),
+                vendor_name: (manualVendorNameInput.value || '').trim(),
+                invoice_number: (manualInvoiceNumberInput.value || '').trim() || null,
+                tax_category: (manualTaxCategoryInput.value || '').trim(),
+                total_amount: parseOptionalNumber(manualTotalAmountInput.value),
+                tax_10_amount: parseOptionalNumber(manualTax10Input.value),
+                tax_8_amount: parseOptionalNumber(manualTax8Input.value),
+                account_title: (manualAccountTitleInput.value || '').trim(),
+                memo: (manualMemoInput.value || '').trim() || null,
+                business_location_id: (manualLocationSelect.value || '').trim(),
+                staff_id: (manualStaffSelect.value || '').trim(),
+            };
+
+            const validationError = validateManualDraftInput(formValues);
+            if (validationError) {
+                showToast(validationError, 'error');
+                throw new Error(validationError);
+            }
+
+            if (!manualLocationIds.has(formValues.business_location_id)) {
+                const message = 'Selected business location is invalid. Please reselect.';
+                showToast(message, 'error');
+                throw new Error(message);
+            }
+            if (!manualStaffIds.has(formValues.staff_id)) {
+                const message = 'Selected staff is invalid for the selected location.';
+                showToast(message, 'error');
+                throw new Error(message);
+            }
+
+            const payload = {
+                receipt: {
+                    receipt_date: formValues.receipt_date,
+                    vendor_name: formValues.vendor_name,
+                    invoice_number: formValues.invoice_number,
+                    tax_category: formValues.tax_category,
+                    total_amount: formValues.total_amount,
+                    tax_10_amount: formValues.tax_10_amount,
+                    tax_8_amount: formValues.tax_8_amount,
+                    account_title: formValues.account_title,
+                    memo: formValues.memo,
+                    business_location_id: formValues.business_location_id,
+                    staff_id: formValues.staff_id,
+                }
+            };
+
+            const isEdit = !!manualEditingDraftId;
+            const endpoint = isEdit ? `/api/drafts/${manualEditingDraftId}` : '/api/drafts';
+            const method = isEdit ? 'PUT' : 'POST';
+
+            const response = await fetch(endpoint, {
+                method,
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const fallbackMessage = `Failed to save draft (HTTP ${response.status})`;
+                let detailMessage = fallbackMessage;
+                try {
+                    const err = await response.json();
+                    detailMessage = getServerErrorMessage(err, fallbackMessage);
+                } catch (_) {
+                    // fallback message only
+                }
+                throw new Error(detailMessage);
+            }
+
+            return await response.json();
+        }
+
+        async function saveManualDraft() {
+            manualEntrySaveBtn.disabled = true;
+            manualEntrySendBtn.disabled = true;
+            manualEntrySaveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+
+            try {
+                await persistManualDraft();
+                showToast('Draft saved', 'success');
+                closeManualEntryModal();
+                await fetchDrafts();
+            } catch (error) {
+                console.error('Manual draft save failed:', error);
+                showToast(error.message || 'Failed to save draft', 'error');
+                manualEntrySaveBtn.disabled = false;
+                manualEntrySaveBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+                manualEntrySendBtn.disabled = false;
+                manualEntrySendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            }
+        }
+
+        async function sendManualDraftFromModal() {
+            const token = localStorage.getItem('auth_token');
+            manualEntrySaveBtn.disabled = true;
+            manualEntrySendBtn.disabled = true;
+            manualEntrySendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
+
+            try {
+                const savedDraft = await persistManualDraft();
+                const draftId = savedDraft && savedDraft.draft_id;
+                if (!draftId) throw new Error('Saved draft id missing for send');
+
+                const response = await fetch('/api/drafts/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ draft_ids: [draftId] })
+                });
+
+                if (!response.ok) {
+                    const fallbackMessage = `Failed to send draft (HTTP ${response.status})`;
+                    let detailMessage = fallbackMessage;
+                    try {
+                        const err = await response.json();
+                        detailMessage = getServerErrorMessage(err, fallbackMessage);
+                    } catch (_) {
+                        // fallback message only
+                    }
+                    throw new Error(detailMessage);
+                }
+
+                const result = await response.json();
+                if (result.sent && result.sent > 0) {
+                    showToast('Draft saved and sent successfully!', 'success');
+                } else {
+                    showToast('Draft save succeeded but send returned no successes', 'warning');
+                }
+
+                closeManualEntryModal();
+                await fetchDrafts();
+            } catch (error) {
+                console.error('Manual draft send failed:', error);
+                showToast(error.message || 'Failed to send draft', 'error');
+                manualEntrySaveBtn.disabled = false;
+                manualEntrySaveBtn.innerHTML = '<i class="fas fa-save"></i> Save Draft';
+                manualEntrySendBtn.disabled = false;
+                manualEntrySendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send';
+            }
+        }
+
         // Fetch drafts
         async function fetchDrafts() {
             const token = localStorage.getItem('auth_token');
-            console.log('[fetchDrafts] Starting fetch with token:', !!token);
             
             // Show loading state
             if (draftsContainer) {
@@ -1580,22 +2470,33 @@
             }
             
             try {
-                console.log('[fetchDrafts] Calling /api/drafts endpoint...');
-                const response = await fetch('/api/drafts', {
+                const response = await fetch(`/api/drafts?limit=${ADMIN_DRAFT_LOAD_LIMIT}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     },
                     cache: 'no-store'
                 });
 
-                console.log('[fetchDrafts] Response status:', response.status, response.ok);
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: Failed to fetch drafts`);
                 }
 
                 const data = await response.json();
-                console.log('[fetchDrafts] Received data:', data.length, 'drafts');
-                allDrafts = data;
+                allDrafts = data.map(draft => {
+                    const vendorText = draft.vendor || (draft.receipt && (draft.receipt.vendor || draft.receipt.vendor_name)) || 'Unknown Vendor';
+                    const invoiceText = draft.invoice_number || (draft.receipt && (draft.receipt.invoice_number || draft.receipt.invoice)) || 'No Invoice';
+                    const workerText = draft.creator_login_id || draft.creator_name || draft.user_email || 'Unknown Worker';
+                    const totalAmount = draft.total_amount != null ? draft.total_amount : (draft.receipt && draft.receipt.total_amount) || 0;
+                    const searchText = [vendorText, invoiceText, workerText, draft.user_email || ''].join(' ').toLowerCase();
+                    return {
+                        ...draft,
+                        _vendorText: vendorText,
+                        _invoiceText: invoiceText,
+                        _workerText: workerText,
+                        _totalAmount: totalAmount,
+                        _searchText: searchText,
+                    };
+                });
                 // Clear selection on new load
                 selectedDrafts.clear();
                 updateBulkBar();
@@ -1631,6 +2532,7 @@
 
         // Apply filters
         function applyFilters() {
+            const query = (searchQuery || '').toLowerCase();
             filteredDrafts = allDrafts.filter(draft => {
                 // Filter by status
                 if (currentFilter === 'draft' && draft.status !== 'DRAFT') return false;
@@ -1639,30 +2541,14 @@
                 if (currentFilter === 'error' && !draft.last_send_error) return false;
 
                 // Filter by search
-                if (searchQuery) {
-                    const query = searchQuery.toLowerCase();
-                    // Phase 5E.1: Search by vendor, invoice, worker login_id, worker name, or email
-                    const vendorText = draft.vendor || (draft.receipt && (draft.receipt.vendor || draft.receipt.vendor_name)) || '';
-                    const invoiceText = draft.invoice_number || (draft.receipt && (draft.receipt.invoice_number || draft.receipt.invoice)) || '';
-                    const workerLoginId = draft.creator_login_id || '';
-                    const workerName = draft.creator_name || '';
-                    const userEmailText = draft.user_email || '';
-                    
-                    const searchText = [
-                        vendorText,
-                        invoiceText,
-                        workerLoginId,
-                        workerName,
-                        userEmailText
-                    ].join(' ').toLowerCase();
-                    
-                    if (!searchText.includes(query)) return false;
+                if (query && !(draft._searchText || '').includes(query)) {
+                    return false;
                 }
 
                 return true;
             });
 
-            renderDrafts();
+            scheduleDraftRender();
         }
 
         // Render drafts
@@ -1678,7 +2564,7 @@
                 return;
             }
 
-            const html = filteredDrafts.map(draft => {
+            const html = filteredDrafts.map((draft) => {
                 // Ensure status is properly lowercased for CSS class matching
                 const statusValue = draft.status ? draft.status.toUpperCase() : 'DRAFT';
                 const statusClass = statusValue === 'SENT' ? 'sent' : 
@@ -1687,24 +2573,10 @@
                 const hasError = draft.last_send_error ? true : false;
                 const displayStatus = hasError ? 'error' : statusClass;
                 const checked = selectedDrafts.has(draft.draft_id) ? 'checked' : '';
-
-                // DEBUG: Log status for troubleshooting
-                if (draft.draft_id && filteredDrafts.indexOf(draft) < 3) {
-                    console.log('Draft status:', { draft_id: draft.draft_id.substring(0, 8), status: draft.status, statusClass, displayStatus, hasError, last_send_error: draft.last_send_error });
-                }
-
-                // Phase 5E.1: Prefer flattened fields, with nested fallback
-                // Vendor: use vendor field, fallback to receipt.vendor
-                const vendorText = draft.vendor || (draft.receipt && (draft.receipt.vendor || draft.receipt.vendor_name)) || 'Unknown Vendor';
-                
-                // Invoice: use invoice_number, fallback to receipt fields
-                const invoiceText = draft.invoice_number || (draft.receipt && (draft.receipt.invoice_number || draft.receipt.invoice)) || 'No Invoice';
-                
-                // Phase 5E.1: Worker identity - use login_id or name, NOT UUID
-                const workerText = draft.creator_login_id || draft.creator_name || draft.user_email || 'Unknown Worker';
-                
-                // Total amount
-                const totalAmount = draft.total_amount != null ? draft.total_amount : (draft.receipt && draft.receipt.total_amount) || 0;
+                const vendorText = draft._vendorText || 'Unknown Vendor';
+                const invoiceText = draft._invoiceText || 'No Invoice';
+                const workerText = draft._workerText || 'Unknown Worker';
+                const totalAmount = draft._totalAmount || 0;
 
                 // Status badge text: capitalize first letter
                 const statusText = hasError ? 'Error' : (draft.status.charAt(0).toUpperCase() + draft.status.slice(1).toLowerCase());
@@ -1743,26 +2615,6 @@
             }).join('');
 
             draftsContainer.innerHTML = html;
-
-            // Add click handlers
-            document.querySelectorAll('.draft-card').forEach(card => {
-                card.addEventListener('click', (evt) => {
-                    // Avoid triggering detail open when clicking the checkbox
-                    if (evt.target.closest('.draft-select')) return;
-                    const draftId = card.getAttribute('data-id');
-                    showDraftDetail(draftId);
-                });
-            });
-
-            // Wire up selection checkboxes
-            document.querySelectorAll('.draft-select').forEach(cb => {
-                cb.addEventListener('change', (e) => {
-                    const id = cb.getAttribute('data-id');
-                    if (cb.checked) selectedDrafts.add(id);
-                    else selectedDrafts.delete(id);
-                    updateBulkBar();
-                });
-            });
         }
 
         // Show draft detail
@@ -1839,7 +2691,7 @@
                     previewSection.innerHTML = `
                         <div class="no-preview">
                             <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); margin-bottom: 12px;"></i>
-                            <div>Failed to load preview</div>
+                            <div>${tA('detail_failed_preview')}</div>
                         </div>
                     `;
                 }
@@ -1848,7 +2700,7 @@
                 previewSection.innerHTML = `
                     <div class="no-preview">
                         <i class="fas fa-exclamation-triangle" style="font-size: 48px; color: var(--danger); margin-bottom: 12px;"></i>
-                        <div>Error loading preview</div>
+                        <div>${tA('detail_error_preview')}</div>
                     </div>
                 `;
             }
@@ -1857,35 +2709,35 @@
             const basicDetails = document.getElementById('basicDetails');
             basicDetails.innerHTML = `
                 <div class="detail-row">
-                    <span class="detail-label">Vendor</span>
+                    <span class="detail-label">${tA('detail_vendor')}</span>
                     <span class="detail-value">${vendorText}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Invoice Number</span>
+                    <span class="detail-label">${tA('detail_invoice')}</span>
                     <span class="detail-value">${invoiceText}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Date</span>
+                    <span class="detail-label">${tA('detail_date')}</span>
                     <span class="detail-value">${dateText}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Total Amount</span>
+                    <span class="detail-label">${tA('detail_total')}</span>
                     <span class="detail-value">¥${(totalAmt || 0).toLocaleString()}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Tax</span>
+                    <span class="detail-label">${tA('detail_tax')}</span>
                     <span class="detail-value">¥${(taxAmt || 0).toLocaleString()}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Worker</span>
+                    <span class="detail-label">${tA('detail_worker')}</span>
                     <span class="detail-value">${workerText}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Email</span>
+                    <span class="detail-label">${tA('detail_email')}</span>
                     <span class="detail-value">${emailText}</span>
                 </div>
                 <div class="detail-row">
-                    <span class="detail-label">Status</span>
+                    <span class="detail-label">${tA('detail_status')}</span>
                     <span class="detail-value">${draft.status}</span>
                 </div>
             `;
@@ -1898,12 +2750,12 @@
                 retrySection.style.display = 'block';
                 retryDetails.innerHTML = `
                     <div class="detail-row">
-                        <span class="detail-label">Send Attempts</span>
+                        <span class="detail-label">${tA('detail_send_attempts')}</span>
                         <span class="detail-value">${draft.send_attempt_count || 0}</span>
                     </div>
                     ${draft.last_send_error ? `
                         <div class="detail-row">
-                            <span class="detail-label">Last Error</span>
+                            <span class="detail-label">${tA('detail_last_error')}</span>
                             <span class="detail-value" style="color: var(--danger);">${draft.last_send_error}</span>
                         </div>
                     ` : ''}
@@ -1914,11 +2766,15 @@
 
             // Phase 5E.1: Admin/HQ can send drafts but with clear visual state
             // Read-only context shown in title bar
+            const canEditManualDraft = draft.status === 'DRAFT' && !draft.image_ref;
             sendBtn.disabled = draft.status !== 'DRAFT';
             sendBtn.textContent = draft.status === 'DRAFT' ? ' Send' : ' Already Sent';
             sendBtn.innerHTML = draft.status === 'DRAFT' 
                 ? '<i class="fas fa-paper-plane"></i> Send'
                 : '<i class="fas fa-check"></i> Already Sent';
+            if (editManualBtn) {
+                editManualBtn.style.display = canEditManualDraft ? 'flex' : 'none';
+            }
 
             // Show drawer
             drawerOverlay.classList.add('show');
@@ -1932,6 +2788,7 @@
             drawerOverlay.classList.remove('show');
             detailDrawer.classList.remove('show');
             currentDraftId = null;
+            if (editManualBtn) editManualBtn.style.display = 'none';
         }
 
         // Toggle bulk bar visibility and update selected count
@@ -2059,10 +2916,37 @@
             });
         });
 
+        let searchDebounceTimer = null;
         searchInput.addEventListener('input', (e) => {
-            searchQuery = e.target.value;
-            applyFilters();
+            const nextQuery = e.target.value;
+            if (searchDebounceTimer) {
+                clearTimeout(searchDebounceTimer);
+            }
+            searchDebounceTimer = setTimeout(() => {
+                searchQuery = nextQuery;
+                applyFilters();
+            }, 140);
         });
+
+        if (draftsContainer) {
+            draftsContainer.addEventListener('click', (evt) => {
+                if (evt.target.closest('.draft-select')) return;
+                const card = evt.target.closest('.draft-card');
+                if (!card) return;
+                const draftId = card.getAttribute('data-id');
+                if (draftId) showDraftDetail(draftId);
+            });
+
+            draftsContainer.addEventListener('change', (evt) => {
+                const cb = evt.target.closest('.draft-select');
+                if (!cb) return;
+                const id = cb.getAttribute('data-id');
+                if (!id) return;
+                if (cb.checked) selectedDrafts.add(id);
+                else selectedDrafts.delete(id);
+                updateBulkBar();
+            });
+        }
 
         closeDrawerBtn.addEventListener('click', closeDrawer);
         drawerOverlay.addEventListener('click', closeDrawer);
@@ -2079,6 +2963,40 @@
         });
 
         sendBtn.addEventListener('click', sendDraft);
+        if (editManualBtn) {
+            editManualBtn.addEventListener('click', () => {
+                const draft = allDrafts.find(d => d.draft_id === currentDraftId);
+                if (!draft) return;
+                closeDrawer();
+                openManualDraftForEdit(draft);
+            });
+        }
+
+        if (manualEntryBtn) {
+            manualEntryBtn.addEventListener('click', openManualEntryModal);
+        }
+        if (manualEntryCloseBtn) manualEntryCloseBtn.addEventListener('click', closeManualEntryModal);
+        if (manualEntryCancelBtn) manualEntryCancelBtn.addEventListener('click', closeManualEntryModal);
+        if (manualEntrySaveBtn) manualEntrySaveBtn.addEventListener('click', saveManualDraft);
+        if (manualEntrySendBtn) manualEntrySendBtn.addEventListener('click', sendManualDraftFromModal);
+        if (manualLocationSelect) {
+            manualLocationSelect.addEventListener('change', () => {
+                populateManualStaffOptions(manualLocationSelect.value || '');
+                if (manualLocationSelect.value && manualStaffSelect.options.length <= 1) {
+                    showToast('No staff found for the selected location', 'warning');
+                }
+            });
+        }
+        if (manualTaxCategoryInput) {
+            manualTaxCategoryInput.addEventListener('change', updateTaxCategoryHint);
+        }
+        if (manualEntryModal) {
+            manualEntryModal.addEventListener('click', (e) => {
+                if (e.target === manualEntryModal) {
+                    closeManualEntryModal();
+                }
+            });
+        }
 
         // Additional listeners for new UX
         if (topRefreshBtn) {
@@ -2952,7 +3870,7 @@
                 const tax8 = formatAmount(record.tax_8_amount);
                 const staff = record.staff_name || record.creator_name || '—';
                 const location = record.business_location_id || '—';
-                const month = record.month_sheet_name || '—';
+                const month = formatMonthDisplay(record);
                 const outputs = formatExpectedOutputs(record.expected_outputs);
                 const sentAt = formatDateTime(record.sent_at);
 
@@ -3020,6 +3938,31 @@
                 month: '2-digit',
                 day: '2-digit'
             });
+        }
+
+        function formatMonthDisplay(record) {
+            const monthKey = record && record.month_key ? String(record.month_key) : '';
+            if (/^\d{6}$/.test(monthKey)) {
+                return `${monthKey.slice(4, 6)}/${monthKey.slice(0, 4)}`;
+            }
+
+            const monthSheet = record && record.month_sheet_name ? String(record.month_sheet_name).trim() : '';
+            const englishMatch = monthSheet.match(/^(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})$/i);
+            if (englishMatch) {
+                const monthMap = {
+                    january: '01', february: '02', march: '03', april: '04', may: '05', june: '06',
+                    july: '07', august: '08', september: '09', october: '10', november: '11', december: '12'
+                };
+                const mm = monthMap[englishMatch[1].toLowerCase()] || '01';
+                return `${mm}/${englishMatch[2]}`;
+            }
+
+            const japaneseMatch = monthSheet.match(/^(\d{4})年\s*(\d{1,2})月$/);
+            if (japaneseMatch) {
+                return `${japaneseMatch[2].padStart(2, '0')}/${japaneseMatch[1]}`;
+            }
+
+            return monthSheet || '—';
         }
 
         function formatExpectedOutputs(outputs) {
@@ -3105,7 +4048,7 @@
             return div.innerHTML;
         }
 
-        // Auto-refresh every 15 seconds (balanced for production - not too aggressive)
+        // Auto-refresh every 30 seconds
         setInterval(() => {
             if (userRole === 'ADMIN' || userRole === 'HQ') {
                 fetchDrafts();
@@ -3121,7 +4064,7 @@
                     }
                 }
             }
-        }, 25000);
+        }, 30000);
     </script>
 </body>
 </html>

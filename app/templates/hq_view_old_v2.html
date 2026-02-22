@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Receipt OCR — 本部管理画面</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            /* HQ Executive Color Palette - Deep Navy/Slate Theme */
+            --hq-primary: #1e3a5f;
+            --hq-primary-light: #2d5a87;
+            --hq-primary-dark: #0f2942;
+            --hq-accent: #4a90c2;
+            --hq-accent-light: #6ba8d6;
+            --hq-gold: #c9a227;
+            --hq-gold-light: #d4b23d;
+            
+            /* Status Colors */
+            --success: #059669;
+            --success-light: #d1fae5;
+            --warning: #d97706;
+            --warning-light: #fef3c7;
+            --info: #0284c7;
+            --info-light: #e0f2fe;
+            
+            /* Neutral Palette */
+            --slate-50: #f8fafc;
+            --slate-100: #f1f5f9;
+            --slate-200: #e2e8f0;
+            --slate-300: #cbd5e1;
+            --slate-400: #94a3b8;
+            --slate-500: #64748b;
+            --slate-600: #475569;
+            --slate-700: #334155;
+            --slate-800: #1e293b;
+            --slate-900: #0f172a;
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+
+        body {
+            font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f0f4f8 0%, #e2e8f0 100%);
+            color: var(--slate-800);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Executive Header */
+        .hq-header {
+            background: linear-gradient(135deg, var(--hq-primary) 0%, var(--hq-primary-dark) 100%);
+            color: white;
+            padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(135deg, var(--hq-gold) 0%, var(--hq-gold-light) 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: var(--hq-primary-dark);
+            box-shadow: 0 4px 12px rgba(201, 162, 39, 0.3);
+        }
+
+        .logo-text {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .logo-title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .logo-subtitle {
+            font-size: 12px;
+            opacity: 0.8;
+            font-weight: 400;
+            letter-spacing: 1px;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+        }
+
+        .user-avatar {
+            width: 36px;
+            height: 36px;
+            background: var(--hq-gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--hq-primary-dark);
+        }
+
+        .user-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .user-role {
+            font-size: 11px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .logout-btn {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255,255,255,0.25);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        /* Navigation Bar */
+        .nav-bar {
+            display: flex;
+            padding: 0 24px;
+            gap: 4px;
+        }
+
+        .nav-item {
+            padding: 14px 24px;
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            border-bottom: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .nav-item:hover {
+            color: white;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .nav-item.active {
+            color: white;
+            border-bottom-color: var(--hq-gold);
+        }
+
+        /* Main Container */
+        .main-container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+        }
+
+        /* Page Header */
+        .page-header {
+            margin-bottom: 32px;
+        }
+
+        .page-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--slate-800);
+            margin-bottom: 8px;
+        }
+
+        .page-description {
+            font-size: 15px;
+            color: var(--slate-500);
+        }
+
+        /* Stats Dashboard */
+        .stats-dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--slate-200);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--hq-primary), var(--hq-accent));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--slate-100);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 16px;
+            font-size: 20px;
+            color: var(--hq-primary);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--slate-800);
+            line-height: 1;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--slate-500);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        /* Filters Panel */
+        .filters-panel {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--slate-200);
+        }
+
+        .filters-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .filters-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--slate-700);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filters-title i {
+            color: var(--hq-accent);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--slate-600);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .filter-select,
+        .filter-input {
+            padding: 12px 16px;
+            border: 2px solid var(--slate-200);
+            border-radius: 10px;
+            font-size: 14px;
+            font-family: inherit;
+            background: var(--slate-50);
+            color: var(--slate-800);
+            transition: all 0.2s ease;
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--hq-accent);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(74, 144, 194, 0.1);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--hq-primary) 0%, var(--hq-primary-light) 100%);
+            color: white;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--slate-100);
+            color: var(--slate-600);
+            border: 2px solid var(--slate-200);
+        }
+
+        .btn-secondary:hover {
+            background: var(--slate-200);
+            border-color: var(--slate-300);
+        }
+
+        /* Batches Section */
+        .batches-section {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--slate-700);
+        }
+
+        .batch-count-badge {
+            padding: 6px 14px;
+            background: var(--hq-primary);
+            color: white;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        /* Batch Card */
+        .batch-card {
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--slate-200);
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .batch-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .batch-header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, var(--slate-50) 0%, white 100%);
+            border-bottom: 1px solid var(--slate-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .batch-header:hover {
+            background: linear-gradient(135deg, var(--slate-100) 0%, var(--slate-50) 100%);
+        }
+
+        .batch-info {
+            flex: 1;
+        }
+
+        .batch-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--slate-800);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .batch-title .office-badge {
+            padding: 4px 12px;
+            background: var(--hq-primary);
+            color: white;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .batch-meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+        }
+
+        .batch-meta-item {
+            font-size: 13px;
+            color: var(--slate-500);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .batch-meta-item i {
+            color: var(--hq-accent);
+            font-size: 14px;
+        }
+
+        .batch-stats {
+            display: flex;
+            gap: 16px;
+            align-items: center;
+        }
+
+        .batch-stat {
+            text-align: center;
+            padding: 8px 16px;
+            background: var(--slate-100);
+            border-radius: 8px;
+        }
+
+        .batch-stat-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--hq-primary);
+        }
+
+        .batch-stat-label {
+            font-size: 11px;
+            color: var(--slate-500);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .batch-toggle {
+            width: 40px;
+            height: 40px;
+            background: var(--slate-100);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--slate-500);
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .batch-toggle.expanded {
+            background: var(--hq-primary);
+            color: white;
+            transform: rotate(180deg);
+        }
+
+        .batch-body {
+            display: none;
+            padding: 0;
+        }
+
+        .batch-body.expanded {
+            display: block;
+        }
+
+        /* Receipt Table */
+        .receipt-table-wrapper {
+            overflow-x: auto;
+            padding: 20px;
+        }
+
+        .receipt-table {
+            width: 100%;
+            min-width: 1100px;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+        }
+
+        .receipt-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .receipt-table th {
+            padding: 14px 16px;
+            text-align: left;
+            font-weight: 600;
+            color: white;
+            background: var(--hq-primary);
+            white-space: nowrap;
+            border-bottom: 2px solid var(--hq-primary-dark);
+        }
+
+        .receipt-table th:first-child {
+            border-radius: 8px 0 0 0;
+        }
+
+        .receipt-table th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        .receipt-table td {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--slate-200);
+            background: white;
+        }
+
+        .receipt-table tbody tr {
+            transition: all 0.2s ease;
+        }
+
+        .receipt-table tbody tr:hover td {
+            background: var(--slate-50);
+        }
+
+        .receipt-table tbody tr:last-child td:first-child {
+            border-radius: 0 0 0 8px;
+        }
+
+        .receipt-table tbody tr:last-child td:last-child {
+            border-radius: 0 0 8px 0;
+        }
+
+        .amount-cell {
+            font-family: 'Courier New', monospace;
+            font-weight: 600;
+            text-align: right;
+            color: var(--slate-800);
+        }
+
+        .amount-highlight {
+            color: var(--hq-primary);
+            font-weight: 700;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 80px 40px;
+            background: white;
+            border-radius: 16px;
+            box-shadow: var(--shadow);
+        }
+
+        .empty-icon {
+            width: 80px;
+            height: 80px;
+            background: var(--slate-100);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 32px;
+            color: var(--slate-400);
+        }
+
+        .empty-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--slate-700);
+            margin-bottom: 12px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--slate-500);
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        /* Loading State */
+        .loading-state {
+            text-align: center;
+            padding: 80px 40px;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--slate-200);
+            border-top: 4px solid var(--hq-primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        .loading-text {
+            font-size: 15px;
+            color: var(--slate-500);
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Change Logs Section */
+        .change-logs-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 32px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--slate-200);
+        }
+
+        .change-logs-header {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--slate-700);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .change-logs-header i {
+            color: var(--hq-accent);
+        }
+
+        .change-logs-placeholder {
+            padding: 40px;
+            text-align: center;
+            color: var(--slate-400);
+            font-size: 14px;
+            background: var(--slate-50);
+            border-radius: 12px;
+            border: 2px dashed var(--slate-200);
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--slate-800);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 12px;
+            box-shadow: var(--shadow-xl);
+            display: none;
+            z-index: 1000;
+            font-size: 14px;
+            max-width: 400px;
+        }
+
+        .toast.show {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .toast.success {
+            background: var(--success);
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-top {
+                flex-direction: column;
+                gap: 16px;
+                text-align: center;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .nav-bar {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+
+            .page-title {
+                font-size: 24px;
+            }
+
+            .stats-dashboard {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-card {
+                padding: 16px;
+            }
+
+            .stat-value {
+                font-size: 28px;
+            }
+
+            .filters-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .batch-header {
+                flex-direction: column;
+                gap: 16px;
+                align-items: flex-start;
+            }
+
+            .batch-stats {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        /* Print Styles */
+        @media print {
+            .hq-header,
+            .filters-panel,
+            .logout-btn,
+            .batch-toggle {
+                display: none !important;
+            }
+
+            .batch-body {
+                display: block !important;
+            }
+
+            body {
+                background: white;
+            }
+
+            .batch-card {
+                box-shadow: none;
+                border: 1px solid #ddd;
+                margin-bottom: 20px;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Executive Header -->
+    <header class="hq-header">
+        <div class="header-top">
+            <div class="logo-section">
+                <div class="logo-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="logo-text">
+                    <div class="logo-title">Receipt OCR System</div>
+                    <div class="logo-subtitle">本部管理ダッシュボード</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <div class="user-badge">
+                    <div class="user-avatar" id="userAvatar">HQ</div>
+                    <div class="user-details">
+                        <div class="user-name" id="userName">本部管理者</div>
+                        <div class="user-role">HEADQUARTERS</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    ログアウト
+                </button>
+            </div>
+        </div>
+        <nav class="nav-bar">
+            <a href="#" class="nav-item active">
+                <i class="fas fa-chart-bar"></i> ダッシュボード
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-history"></i> 変更履歴
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i> 設定
+            </a>
+        </nav>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1 class="page-title">送信済みレシート一覧</h1>
+            <p class="page-description">各事業所から送信された経費データを確認できます。フィルターを使用して期間や事業所を絞り込めます。</p>
+        </div>
+
+        <!-- Stats Dashboard -->
+        <div class="stats-dashboard">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <div class="stat-value" id="totalBatches">0</div>
+                <div class="stat-label">バッチ数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-receipt"></i>
+                </div>
+                <div class="stat-value" id="totalReceipts">0</div>
+                <div class="stat-label">レシート総数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="stat-value" id="officeCount">0</div>
+                <div class="stat-label">事業所数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-value" id="monthCount">0</div>
+                <div class="stat-label">対象月数</div>
+            </div>
+        </div>
+
+        <!-- Filters Panel -->
+        <div class="filters-panel">
+            <div class="filters-header">
+                <div class="filters-title">
+                    <i class="fas fa-filter"></i>
+                    フィルター条件
+                </div>
+            </div>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-building"></i>
+                        事業所
+                    </label>
+                    <select class="filter-select" id="officeFilter">
+                        <option value="">すべての事業所</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-calendar"></i>
+                        対象月
+                    </label>
+                    <select class="filter-select" id="monthFilter">
+                        <option value="">すべての月</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">
+                        <i class="fas fa-search"></i>
+                        キーワード検索
+                    </label>
+                    <input type="text" class="filter-input" id="searchInput" placeholder="摘要、担当者名で検索...">
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters()">
+                    <i class="fas fa-search"></i>
+                    検索実行
+                </button>
+                <button class="btn btn-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times"></i>
+                    クリア
+                </button>
+            </div>
+        </div>
+
+        <!-- Batches Container -->
+        <div id="batchesContainer">
+            <div class="loading-state">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">データを読み込んでいます...</div>
+            </div>
+        </div>
+
+        <!-- Change Logs Section -->
+        <div class="change-logs-section">
+            <div class="change-logs-header">
+                <i class="fas fa-history"></i>
+                変更履歴
+            </div>
+            <div class="change-logs-placeholder">
+                <i class="fas fa-info-circle" style="font-size: 24px; margin-bottom: 12px; display: block;"></i>
+                変更履歴機能は今後のアップデートで追加予定です。
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Auth check
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        // Parse JWT to get user info
+        function parseJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const userData = parseJWT(token);
+        if (userData) {
+            if (userData.name) {
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('userAvatar').textContent = userData.name.substring(0, 2).toUpperCase();
+            }
+        }
+
+        // Check role (HQ or ADMIN only)
+        if (userData && userData.role !== 'HQ' && userData.role !== 'ADMIN') {
+            showToast('アクセス権限がありません。本部または管理者権限が必要です。', 'error');
+            setTimeout(() => window.location.href = '/', 2000);
+        }
+
+        // API calls
+        async function fetchBatches(office = null, month = null) {
+            try {
+                const params = new URLSearchParams();
+                if (office) params.append('office', office);
+                if (month) params.append('month', month);
+
+                const response = await fetch(`/api/hq-view/batches?${params.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching batches:', error);
+                showToast('バッチデータの読み込みに失敗しました', 'error');
+                return null;
+            }
+        }
+
+        async function fetchOffices() {
+            try {
+                const response = await fetch('/api/hq-view/offices', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching offices:', error);
+                return [];
+            }
+        }
+
+        async function fetchMonths() {
+            try {
+                const response = await fetch('/api/hq-view/months', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching months:', error);
+                return [];
+            }
+        }
+
+        // Render functions
+        function renderBatches(data) {
+            const container = document.getElementById('batchesContainer');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            if (!data || !data.batches || data.batches.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-inbox"></i>
+                        </div>
+                        <div class="empty-title">データが見つかりません</div>
+                        <div class="empty-text">現在の検索条件に一致する送信済みレシートはありません。フィルター条件を変更してお試しください。</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Filter by search term
+            let filteredBatches = data.batches;
+            if (searchTerm) {
+                filteredBatches = data.batches.map(batch => {
+                    const filteredReceipts = batch.receipts.filter(receipt => {
+                        const searchableText = [
+                            receipt.vendor,
+                            receipt.staff_name,
+                            receipt.business_location,
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        return searchableText.includes(searchTerm);
+                    });
+                    return { ...batch, receipts: filteredReceipts };
+                }).filter(batch => batch.receipts.length > 0);
+            }
+
+            // Update stats
+            document.getElementById('totalBatches').textContent = filteredBatches.length.toLocaleString('ja-JP');
+            const totalReceipts = filteredBatches.reduce((sum, batch) => sum + batch.receipts.length, 0);
+            document.getElementById('totalReceipts').textContent = totalReceipts.toLocaleString('ja-JP');
+
+            // Render batch cards
+            const batchesHTML = filteredBatches.map((batch, index) => {
+                const totalAmount = batch.receipts.reduce((sum, r) => sum + (r.total || 0), 0);
+                
+                return `
+                <div class="batch-card">
+                    <div class="batch-header" onclick="toggleBatch(${index})">
+                        <div class="batch-info">
+                            <div class="batch-title">
+                                <span class="office-badge">${batch.office || '不明'}</span>
+                                ${batch.month_display || '対象月不明'}
+                            </div>
+                            <div class="batch-meta">
+                                <span class="batch-meta-item">
+                                    <i class="fas fa-receipt"></i>
+                                    ${batch.receipts.length}件のレシート
+                                </span>
+                                ${batch.sent_timestamp ? `
+                                <span class="batch-meta-item">
+                                    <i class="fas fa-clock"></i>
+                                    送信日時: ${formatDateTime(batch.sent_timestamp)}
+                                </span>` : ''}
+                                <span class="batch-meta-item">
+                                    <i class="fas fa-yen-sign"></i>
+                                    合計: ${formatCurrency(totalAmount)}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="batch-stats">
+                            <div class="batch-stat">
+                                <div class="batch-stat-value">${batch.receipts.length}</div>
+                                <div class="batch-stat-label">件数</div>
+                            </div>
+                        </div>
+                        <div class="batch-toggle" id="toggle-${index}">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="batch-body" id="batch-${index}">
+                        <div class="receipt-table-wrapper">
+                            <table class="receipt-table">
+                                <thead>
+                                    <tr>
+                                        <th>支払日</th>
+                                        <th>摘要（取引先）</th>
+                                        <th>担当者</th>
+                                        <th style="text-align: right;">支出額</th>
+                                        <th>インボイス</th>
+                                        <th style="text-align: right;">10%税込</th>
+                                        <th style="text-align: right;">8%税込</th>
+                                        <th style="text-align: right;">非課税</th>
+                                        <th style="text-align: right;">税込合計</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${batch.receipts.map(receipt => `
+                                        <tr>
+                                            <td>${receipt.receipt_date || '—'}</td>
+                                            <td>${receipt.vendor || '—'}</td>
+                                            <td>${receipt.staff_name || '—'}</td>
+                                            <td class="amount-cell">${formatCurrency(receipt.total)}</td>
+                                            <td>${receipt.invoice_flag || '—'}</td>
+                                            <td class="amount-cell">${formatCurrency(receipt.tax_10)}</td>
+                                            <td class="amount-cell">${formatCurrency(receipt.tax_8)}</td>
+                                            <td class="amount-cell">${formatCurrency(receipt.tax_exempt)}</td>
+                                            <td class="amount-cell amount-highlight">${formatCurrency(receipt.total)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `}).join('');
+
+            container.innerHTML = `
+                <div class="section-header">
+                    <h2 class="section-title">送信済みバッチ一覧</h2>
+                    <span class="batch-count-badge">${filteredBatches.length}件</span>
+                </div>
+                <div class="batches-section">${batchesHTML}</div>
+            `;
+        }
+
+        function toggleBatch(index) {
+            const body = document.getElementById(`batch-${index}`);
+            const toggle = document.getElementById(`toggle-${index}`);
+            
+            body.classList.toggle('expanded');
+            toggle.classList.toggle('expanded');
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return '—';
+            try {
+                const dt = new Date(isoString);
+                return dt.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return isoString;
+            }
+        }
+
+        function formatCurrency(value) {
+            if (value == null || value === 0) return '—';
+            return `¥${Number(value).toLocaleString('ja-JP')}`;
+        }
+
+        // Filter actions
+        async function applyFilters() {
+            const office = document.getElementById('officeFilter').value || null;
+            const month = document.getElementById('monthFilter').value || null;
+
+            // Show loading
+            document.getElementById('batchesContainer').innerHTML = `
+                <div class="loading-state">
+                    <div class="loading-spinner"></div>
+                    <div class="loading-text">データを読み込んでいます...</div>
+                </div>
+            `;
+
+            const data = await fetchBatches(office, month);
+            if (data) {
+                renderBatches(data);
+            }
+        }
+
+        async function clearFilters() {
+            document.getElementById('officeFilter').value = '';
+            document.getElementById('monthFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            await applyFilters();
+        }
+
+        // Initialize
+        async function initialize() {
+            // Populate office dropdown
+            const offices = await fetchOffices();
+            const officeSelect = document.getElementById('officeFilter');
+            document.getElementById('officeCount').textContent = offices.length.toLocaleString('ja-JP');
+            
+            offices.forEach(office => {
+                const option = document.createElement('option');
+                option.value = office;
+                option.textContent = office;
+                officeSelect.appendChild(option);
+            });
+
+            // Populate month dropdown
+            const months = await fetchMonths();
+            const monthSelect = document.getElementById('monthFilter');
+            document.getElementById('monthCount').textContent = months.length.toLocaleString('ja-JP');
+            
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                // Format YYYYMM to display format
+                const year = month.substring(0, 4);
+                const mon = month.substring(4, 6);
+                option.textContent = `${year}年${mon}月`;
+                monthSelect.appendChild(option);
+            });
+
+            // Load initial data
+            await applyFilters();
+        }
+
+        // Real-time search filter
+        let searchTimeout;
+        document.getElementById('searchInput').addEventListener('input', () => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                applyFilters();
+            }, 300);
+        });
+
+        // Utility functions
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = `toast show ${type}`;
+            setTimeout(() => toast.className = 'toast', 4000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+        // Start
+        initialize();
+    </script>
+</body>
+</html>

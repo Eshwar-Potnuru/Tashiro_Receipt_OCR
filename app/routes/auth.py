@@ -15,6 +15,7 @@ from app.models.user import UserResponse
 from app.repositories.user_repository import UserRepository
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
+user_repo = UserRepository()
 
 
 class LoginRequest(BaseModel):
@@ -64,14 +65,12 @@ async def login(request: LoginRequest) -> LoginResponse:
             "password": "password123"
         }
     """
-    repo = UserRepository()
-    
     # Phase 5D-4.1: Try email first, then login_id (PY-XXXXX)
-    user = repo.get_user_by_email(request.email)
+    user = user_repo.get_user_by_email(request.email)
     
     if not user:
         # Try as login_id (for dev users like 'PY-V48XE')
-        user = repo.get_user_by_login_id(request.email)
+        user = user_repo.get_user_by_login_id(request.email)
     
     if not user:
         raise HTTPException(

@@ -4,9 +4,32 @@ Simple server startup script for Tashiro OCR system
 """
 import os
 import sys
+from pathlib import Path
+
+
+def _ensure_project_venv() -> None:
+    """Re-exec under project .venv Python when available.
+
+    This prevents dependency mismatches when users run `python start_server.py`
+    with a global interpreter that lacks required packages.
+    """
+    project_root = Path(__file__).resolve().parent
+    venv_python = project_root / ".venv" / "Scripts" / "python.exe"
+    if not venv_python.exists():
+        return
+
+    current_python = Path(sys.executable).resolve()
+    target_python = venv_python.resolve()
+    if current_python == target_python:
+        return
+
+    print(f"🔁 Switching to project virtual environment: {target_python}")
+    os.execv(str(target_python), [str(target_python), str(Path(__file__).resolve()), *sys.argv[1:]])
 
 # Add current directory to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+_ensure_project_venv()
 
 from app.main import app
 import uvicorn

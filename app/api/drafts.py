@@ -20,12 +20,15 @@ Phase 4B Scope:
 from __future__ import annotations
 
 from typing import List, Optional, Dict, Any
+import asyncio
 import os
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
+import time
 
-from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends, Request
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Form, Depends, Request, Response
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, Field
 
 from app.auth.dependencies import get_current_user
@@ -33,11 +36,12 @@ from app.models.user import User
 
 from app.models.draft import DraftReceipt, DraftStatus
 from app.models.schema import Receipt
-from app.services.draft_service import DraftService
+from app.services.draft_service import DraftService, StaffLocationMismatchError
 from app.repositories.user_repository import UserRepository
 import logging
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
+logger.setLevel(logging.INFO)
 
 # Create router
 router = APIRouter(prefix="/api/drafts", tags=["drafts"])
@@ -45,6 +49,20 @@ router = APIRouter(prefix="/api/drafts", tags=["drafts"])
 # Singleton service instance
 _draft_service: Optional[DraftService] = None
 DEBUG_DRAFTS = os.getenv("DEBUG_DRAFTS", "").lower() in {"1", "true", "yes", "on"}
+OCR_CONCURRENCY_LIMIT = max(1, int(os.getenv("OCR_CONCURRENCY_LIMIT", "3")))
+_ocr_semaphore = asyncio.Semaphore(OCR_CONCURRENCY_LIMIT)
+_ocr_in_flight = 0
+
+
+def _log_endpoint_timing(path: str, started_at: float, current_user: Optional[User] = None) -> None:
+    duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+    logger.info(
+        "endpoint_timing path=%s duration_ms=%s user_id=%s role=%s",
+        path,
+        duration_ms,
+        getattr(current_user, "user_id", None),
+        getattr(current_user, "role", None),
+    )
 
 
 def get_draft_service() -> DraftService:
@@ -53,6 +71,57 @@ def get_draft_service() -> DraftService:
     if _draft_service is None:
         _draft_service = DraftService()
     return _draft_service
+
+
+def _is_worker(user: User) -> bool:
+    return str(getattr(user, "role", "")).upper() == "WORKER"
+
+
+def _assert_draft_access(current_user: User, draft: DraftReceipt) -> None:
+    if not _is_worker(current_user):
+        return
+
+    owner_user_id = str(draft.creator_user_id) if draft.creator_user_id else None
+    current_user_id = str(current_user.user_id)
+    if owner_user_id != current_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Permission denied. You can only access your own drafts.",
+        )
+
+
+def _ensure_not_sent(draft: DraftReceipt, current_user: Optional[User] = None) -> None:
+    """Phase 6A-1: Enforce SENT immutability.
+    
+    Once a draft is SENT, it becomes immutable and cannot be modified,
+    deleted, validated, or re-sent. This is a production-grade data
+    integrity guarantee.
+    
+    Args:
+        draft: DraftReceipt to check
+        current_user: Optional User for audit logging
+    
+    Raises:
+        HTTPException 409 if draft status is SENT
+    
+    Design:
+        - Centralized guard for all mutation operations
+        - Applied after auth/ownership checks
+        - Read operations remain unaffected
+    """
+    if draft.status == DraftStatus.SENT:
+        # Phase 6A-1: Log immutability block for audit trail
+        logger.warning(
+            "sent_immutability_block user_id=%s role=%s draft_id=%s status=%s action=mutation_blocked",
+            getattr(current_user, "user_id", None),
+            getattr(current_user, "role", None),
+            draft.draft_id,
+            draft.status.value,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This receipt has already been sent and is immutable. Sent receipts cannot be modified or deleted.",
+        )
 
 
 # ============================================================================
@@ -101,12 +170,18 @@ class DraftResponse(BaseModel):
     created_at: str
     updated_at: str
     sent_at: Optional[str] = None
+    sent_by_user_id: Optional[str] = None
+    sent_by_role: Optional[str] = None
+    hq_status: Optional[str] = None
+    hq_batch_id: Optional[str] = None
+    hq_transferred_at: Optional[str] = None
     image_ref: Optional[str] = None
     image_data: Optional[str] = None
 
     # Convenience flattened fields for frontend
     vendor: Optional[str] = None
     invoice_number: Optional[str] = None
+    creator_user_id: Optional[str] = None
     created_by: Optional[str] = None
     creator_login_id: Optional[str] = None  # Phase 5E.1: Human-readable login ID
     creator_name: Optional[str] = None  # Phase 5E.1: Display name
@@ -170,12 +245,20 @@ class DraftResponse(BaseModel):
         
         if draft.creator_user_id:
             created_by = str(draft.creator_user_id)
-            # Lookup user info from repository
+            # Lookup user info from repository (try UUID first, then login_id)
             try:
                 from uuid import UUID as UUID_Type
                 user_repo = UserRepository()
-                user_uuid = UUID_Type(draft.creator_user_id) if isinstance(draft.creator_user_id, str) else draft.creator_user_id
-                user = user_repo.get_user_by_id(user_uuid)
+                user = None
+                
+                # Try UUID lookup first
+                try:
+                    user_uuid = UUID_Type(draft.creator_user_id) if isinstance(draft.creator_user_id, str) else draft.creator_user_id
+                    user = user_repo.get_user_by_id(user_uuid)
+                except ValueError:
+                    # Not a valid UUID, try login_id lookup instead
+                    user = user_repo.get_user_by_login_id(draft.creator_user_id)
+                
                 if user:
                     creator_login_id = user.login_id
                     creator_name = user.name
@@ -252,10 +335,16 @@ class DraftResponse(BaseModel):
             created_at=draft.created_at.isoformat(),
             updated_at=draft.updated_at.isoformat(),
             sent_at=draft.sent_at.isoformat() if draft.sent_at else None,
+            sent_by_user_id=draft.sent_by_user_id,
+            sent_by_role=draft.sent_by_role,
+            hq_status=draft.hq_status,
+            hq_batch_id=draft.hq_batch_id,
+            hq_transferred_at=draft.hq_transferred_at.isoformat() if draft.hq_transferred_at else None,
             image_ref=draft.image_ref,
             image_data=draft.image_data,
             vendor=vendor,
             invoice_number=invoice_number,
+            creator_user_id=created_by,
             created_by=created_by,
             creator_login_id=creator_login_id,
             creator_name=creator_name,
@@ -287,6 +376,32 @@ class SendDraftsResponse(BaseModel):
     sent: int = Field(..., description="Number successfully sent")
     failed: int = Field(..., description="Number failed")
     results: List[dict] = Field(..., description="Per-draft results")
+    warnings: Dict[str, Any] = Field(default_factory=dict, description="Warning metadata (non-blocking)")
+
+
+class SendPrecheckResponse(BaseModel):
+    """Response model for pre-send duplicate checks (no Excel writes)."""
+    total: int = Field(..., description="Total draft IDs requested")
+    checked: int = Field(..., description="Number of DRAFT receipts checked for duplicates")
+    missing: List[str] = Field(default_factory=list, description="Draft IDs not found")
+    has_duplicates: bool = Field(default=False, description="True when duplicate candidates are detected")
+    duplicates: List[dict] = Field(default_factory=list, description="Flat duplicate warning entries")
+    by_draft: List[dict] = Field(default_factory=list, description="Grouped duplicate details by current draft")
+class ReferenceLocation(BaseModel):
+    """Business location reference item for admin manual entry."""
+    id: str
+    name: str
+
+class ReferenceStaff(BaseModel):
+    """Staff reference item with location mapping for admin manual entry."""
+    staff_id: str
+    name: str
+    business_location_id: str
+
+class ReferenceDataResponse(BaseModel):
+    """Reference data payload for Office Manual Entry UI."""
+    business_locations: List[ReferenceLocation] = Field(default_factory=list)
+    staff: List[ReferenceStaff] = Field(default_factory=list)
 
 
 # ============================================================================
@@ -349,6 +464,7 @@ def save_draft(
 @router.get("", response_model=List[DraftResponse])
 def list_drafts(
     status_filter: Optional[str] = None,
+    limit: Optional[int] = None,
     current_user: User = Depends(get_current_user)
 ) -> List[DraftResponse]:
     """List all drafts for the current user, optionally filtered by status.
@@ -356,6 +472,8 @@ def list_drafts(
     Args:
         status_filter: Optional query parameter to filter by status
                       ("DRAFT" or "SENT"). If omitted, returns all drafts.
+        limit: Maximum number of drafts to return. Defaults to 200 for ADMIN/HQ, 50 for WORKER.
+              Use lower values for faster response times.
         current_user: Authenticated user from JWT token
     
     Returns:
@@ -364,12 +482,23 @@ def list_drafts(
     Notes:
         - ADMIN/HQ roles get image_data included (for office view previews)
         - WORKER role gets image_data excluded (to reduce payload for workers)
+        - Validation is only computed for DRAFT status (not for SENT/REVIEWED)
     
     Example:
         GET /api/drafts              # All drafts for current user
         GET /api/drafts?status_filter=DRAFT  # Only unsent drafts for current user
         GET /api/drafts?status_filter=SENT   # Only sent drafts for current user
+        GET /api/drafts?limit=20     # Last 20 drafts for current user
     """
+    started_at = time.perf_counter()
+    
+    # Set role-based default limits
+    if limit is None:
+        if current_user.role in ["ADMIN", "HQ"]:
+            limit = 200  # Higher limit for admins to monitor all workers
+        else:
+            limit = 50   # Conservative limit for workers
+    
     service = get_draft_service()
     
     # Parse status filter
@@ -398,15 +527,22 @@ def list_drafts(
     include_image_data = False
     
     if DEBUG_DRAFTS:
-        print(f"DEBUG: list_drafts called by user_id={current_user.user_id}, role={current_user.role}, filtering by user_id={filter_by_user}, include_image_data={include_image_data}")
+        print(f"DEBUG: list_drafts called by user_id={current_user.user_id}, role={current_user.role}, filtering by user_id={filter_by_user}, include_image_data={include_image_data}, limit={limit}")
 
     try:
-        drafts = service.list_drafts(status=status_enum, user_id=filter_by_user, include_image_data=include_image_data)
+        drafts = service.list_drafts(status=status_enum, user_id=filter_by_user, include_image_data=include_image_data, limit=limit)
         
         # Add validation status to each draft
+        # Performance optimization: Only validate DRAFT status, skip for SENT/REVIEWED
         responses = []
         for draft in drafts:
-            is_valid, errors = service._validate_ready_to_send(draft)
+            if draft.status == DraftStatus.DRAFT:
+                # Validate DRAFT status receipts for ready-to-send
+                is_valid, errors = service._validate_ready_to_send(draft)
+            else:
+                # SENT/REVIEWED drafts are already validated, skip validation
+                is_valid = True
+                errors = []
             responses.append(DraftResponse.from_draft(draft, is_valid=is_valid, validation_errors=errors))
         
         return responses
@@ -415,16 +551,23 @@ def list_drafts(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list drafts: {str(exc)}",
         )
+    finally:
+        _log_endpoint_timing("/api/drafts", started_at, current_user)
 
 
 @router.get("/sent-records/all", response_model=List[DraftResponse])
 def list_sent_records(
+    limit: int = 50,
     current_user: User = Depends(get_current_user)
 ) -> List[DraftResponse]:
     """Phase 5G-A/C: List all SENT and REVIEWED receipts for Admin/HQ verification view.
     
     This endpoint is READ-ONLY and shows receipts that have been sent to Excel.
     Phase 5G-C adds REVIEWED status for office verification tracking.
+    
+    Args:
+        limit: Maximum number of sent records to return (default 50).
+              Use lower values for faster response times.
     
     Security:
         - Only ADMIN and HQ roles can access
@@ -447,7 +590,10 @@ def list_sent_records(
     
     Example:
         GET /api/drafts/sent-records/all
+        GET /api/drafts/sent-records/all?limit=20  # Last 20 sent records
     """
+    started_at = time.perf_counter()
+
     # Security: Only ADMIN/HQ can access sent records view
     if current_user.role not in ["ADMIN", "HQ"]:
         raise HTTPException(
@@ -459,22 +605,30 @@ def list_sent_records(
     
     try:
         # Phase 5G-C: Fetch both SENT and REVIEWED drafts (no user filtering for ADMIN/HQ)
+        # Apply limit to each query, then combine (total may be up to 2*limit)
         sent_drafts = service.list_drafts(
             status=DraftStatus.SENT,
             user_id=None,  # Admin/HQ see all users
-            include_image_data=False  # Don't include images for list view
+            include_image_data=False,  # Don't include images for list view
+            limit=limit
         )
         
         reviewed_drafts = service.list_drafts(
             status=DraftStatus.REVIEWED,
             user_id=None,
-            include_image_data=False
+            include_image_data=False,
+            limit=limit
         )
         
         # Combine and convert to response format
+        # Sort by sent_at descending and trim to limit
         all_drafts = sent_drafts + reviewed_drafts
+        all_drafts.sort(key=lambda d: d.sent_at or d.created_at, reverse=True)
+        all_drafts = all_drafts[:limit]  # Trim combined results to limit
+        
         responses = []
         for draft in all_drafts:
+            # SENT/REVIEWED drafts are already validated, skip validation for performance
             responses.append(DraftResponse.from_draft(draft, is_valid=True, validation_errors=[]))
         
         return responses
@@ -485,6 +639,55 @@ def list_sent_records(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to list sent records: {str(exc)}",
         )
+    finally:
+        _log_endpoint_timing("/api/drafts/sent-records/all", started_at, current_user)
+
+
+@router.get("/config/reference-data", response_model=ReferenceDataResponse)
+def get_reference_data(
+    current_user: User = Depends(get_current_user)
+) -> ReferenceDataResponse:
+    """Return read-only location/staff reference data for Office Manual Entry.
+
+    Access:
+    - ADMIN, HQ: allowed
+    - WORKER: forbidden
+    """
+    role = str(getattr(current_user, "role", "")).upper()
+    if role not in {"ADMIN", "HQ"}:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Forbidden: ADMIN or HQ role required",
+        )
+
+    service = get_draft_service()
+    locations = service.config_service.get_locations()
+
+    business_locations = [
+        ReferenceLocation(id=location_id, name=location_id)
+        for location_id in locations
+    ]
+
+    staff: List[ReferenceStaff] = []
+    for location_id in locations:
+        for staff_entry in service.config_service.get_staff_for_location(location_id):
+            staff_id = str(staff_entry.get("id") or "").strip()
+            if not staff_id:
+                continue
+
+            staff_name = str(staff_entry.get("name") or staff_id)
+            staff.append(
+                ReferenceStaff(
+                    staff_id=staff_id,
+                    name=staff_name,
+                    business_location_id=location_id,
+                )
+            )
+
+    return ReferenceDataResponse(
+        business_locations=business_locations,
+        staff=staff,
+    )
 
 
 class MarkReviewedRequest(BaseModel):
@@ -548,6 +751,10 @@ def mark_drafts_as_reviewed(
     failed_count = 0
     errors = []
     
+    # Preflight checks (single loop, equivalent to prior Worker/Admin split):
+    # - Worker: ownership + SENT immutability
+    # - Admin/HQ: SENT immutability
+    # - All roles: Phase 6A-4 staff/location enforcement
     for draft_id in request.draft_ids:
         try:
             # Fetch the draft
@@ -591,6 +798,7 @@ def mark_drafts_as_reviewed(
 @router.get("/ledger-preview")
 def get_ledger_preview(
     format: str,
+    limit: int = 200,
     month_key: Optional[str] = None,
     location: Optional[str] = None,
     staff_id: Optional[str] = None,
@@ -610,6 +818,7 @@ def get_ledger_preview(
     
     Args:
         format: "staff" (Format①) or "location" (Format②)
+        limit: Maximum number of rows to scan/return (default 200)
         month_key: Optional filter by month (e.g., "202412")
         location: Optional filter by business_location_id
         staff_id: Optional filter by staff_id (Format① only)
@@ -632,6 +841,8 @@ def get_ledger_preview(
         GET /api/drafts/ledger-preview?format=staff&month_key=202412
         GET /api/drafts/ledger-preview?format=location&location=Tokyo&q=ABC Corp
     """
+    started_at = time.perf_counter()
+
     # Security: Only ADMIN/HQ can access ledger previews
     if current_user.role not in ["ADMIN", "HQ"]:
         raise HTTPException(
@@ -645,6 +856,13 @@ def get_ledger_preview(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid format. Must be 'staff' or 'location'.",
         )
+
+    # Validate limit for performance safety
+    if limit < 1 or limit > 1000:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid limit. Must be between 1 and 1000.",
+        )
     
     service = get_draft_service()
     
@@ -653,7 +871,8 @@ def get_ledger_preview(
         sent_drafts = service.list_drafts(
             status=DraftStatus.SENT,
             user_id=None,  # Admin/HQ see all users
-            include_image_data=False
+            include_image_data=False,
+            limit=limit,
         )
         
         # Convert to preview rows
@@ -711,8 +930,9 @@ def get_ledger_preview(
         
         # Sort by sent_at descending (most recent first)
         rows.sort(key=lambda x: x.get('sent_at', ''), reverse=True)
-        
-        return rows
+
+        # Defensive trim after filtering/sorting
+        return rows[:limit]
         
     except Exception as exc:
         logger.exception("Failed to generate ledger preview: %s", exc)
@@ -720,9 +940,14 @@ def get_ledger_preview(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to generate ledger preview: {str(exc)}",
         )
+    finally:
+        _log_endpoint_timing("/api/drafts/ledger-preview", started_at, current_user)
 
 @router.get("/{draft_id}", response_model=DraftResponse)
-def get_draft(draft_id: UUID) -> DraftResponse:
+def get_draft(
+    draft_id: UUID,
+    current_user: User = Depends(get_current_user)
+) -> DraftResponse:
     """Get a specific draft by ID.
     
     Args:
@@ -737,6 +962,7 @@ def get_draft(draft_id: UUID) -> DraftResponse:
     Example:
         GET /api/drafts/123e4567-e89b-12d3-a456-426614174000
     """
+    started_at = time.perf_counter()
     service = get_draft_service()
     
     draft = service.get_draft(draft_id)
@@ -745,11 +971,20 @@ def get_draft(draft_id: UUID) -> DraftResponse:
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Draft not found: {draft_id}",
         )
+
+    _assert_draft_access(current_user, draft)
     
-    return DraftResponse.from_draft(draft)
+    try:
+        return DraftResponse.from_draft(draft)
+    finally:
+        _log_endpoint_timing("/api/drafts/{draft_id}", started_at, current_user)
 
 @router.put("/{draft_id}", response_model=DraftResponse)
-def update_draft(draft_id: UUID, request: UpdateDraftRequest) -> DraftResponse:
+def update_draft(
+    draft_id: UUID,
+    request: UpdateDraftRequest,
+    current_user: User = Depends(get_current_user)
+) -> DraftResponse:
     """Update an existing draft with new receipt data.
     
     Only allowed for drafts with status=DRAFT.
@@ -777,6 +1012,26 @@ def update_draft(draft_id: UUID, request: UpdateDraftRequest) -> DraftResponse:
         }
     """
     service = get_draft_service()
+
+    existing = service.get_draft(draft_id)
+    if existing is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Draft not found: {draft_id}",
+        )
+    _assert_draft_access(current_user, existing)
+
+    _ensure_not_sent(existing, current_user)  # Phase 6A-1: Block SENT modification
+
+    # Phase 8.4 guard: ADMIN may edit only manual-entry DRAFTs (image_ref is null)
+    if current_user.role == "ADMIN":
+        image_ref_value = getattr(existing, "image_ref", None)
+        has_image_ref = bool(str(image_ref_value).strip()) if image_ref_value is not None else False
+        if existing.status != DraftStatus.DRAFT or has_image_ref:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only manual-entry drafts can be edited.",
+            )
     
     try:
         draft = service.update_draft(draft_id, request.receipt)
@@ -801,7 +1056,10 @@ def update_draft(draft_id: UUID, request: UpdateDraftRequest) -> DraftResponse:
 
 
 @router.delete("/{draft_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_draft(draft_id: UUID):
+def delete_draft(
+    draft_id: UUID,
+    current_user: User = Depends(get_current_user)
+):
     """Delete a draft by ID.
     
     Can delete drafts in any state (DRAFT or SENT).
@@ -816,7 +1074,16 @@ def delete_draft(draft_id: UUID):
         DELETE /api/drafts/123e4567-e89b-12d3-a456-426614174000
     """
     service = get_draft_service()
-    
+
+    draft = service.get_draft(draft_id)
+    if draft is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Draft not found: {draft_id}",
+        )
+    _assert_draft_access(current_user, draft)
+    _ensure_not_sent(draft, current_user)  # Phase 6A-1: Block SENT deletion
+
     deleted = service.delete_draft(draft_id)
     if not deleted:
         raise HTTPException(
@@ -826,7 +1093,10 @@ def delete_draft(draft_id: UUID):
 
 
 @router.get("/{draft_id}/validate")
-def validate_draft(draft_id: UUID):
+def validate_draft(
+    draft_id: UUID,
+    current_user: User = Depends(get_current_user)
+):
     """Validate a draft against READY-TO-SEND requirements.
     
     Phase 4D: UI validation endpoint.
@@ -855,6 +1125,9 @@ def validate_draft(draft_id: UUID):
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Draft not found: {draft_id}",
         )
+
+    _assert_draft_access(current_user, draft)
+    _ensure_not_sent(draft, current_user)  # Phase 6A-1: Block SENT validation
     
     is_valid, errors = service._validate_ready_to_send(draft)
     
@@ -867,6 +1140,7 @@ def validate_draft(draft_id: UUID):
 @router.post("/batch-upload")
 async def batch_upload_receipts(
     request: Request,
+    response: Response,
     files: List[UploadFile] = File(...),
     ocr_engine: str = Form('auto'),
     current_user: User = Depends(get_current_user)
@@ -878,6 +1152,9 @@ async def batch_upload_receipts(
     Admin then reviews drafts and clicks 'Send' to write to Excel.
     This workflow prevents accidental Excel writes and allows correction.
     """
+    global _ocr_in_flight
+
+    started_at = time.perf_counter()
     logger.info("Batch upload endpoint called: files=%d, engine=%s, user=%s", len(files), ocr_engine, getattr(current_user, 'user_id', None))
     if len(files) > 4:
         logger.warning("Batch upload rejected: too many files (%d)", len(files))
@@ -915,18 +1192,89 @@ async def batch_upload_receipts(
     if isinstance(creator_user_id, UUID):
         creator_user_id = str(creator_user_id)
     
+    semaphore_acquired = False
+    wait_ms_int = 0
     try:
-        result = service.create_drafts_from_images(
-            images=images,
-            creator_user_id=creator_user_id,
-            engine_preference=ocr_engine
+        wait_started_at = time.perf_counter()
+        wait_logged = _ocr_semaphore.locked()
+        if wait_logged:
+            logger.info(
+                "ocr_batch_wait_start user_id=%s role=%s files=%s limit=%s in_flight=%s",
+                getattr(current_user, "user_id", None),
+                getattr(current_user, "role", None),
+                len(images),
+                OCR_CONCURRENCY_LIMIT,
+                _ocr_in_flight,
+            )
+
+        await _ocr_semaphore.acquire()
+        semaphore_acquired = True
+
+        wait_ms = round((time.perf_counter() - wait_started_at) * 1000, 2)
+        wait_ms_int = max(0, int(round(wait_ms)))
+        if wait_ms_int > 0:
+            logger.info(
+                "ocr_batch_wait_end user_id=%s role=%s wait_ms=%s limit=%s",
+                getattr(current_user, "user_id", None),
+                getattr(current_user, "role", None),
+                wait_ms_int,
+                OCR_CONCURRENCY_LIMIT,
+            )
+
+        _ocr_in_flight += 1
+        logger.info(
+            "ocr_batch_start user_id=%s role=%s files=%s engine=%s limit=%s in_flight=%s",
+            getattr(current_user, "user_id", None),
+            getattr(current_user, "role", None),
+            len(images),
+            ocr_engine,
+            OCR_CONCURRENCY_LIMIT,
+            _ocr_in_flight,
+        )
+        result = await run_in_threadpool(
+            service.create_drafts_from_images,
+            images,
+            creator_user_id,
+            ocr_engine,
+        )
+        if wait_ms_int > 0:
+            response.headers["X-OCR-Queue-Wait-Ms"] = str(wait_ms_int)
+            result["ocr_queue_wait_ms"] = wait_ms_int
+        logger.info(
+            "ocr_batch_end user_id=%s role=%s files=%s succeeded=%s failed=%s limit=%s in_flight=%s",
+            getattr(current_user, "user_id", None),
+            getattr(current_user, "role", None),
+            len(images),
+            result.get("succeeded"),
+            result.get("failed"),
+            OCR_CONCURRENCY_LIMIT,
+            _ocr_in_flight,
         )
         return result
     except Exception as exc:
+        logger.exception(
+            "ocr_batch_error user_id=%s role=%s files=%s error=%s",
+            getattr(current_user, "user_id", None),
+            getattr(current_user, "role", None),
+            len(images),
+            str(exc),
+        )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Batch upload failed: {str(exc)}",
         )
+    finally:
+        if semaphore_acquired:
+            _ocr_in_flight = max(0, _ocr_in_flight - 1)
+            _ocr_semaphore.release()
+            logger.info(
+                "ocr_batch_slot_released user_id=%s role=%s limit=%s in_flight=%s",
+                getattr(current_user, "user_id", None),
+                getattr(current_user, "role", None),
+                OCR_CONCURRENCY_LIMIT,
+                _ocr_in_flight,
+            )
+        _log_endpoint_timing("/api/drafts/batch-upload", started_at, current_user)
 
 
 @router.post("/debug-batch-upload")
@@ -969,7 +1317,11 @@ async def debug_batch_upload_receipts(
 
 
 @router.post("/send", response_model=SendDraftsResponse)
-def send_drafts(request: SendDraftsRequest) -> SendDraftsResponse:
+def send_drafts(
+    request: SendDraftsRequest,
+    response: Response,
+    current_user: User = Depends(get_current_user)
+) -> SendDraftsResponse:
     """Send multiple drafts to Excel in bulk (DRAFT → SENT transition).
     
     This is the critical operation that:
@@ -1028,15 +1380,109 @@ def send_drafts(request: SendDraftsRequest) -> SendDraftsResponse:
         }
     """
     service = get_draft_service()
+
+    for draft_id in request.draft_ids:
+        draft = service.get_draft(draft_id)
+        if draft is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Draft not found: {draft_id}",
+            )
+
+        if _is_worker(current_user):
+            _assert_draft_access(current_user, draft)
+
+        _ensure_not_sent(draft, current_user)  # Phase 6A-1: Block re-sending SENT
+
+        # Phase 6A-4: SEND-only hard block for staff/location mismatch
+        try:
+            service.validate_staff_location_or_raise(
+                getattr(draft.receipt, "staff_id", None),
+                getattr(draft.receipt, "business_location_id", None),
+            )
+        except StaffLocationMismatchError as exc:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail={
+                    "message": str(exc),
+                    "error_code": getattr(exc, "error_code", "STAFF_LOCATION_MISMATCH"),
+                },
+            )
     
     try:
-        result = service.send_drafts(request.draft_ids)
+        role_value = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
+        result = service.send_drafts(
+            request.draft_ids,
+            sent_by_user_id=str(current_user.user_id),
+            sent_by_role=role_value,
+        )
+        duplicate_warnings = (result.get("warnings") or {}).get("duplicates") or []
+        has_duplicate_warning = len(duplicate_warnings) > 0
+        response.headers["X-Duplicate-Warning"] = "true" if has_duplicate_warning else "false"
+
+        tax_warning_obj = (result.get("warnings") or {}).get("tax_mismatch") or {}
+        tax_warning_items = tax_warning_obj.get("items") if isinstance(tax_warning_obj, dict) else []
+        has_tax_mismatch_warning = bool(tax_warning_items)
+        response.headers["X-Tax-Mismatch-Warning"] = "true" if has_tax_mismatch_warning else "false"
+
+        if has_duplicate_warning:
+            per_draft_matches: Dict[str, List[dict]] = {}
+            for warning in duplicate_warnings:
+                draft_key = warning.get("draft_id")
+                if not draft_key:
+                    continue
+                per_draft_matches.setdefault(draft_key, []).append(warning)
+
+            for draft_key, matches in per_draft_matches.items():
+                top_reason = matches[0].get("reason") if matches else "unknown"
+                logger.warning(
+                    "duplicate_warning draft_id=%s user_id=%s role=%s matches_count=%s top_reason=%s",
+                    draft_key,
+                    getattr(current_user, "user_id", None),
+                    getattr(current_user, "role", None),
+                    len(matches),
+                    top_reason,
+                )
+
+        if has_tax_mismatch_warning:
+            first_item = tax_warning_items[0]
+            logger.warning(
+                "tax_mismatch_warning draft_id=%s user_id=%s role=%s diff_yen=%s fields_present=%s",
+                first_item.get("draft_id"),
+                getattr(current_user, "user_id", None),
+                getattr(current_user, "role", None),
+                first_item.get("diff_yen"),
+                first_item.get("fields_present"),
+            )
+
         return SendDraftsResponse(**result)
     except Exception as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to send drafts: {str(exc)}",
         )
+
+
+@router.post("/send/precheck", response_model=SendPrecheckResponse)
+def precheck_send_drafts(
+    request: SendDraftsRequest,
+    current_user: User = Depends(get_current_user)
+) -> SendPrecheckResponse:
+    """Pre-send duplicate preview (no state changes, no Excel writes)."""
+    service = get_draft_service()
+
+    for draft_id in request.draft_ids:
+        draft = service.get_draft(draft_id)
+        if draft is None:
+            continue
+
+        if _is_worker(current_user):
+            _assert_draft_access(current_user, draft)
+
+        _ensure_not_sent(draft, current_user)
+
+    result = service.precheck_send_duplicates(request.draft_ids)
+    return SendPrecheckResponse(**result)
 
 
 # ============= Phase 5G-C: Excel-Like Ledger Preview Endpoints =============

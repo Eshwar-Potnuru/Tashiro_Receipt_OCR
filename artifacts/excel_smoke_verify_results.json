@@ -1,0 +1,63 @@
+{
+  "generated_at": "2026-02-22T22:08:30.005592Z",
+  "since_epoch": 1771798010.3415952,
+  "checked_files": [
+    {
+      "path": "app/Data/accumulation/locations/Tokyo_Accumulated.xlsx",
+      "valid_zip": true,
+      "openpyxl_loadable": true,
+      "sheet_count": 21,
+      "sheet_names": [
+        "\u8a18\u5165\u4f8b",
+        "Monthly_Template",
+        "English ver \u8a18\u5165\u4f8b",
+        "2025\u5e741\u6708",
+        "\u8ffd\u52a01",
+        "2025\u5e742\u6708",
+        "2025\u5e743\u6708",
+        "2025\u5e744\u6708",
+        "2025\u5e745\u6708",
+        "2025\u5e746\u6708",
+        "2025\u5e747\u6708",
+        "2025\u5e748\u6708",
+        "2025\u5e749\u6708",
+        "2025\u5e7410\u6708",
+        "2025\u5e7411\u6708",
+        "2025\u5e7412\u6708",
+        "\u96c6\u8a08\uff83\uff70\uff8c\uff9e\uff99",
+        "2024\u5e7412\u6708",
+        "2026\u5e742\u6708",
+        "2024\u5e7410\u6708",
+        "2024\u5e745\u6708"
+      ],
+      "error": "",
+      "mtime_epoch": 1771798108.6760297
+    },
+    {
+      "path": "app/Data/accumulation/staff/Chloe_Bryant_Tokyo.xlsx",
+      "valid_zip": true,
+      "openpyxl_loadable": true,
+      "sheet_count": 10,
+      "sheet_names": [
+        "\u539f\u672c",
+        "202404",
+        "202405",
+        "202406",
+        "202407",
+        "\u96c6\u8a08\u30b7\u30fc\u30c8",
+        "202602",
+        "202506",
+        "202412",
+        "202507"
+      ],
+      "error": "",
+      "mtime_epoch": 1771798109.9290395
+    }
+  ],
+  "summary": {
+    "total": 2,
+    "valid_zip": 2,
+    "openpyxl_loadable": 2,
+    "failures": 0
+  }
+}

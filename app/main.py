@@ -5,6 +5,8 @@ from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 import os
+import time
+import logging
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -47,7 +49,13 @@ except Exception as e:
 from app.api.routes import router as api_router
 from app.api.drafts import router as drafts_router
 from app.api.audits import router as audits_router  # Phase 5A Step 3
+from app.api.hq_transfer import router as hq_transfer_router  # Phase 7A-3: Internal HQ transfer
+from app.api.hq_view import router as hq_view_router  # Phase 7.2: HQ read-only view
 from app.routes.auth import router as auth_router  # Phase 5B.1: Authentication
+
+
+logger = logging.getLogger("uvicorn.error")
+logger.setLevel(logging.INFO)
 
 
 class BlockTrackerMiddleware(BaseHTTPMiddleware):
@@ -70,6 +78,50 @@ class BlockTrackerMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class ApiTimingMiddleware(BaseHTTPMiddleware):
+    """Targeted timing logs for key API paths to diagnose cross-user freezes."""
+
+    TIMED_PREFIXES = (
+        "/api/drafts",
+        "/api/auth/login",
+    )
+
+    async def dispatch(self, request: Request, call_next):
+        path = request.url.path
+        should_time = path.startswith(self.TIMED_PREFIXES)
+
+        if not should_time:
+            return await call_next(request)
+
+        started_at = time.perf_counter()
+        try:
+            response = await call_next(request)
+            duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+            user = getattr(request.state, "user", None)
+            logger.info(
+                "api_timing method=%s path=%s status=%s duration_ms=%s user_id=%s role=%s",
+                request.method,
+                path,
+                getattr(response, "status_code", "unknown"),
+                duration_ms,
+                getattr(user, "user_id", None),
+                getattr(user, "role", None),
+            )
+            return response
+        except Exception:
+            duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
+            user = getattr(request.state, "user", None)
+            logger.exception(
+                "api_timing_error method=%s path=%s duration_ms=%s user_id=%s role=%s",
+                request.method,
+                path,
+                duration_ms,
+                getattr(user, "user_id", None),
+                getattr(user, "role", None),
+            )
+            raise
+
+
 def create_app() -> FastAPI:
     try:
         app = FastAPI(
@@ -86,6 +138,8 @@ def create_app() -> FastAPI:
             allow_methods=["*"],
             allow_headers=["*"],
         )
+
+        app.add_middleware(ApiTimingMiddleware)
 
         # Add global exception handler to ensure JSON responses for API errors
         @app.exception_handler(Exception)
@@ -146,7 +200,7 @@ def create_app() -> FastAPI:
         app.mount("/accumulation", StaticFiles(directory=str(base_dir / "app" / "Data" / "accumulation")), name="accumulation")
 
         # Add tracker blocking middleware (Phase 4F Fix 2)
-        # app.add_middleware(BlockTrackerMiddleware)
+        app.add_middleware(BlockTrackerMiddleware)
 
         print("App initialization successful")
 
@@ -177,7 +231,7 @@ def create_app() -> FastAPI:
             """Phase 5E: Admin/HQ business office operations view
 
             Backend enforces authentication when Authorization header present.
-            Role-specific enforcement (ADMIN/HQ only) is checked here.
+            Role-specific enforcement (ADMIN only) is checked here.
             
             This dual-layer approach:
             - Backend: Blocks unauthenticated/WORKER access when auth header present
@@ -193,12 +247,10 @@ def create_app() -> FastAPI:
                     SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
                     payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
                     
-                    # Check role - only ADMIN and HQ allowed
+                    # Check role - only ADMIN allowed
                     role = payload.get("role")
-                    if role == "WORKER":
-                        raise HTTPException(status_code=403, detail="Forbidden: Workers cannot access office view")
-                    elif role not in ("ADMIN", "HQ"):
-                        raise HTTPException(status_code=403, detail="Forbidden: Invalid role for office view")
+                    if role != "ADMIN":
+                        raise HTTPException(status_code=403, detail="Forbidden: ADMIN role required for office view")
                         
                 except JWTError as e:
                     raise HTTPException(status_code=401, detail=f"Invalid authentication token: {str(e)}")
@@ -208,12 +260,7 @@ def create_app() -> FastAPI:
                     raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
             
             # Serve the page (JavaScript will check localStorage token for browser access)
-            return templates.TemplateResponse("office_view_admin.html", {"request": request})
-
-        @app.get("/diagnostics", response_class=HTMLResponse, tags=["ui"])
-        def diagnostics_page(request: Request) -> HTMLResponse:
-            """System diagnostics and testing page"""
-            return templates.TemplateResponse("diagnostics.html", {"request": request})
+            return templates.TemplateResponse("office_view_admin_new.html", {"request": request})
 
         @app.get("/debug", response_class=HTMLResponse, tags=["ui"])
         def debug_test(request: Request) -> HTMLResponse:
@@ -229,9 +276,50 @@ def create_app() -> FastAPI:
             """Phase 4D: Draft management UI"""
             return templates.TemplateResponse("draft_management.html", {"request": request})
 
+        @app.get("/hq", response_class=HTMLResponse, tags=["ui"])
+        def hq_view(
+            request: Request,
+            authorization: Opt[str] = Header(None)
+        ) -> HTMLResponse:
+            """Phase 7.2: HQ read-only view for office-month batches
+
+            Backend enforces authentication when Authorization header present.
+            Role-specific enforcement (HQ only) is checked here.
+            
+            This dual-layer approach:
+            - Backend: Blocks unauthenticated/non-HQ access when auth header present
+            - Frontend: JavaScript checks localStorage token for browser redirects
+            """
+            # If Authorization header present, verify it
+            if authorization:
+                try:
+                    # Extract and verify JWT token
+                    token = authorization.replace("Bearer ", "").strip()
+                    
+                    # Decode token (using same config as app.auth.jwt)
+                    SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
+                    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                    
+                    # Check role - only HQ allowed
+                    role = payload.get("role")
+                    if role != "HQ":
+                        raise HTTPException(status_code=403, detail="Forbidden: HQ role required for HQ view")
+                        
+                except JWTError as e:
+                    raise HTTPException(status_code=401, detail=f"Invalid authentication token: {str(e)}")
+                except HTTPException:
+                    raise  # Re-raise 403 errors
+                except Exception as e:
+                    raise HTTPException(status_code=401, detail=f"Authentication failed: {str(e)}")
+            
+            # Serve the page (JavaScript will check localStorage token for browser access)
+            return templates.TemplateResponse("hq_view_new.html", {"request": request})
+
         app.include_router(api_router, prefix="/api")
         app.include_router(drafts_router)  # Phase 4B: Draft API endpoints
         app.include_router(audits_router)  # Phase 5A Step 3: Audit API endpoints
+        app.include_router(hq_transfer_router)  # Phase 7A-3: Internal HQ transfer endpoints
+        app.include_router(hq_view_router)  # Phase 7.2: HQ read-only view endpoints
         app.include_router(auth_router)  # Phase 5B.1: Authentication endpoints
 
         return app

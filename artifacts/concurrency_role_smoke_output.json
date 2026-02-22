@@ -1,0 +1,124 @@
+﻿{
+  "base_url": "http://127.0.0.1:8001",
+  "image": "Sample reciepts\\Reciept_01.png",
+  "elapsed_sec": 7.35,
+  "total_flows": 7,
+  "ok_flows": 7,
+  "failed_flows": 0,
+  "all_ok": true,
+  "results": [
+    {
+      "actor": "TIW-3E08W",
+      "role": "ADMIN",
+      "ok": true,
+      "steps": [
+        {
+          "step": "draft_filter_draft",
+          "status": 200
+        },
+        {
+          "step": "draft_filter_sent",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "actor": "TIW-BNZRL",
+      "role": "ADMIN",
+      "ok": true,
+      "steps": [
+        {
+          "step": "draft_filter_draft",
+          "status": 200
+        },
+        {
+          "step": "draft_filter_sent",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "actor": "TIW-OQFOW",
+      "role": "HQ",
+      "ok": true,
+      "steps": [
+        {
+          "step": "offices",
+          "status": 200
+        },
+        {
+          "step": "months",
+          "status": 200
+        },
+        {
+          "step": "batches",
+          "status": 200,
+          "params": {
+            "office": "Aichi",
+            "month": "202602"
+          }
+        }
+      ]
+    },
+    {
+      "actor": "TIW-2OIPF",
+      "role": "WORKER",
+      "ok": true,
+      "steps": [
+        {
+          "step": "analyze",
+          "status": 200
+        },
+        {
+          "step": "submit",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "actor": "TIW-FZ3CL",
+      "role": "WORKER",
+      "ok": true,
+      "steps": [
+        {
+          "step": "analyze",
+          "status": 200
+        },
+        {
+          "step": "submit",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "actor": "TIW-V48XE",
+      "role": "WORKER",
+      "ok": true,
+      "steps": [
+        {
+          "step": "analyze",
+          "status": 200
+        },
+        {
+          "step": "submit",
+          "status": 200
+        }
+      ]
+    },
+    {
+      "actor": "TIW-XX6E4",
+      "role": "WORKER",
+      "ok": true,
+      "steps": [
+        {
+          "step": "analyze",
+          "status": 200
+        },
+        {
+          "step": "submit",
+          "status": 200
+        }
+      ]
+    }
+  ]
+}

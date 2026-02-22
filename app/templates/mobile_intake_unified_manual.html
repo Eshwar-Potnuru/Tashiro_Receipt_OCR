@@ -1193,33 +1193,38 @@
     <!-- Welcome Modal -->
     <div id="welcomeModal" class="welcome-modal">
         <div class="modal-content">
+            <!-- Language Toggle on Login -->
+            <div class="login-lang-toggle" style="position: absolute; top: 16px; right: 16px; display: flex; background: #f1f5f9; border-radius: 8px; padding: 3px;">
+                <button type="button" class="login-lang-btn" data-lang="en" onclick="switchLoginLang('en')" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: transparent; color: #64748b; transition: all 0.2s;">EN</button>
+                <button type="button" class="login-lang-btn active" data-lang="ja" onclick="switchLoginLang('ja')" style="padding: 6px 14px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; background: white; color: #007BFF; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">JP</button>
+            </div>
             <div class="company-logo">
                 <div class="logo-circle">
                     <i class="fas fa-industry"></i>
                 </div>
             </div>
-            <h1>Tashiro Ironworks Co., Ltd.</h1>
-            <p class="modal-subtitle">Professional Receipt OCR Automation System</p>
+            <h1 data-i18n="welcomeTitle">株式会社タシロ鉄工所</h1>
+            <p class="modal-subtitle" data-i18n="welcomeSubtitle">プロフェッショナル領収書OCR自動化システム</p>
             
             <form id="registrationForm" class="registration-form">
                 <div class="form-group">
-                    <label for="userName">Full Name <span class="required">*</span></label>
-                    <input type="text" id="userName" name="userName" placeholder="Enter your full name" required autocomplete="name">
+                    <label for="userName" data-i18n="loginFullNameLabel">氏名 <span class="required">*</span></label>
+                    <input type="text" id="userName" name="userName" data-i18n-ph="loginFullNamePlaceholder" placeholder="氏名を入力してください" required autocomplete="name">
                 </div>
                 
                 <div class="form-group">
-                    <label for="loginIdentifier">Login ID or Email <span class="required">*</span></label>
-                    <input type="text" id="loginIdentifier" name="loginIdentifier" placeholder="TIW-##### or your.email@company.com" required autocomplete="username">
-                    <p style="font-size: 12px; color: #64748b; margin-top: 4px;">Enter your Login ID (e.g., TIW-#####) or email address</p>
+                    <label for="loginIdentifier" data-i18n="loginIdLabel">ログインID または メールアドレス <span class="required">*</span></label>
+                    <input type="text" id="loginIdentifier" name="loginIdentifier" data-i18n-ph="loginIdPlaceholder" placeholder="TIW-##### または your.email@company.com" required autocomplete="username">
+                    <p style="font-size: 12px; color: #64748b; margin-top: 4px;" data-i18n="loginIdHint">ログインID（例: TIW-#####）またはメールアドレスを入力してください</p>
                 </div>
                 
                 <div class="form-group">
-                    <label for="password">Password <span class="required">*</span></label>
-                    <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                    <label for="password" data-i18n="loginPasswordLabel">パスワード <span class="required">*</span></label>
+                    <input type="password" id="password" name="password" data-i18n-ph="loginPasswordPlaceholder" placeholder="パスワードを入力してください" required autocomplete="current-password">
                 </div>
                 
                 <button type="submit" id="launchSystemBtn" name="launchSystemBtn" class="primary-button">
-                    <i class="fas fa-rocket"></i> Launch OCR System
+                    <i class="fas fa-sign-in-alt"></i> <span data-i18n="loginButton">ログイン</span>
                 </button>
             </form>
         </div>
@@ -1229,12 +1234,12 @@
     <div id="loadingOverlay" class="loading-overlay" aria-live="polite">
         <div class="loading-card">
             <div class="loading-spinner" role="status" aria-label="Processing receipt"></div>
-            <div class="loading-message" id="loadingMessage">Processing receipt…</div>
-            <div class="loading-subtext" id="loadingSubtext">Running OCR engines…</div>
+            <div class="loading-message" id="loadingMessage" data-i18n-worker="loadingMessage">Processing receipt…</div>
+            <div class="loading-subtext" id="loadingSubtext" data-i18n-worker="loadingSubtext">Running OCR engines…</div>
             <ul class="loading-steps">
-                <li id="loadingStepUpload">1. Uploading image…</li>
-                <li id="loadingStepQueue">2. Waiting for OCR engines…</li>
-                <li id="loadingStepExtraction">3. Extracting fields…</li>
+                <li id="loadingStepUpload" data-i18n-worker="loadingStep1">1. Uploading image…</li>
+                <li id="loadingStepQueue" data-i18n-worker="loadingStep2">2. Waiting for OCR engines…</li>
+                <li id="loadingStepExtraction" data-i18n-worker="loadingStep3">3. Extracting fields…</li>
             </ul>
         </div>
     </div>
@@ -1294,8 +1299,6 @@
                     <label for="themeToggle">Theme</label>
                     <select id="themeToggle" name="themeToggle">
                         <option value="light">Light Mode</option>
-                        <option value="dark">Dark Mode</option>
-                        <option value="auto">Auto (System)</option>
                     </select>
                 </div>
                 
@@ -1567,18 +1570,18 @@
                         
                         <!-- Additional Information -->
                         <div class="additional-info">
-                            <h4>Additional Information</h4>
+                            <h4 data-i18n-worker="additionalInformation">Additional Information</h4>
                             <div class="form-grid">
                                 <div class="form-field">
-                                    <label for="fieldTax10">Tax Amount (10%)</label>
+                                    <label for="fieldTax10" data-i18n-worker="taxAmount10Label">Tax Amount (10%)</label>
                                     <input type="text" id="fieldTax10" name="fieldTax10" placeholder="0.00" autocomplete="off" data-field="tax_10_amount">
                                 </div>
                                 <div class="form-field">
-                                    <label for="fieldTax8">Tax Amount (8%)</label>
+                                    <label for="fieldTax8" data-i18n-worker="taxAmount8Label">Tax Amount (8%)</label>
                                     <input type="text" id="fieldTax8" name="fieldTax8" placeholder="0.00" autocomplete="off" data-field="tax_8_amount">
                                 </div>
                                 <div class="form-field">
-                                    <label for="fieldCurrency">Currency</label>
+                                    <label for="fieldCurrency" data-i18n-worker="currencyLabel">Currency</label>
                                     <input type="text" id="fieldCurrency" name="fieldCurrency" placeholder="JPY" value="JPY" autocomplete="off" data-field="currency">
                                 </div>
                             </div>
@@ -1706,8 +1709,6 @@
                 notifications: "Notifications",
                 autoSave: "Auto-save Forms",
                 lightMode: "Light Mode",
-                darkMode: "Dark Mode",
-                autoSystem: "Auto (System)",
                 ocrEngine: "OCR Engine",
                 ocrEngineAuto: "Hybrid (Auto)",
                 ocrEngineStandard: "Standard Engines",
@@ -1863,12 +1864,69 @@
                 forceSavePrompt: "Duplicate found. Force save anyway?",
                 savedReceipt: "Receipt saved to HQ ledger!",
                 downloadWorkbook: "Download workbook",
-                savedToPath: "Saved to {path}."
+                savedToPath: "Saved to {path}.",
+
+                // Loading Steps
+                loadingStep1: "1. Uploading image…",
+                loadingStep2: "2. Waiting for OCR engines…",
+                loadingStep3: "3. Extracting fields…",
+                loadingMessage: "Processing receipt…",
+                loadingSubtext: "Running OCR engines…",
+
+                // Engine Status
+                engineDocumentAI: "Document AI engine is processing your receipts.",
+                engineStandard: "Google Vision and OpenAI engines are processing your receipts.",
+                engineHybrid: "Hybrid mode: Document AI + standard engines are processing your receipts.",
+
+                // Send / Draft Management
+                sendConfirm: "Send {count} draft(s) to Excel?",
+                sendResultSummary: "Sent: {sent}, Failed: {failed}",
+                noDraftsSelected: "No drafts selected",
+                draftModalTitle: "Receipt Drafts",
+                draftModalSubtitle: "Manage and send receipt drafts",
+                draftFilterLabel: "Filter:",
+                draftFilterAll: "All",
+                draftFilterDraft: "Draft",
+                draftFilterSent: "Sent",
+                draftFilterErrors: "Errors",
+                draftSelectAll: "Select All",
+                draftRefresh: "Refresh",
+                draftLoadingText: "Loading drafts...",
+                draftNoImage: "No image available",
+                draftSelectToView: "Select a draft to view details",
+                draftSelectionCount: "{count} drafts selected",
+                draftSendBtn: "Send",
+                draftLogout: "Logout",
+                sendResultsTitle: "Send Results",
+                sendResultsClose: "Close",
+
+                // Validation Alerts
+                alertSelectLocation: "Please select a Business Location before sending to Excel!",
+                alertSelectStaff: "Please select a Staff Member before sending to Excel!",
+                alertValidationFailed: "Receipt cannot be sent. Please fix these errors:",
+                alertValidationHeader: "Some receipts failed validation:",
+
+                // Additional Info Labels
+                taxAmount10Label: "Tax Amount (10%)",
+                taxAmount8Label: "Tax Amount (8%)",
+                currencyLabel: "Currency",
+
+                // Login Screen
+                loginFullNameLabel: "Full Name",
+                loginFullNamePlaceholder: "Enter your full name",
+                loginIdLabel: "Login ID or Email",
+                loginIdPlaceholder: "TIW-##### or your.email@company.com",
+                loginIdHint: "Enter your Login ID (e.g., TIW-#####) or email address",
+                loginPasswordLabel: "Password",
+                loginPasswordPlaceholder: "Enter your password",
+                loginButton: "Login",
+                loginFailed: "Invalid Login ID/Email or Password",
+                loginSuccess: "Login successful! Welcome, {name}."
             },
             ja: {
                 uploadFiles: 'ファイルをアップロード',
                 uploadUpTo4: '最大4枚まで',
-                // Welcome Modal
+                // Welcome Modal / Login Screen
                 welcomeTitle: "株式会社タシロ鉄工所",
                 welcomeSubtitle: "プロフェッショナル領収書OCR自動化システム",
                 fullName: "氏名",
@@ -1878,6 +1936,61 @@
                 enterFullName: "氏名を入力してください",
                 enterEmail: "your.email@company.com",
                 enterEmployeeId: "PY-V48XE",
+                // Loading Steps
+                loadingStep1: "1. 画像をアップロード中…",
+                loadingStep2: "2. OCRエンジンを待機中…",
+                loadingStep3: "3. フィールドを抽出中…",
+                loadingMessage: "領収書を処理中…",
+                loadingSubtext: "OCRエンジン実行中…",
+
+                // Engine Status
+                engineDocumentAI: "Document AIエンジンで領収書を処理しています。",
+                engineStandard: "Google VisionとOpenAIエンジンで領収書を処理しています。",
+                engineHybrid: "ハイブリッドモード：Document AI＋標準エンジンで領収書を処理しています。",
+
+                // Send / Draft Management
+                sendConfirm: "{count}件の下書きをExcelに送信しますか？",
+                sendResultSummary: "送信: {sent}件, 失敗: {failed}件",
+                noDraftsSelected: "下書きが選択されていません",
+                draftModalTitle: "領収書の下書き",
+                draftModalSubtitle: "下書きの管理と送信",
+                draftFilterLabel: "フィルター:",
+                draftFilterAll: "すべて",
+                draftFilterDraft: "下書き",
+                draftFilterSent: "送信済み",
+                draftFilterErrors: "エラー",
+                draftSelectAll: "すべて選択",
+                draftRefresh: "更新",
+                draftLoadingText: "下書きを読み込み中...",
+                draftNoImage: "画像がありません",
+                draftSelectToView: "下書きを選択して詳細を表示",
+                draftSelectionCount: "{count}件選択中",
+                draftSendBtn: "送信",
+                draftLogout: "ログアウト",
+                sendResultsTitle: "送信結果",
+                sendResultsClose: "閉じる",
+
+                // Validation Alerts
+                alertSelectLocation: "Excelに送信する前に事業所を選択してください！",
+                alertSelectStaff: "Excelに送信する前に担当者を選択してください！",
+                alertValidationFailed: "領収書を送信できません。以下のエラーを修正してください：",
+                alertValidationHeader: "一部の領収書がバリデーションに失敗しました：",
+
+                // Additional Info Labels
+                taxAmount10Label: "税額（10%）",
+                taxAmount8Label: "税額（8%）",
+                currencyLabel: "通貨",
+
+                loginFullNameLabel: "氏名",
+                loginFullNamePlaceholder: "氏名を入力してください",
+                loginIdLabel: "ログインID または メールアドレス",
+                loginIdPlaceholder: "TIW-##### または your.email@company.com",
+                loginIdHint: "ログインID（例: TIW-#####）またはメールアドレスを入力してください",
+                loginPasswordLabel: "パスワード",
+                loginPasswordPlaceholder: "パスワードを入力してください",
+                loginButton: "ログイン",
+                loginFailed: "ログインID/メールアドレスまたはパスワードが無効です",
+                loginSuccess: "ログイン成功！{name}さん、ようこそ。",
 
                 // Profile Modal
                 updateProfile: "プロフィールを更新",
@@ -1893,8 +2006,6 @@
                 notifications: "通知",
                 autoSave: "フォームの自動保存",
                 lightMode: "ライトモード",
-                darkMode: "ダークモード",
-                autoSystem: "自動（システム）",
                 ocrEngine: "OCRエンジン",
                 ocrEngineAuto: "ハイブリッド（自動）",
                 ocrEngineStandard: "通常エンジン",
@@ -2056,6 +2167,7 @@
 
         // Current language
         let currentLanguage = 'en';
+        window.currentLanguage = currentLanguage;
 
         // Translation function
         function t(key, params = {}) {
@@ -2089,6 +2201,55 @@
             return text;
         }
 
+        // Switch language on login screen (before full app loads)
+        function switchLoginLang(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('appLang', lang);
+            
+            // Update login toggle buttons
+            document.querySelectorAll('.login-lang-btn').forEach(btn => {
+                if (btn.dataset.lang === lang) {
+                    btn.style.background = 'white';
+                    btn.style.color = '#007BFF';
+                    btn.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)';
+                } else {
+                    btn.style.background = 'transparent';
+                    btn.style.color = '#64748b';
+                    btn.style.boxShadow = 'none';
+                }
+            });
+            
+            // Update login modal elements with data-i18n
+            document.querySelectorAll('#welcomeModal [data-i18n]').forEach(el => {
+                const key = el.getAttribute('data-i18n');
+                if (translations[lang]?.[key]) {
+                    if (key === 'loginFullNameLabel' || key === 'loginIdLabel' || key === 'loginPasswordLabel') {
+                        el.innerHTML = translations[lang][key] + ' <span class="required">*</span>';
+                    } else {
+                        el.textContent = translations[lang][key];
+                    }
+                }
+            });
+            
+            // Update placeholders
+            document.querySelectorAll('#welcomeModal [data-i18n-ph]').forEach(el => {
+                const key = el.getAttribute('data-i18n-ph');
+                if (translations[lang]?.[key]) {
+                    el.placeholder = translations[lang][key];
+                }
+            });
+            
+            // Update page title
+            document.title = lang === 'ja' ? '株式会社タシロ鉄工所 - OCRシステム' : 'Tashiro Ironworks - OCR System';
+        }
+
+        // Initialize login language from localStorage
+        (function initLoginLang() {
+            const savedLang = localStorage.getItem('appLang') || 'ja';
+            currentLanguage = savedLang;
+            setTimeout(() => switchLoginLang(savedLang), 50);
+        })();
+
 // Update field labels based on extracted data
 function updateFieldLabels() {
     const fieldTexts = document.querySelectorAll('.field-text');
@@ -2112,8 +2273,14 @@ function updateFieldLabels() {
 
         function applyLanguage(language) {
             currentLanguage = language;
+            window.currentLanguage = language;
+            localStorage.setItem('appLang', language);
             document.documentElement.lang = language;
             document.title = t('pageTitle');
+
+            window.dispatchEvent(new CustomEvent('app-language-changed', {
+                detail: { language }
+            }));
 
             if (languageUpdateScheduled) {
                 return;
@@ -2139,7 +2306,9 @@ function updateFieldLabels() {
             safeUpdate('label[for="userName"]', 'innerHTML', `${t('fullName')} <span class="required">*</span>`);
             safeUpdate('label[for="userEmail"]', 'textContent', t('emailAddress'));
             safeUpdate('label[for="employeeId"]', 'innerHTML', `${t('employeeId')} <span class="required">*</span>`);
-            safeUpdate('#registrationForm button[type="submit"]', 'innerHTML', `<i class="fas fa-rocket"></i> ${t('launchSystem')}`);
+            // Login button - update the span inside
+            const loginBtnSpan = document.querySelector('#launchSystemBtn span[data-i18n="loginButton"]');
+            if (loginBtnSpan) loginBtnSpan.textContent = t('loginButton');
             const userName = document.getElementById('userName');
             if (userName) userName.placeholder = t('enterFullName');
             const userEmail = document.getElementById('userEmail');
@@ -2179,8 +2348,6 @@ function updateFieldLabels() {
             // Update select options
             const themeSelect = document.getElementById('themeToggle');
             themeSelect.querySelector('option[value="light"]').textContent = t('lightMode');
-            themeSelect.querySelector('option[value="dark"]').textContent = t('darkMode');
-            themeSelect.querySelector('option[value="auto"]').textContent = t('autoSystem');
 
             const languageSelect = document.getElementById('languageSelect');
             languageSelect.querySelector('option[value="en"]').textContent = t('english');
@@ -2319,10 +2486,14 @@ function updateFieldLabels() {
             }
 
             // Additional info field labels
-            const additionalLabels = document.querySelectorAll('.additional-info label');
-            console.log('Additional labels found (regular update):', additionalLabels.length);
-            // Note: Labels are now correctly set in HTML (Tax Amount 10%, Tax Amount 8%, Currency)
-            // No longer need to dynamically update them
+            // Note: Labels are now translated dynamically via data-i18n-worker attributes
+            // Update additional info labels
+            const tax10Label = document.querySelector('label[for="fieldTax10"]');
+            if (tax10Label) tax10Label.textContent = t('taxAmount10Label');
+            const tax8Label = document.querySelector('label[for="fieldTax8"]');
+            if (tax8Label) tax8Label.textContent = t('taxAmount8Label');
+            const currLabel = document.querySelector('label[for="fieldCurrency"]');
+            if (currLabel) currLabel.textContent = t('currencyLabel');
 
             const assignmentHeader = document.querySelector('.assignment-panel h4');
             if (assignmentHeader) {
@@ -2444,6 +2615,26 @@ function updateFieldLabels() {
             // Update field labels based on current form values
             updateFieldLabels();
 
+            // Update all data-i18n-worker elements (loading overlay, additional info, etc.)
+            document.querySelectorAll('[data-i18n-worker]').forEach(el => {
+                const key = el.getAttribute('data-i18n-worker');
+                const val = t(key);
+                if (val && val !== key) el.textContent = val;
+            });
+
+            // Update draft modal title/subtitle (ids, not data-i18n-worker)
+            const draftTitleEl = document.getElementById('draftModalTitleEl');
+            if (draftTitleEl) draftTitleEl.textContent = t('draftModalTitle');
+            const draftSubEl = document.getElementById('draftModalSubtitleEl');
+            if (draftSubEl) draftSubEl.textContent = t('draftModalSubtitle');
+            
+            // Update draft selection count text
+            const draftSelCount = document.getElementById('draftSelectionCount');
+            if (draftSelCount) {
+                const count = document.querySelectorAll('.draft-checkbox:checked').length;
+                draftSelCount.textContent = t('draftSelectionCount', { count });
+            }
+
         }
 
         // DOM Elements
@@ -2451,6 +2642,7 @@ function updateFieldLabels() {
         const profileModal = document.getElementById('profileModal');
         const appContainer = document.getElementById('appContainer');
         const registrationForm = document.getElementById('registrationForm');
+        const launchSystemBtn = document.getElementById('launchSystemBtn');
         const profileForm = document.getElementById('profileForm');
         const userNameInput = document.getElementById('userName');
         const loginIdentifierInput = document.getElementById('loginIdentifier');
@@ -2592,9 +2784,32 @@ function updateFieldLabels() {
 
         // Check if user is already registered
         function checkUserRegistration() {
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
             const userData = localStorage.getItem('tashiro_user');
+
+            if (!token) {
+                localStorage.removeItem('tashiro_user');
+                return false;
+            }
+
             if (userData) {
-                const user = JSON.parse(userData);
+                let user = null;
+                try {
+                    user = JSON.parse(userData);
+                } catch (e) {
+                    localStorage.removeItem('tashiro_user');
+                    return false;
+                }
+
+                if (user.role === 'ADMIN') {
+                    window.location = '/office';
+                    return true;
+                }
+                if (user.role === 'HQ') {
+                    window.location = '/hq';
+                    return true;
+                }
+
                 displayUserInfo(user);
                 welcomeModal.style.display = 'none';
                 appContainer.style.display = 'block';
@@ -2621,10 +2836,17 @@ function updateFieldLabels() {
             
             const identifier = loginIdentifierInput.value.trim();
             const password = passwordInput.value;
+            const loginBtnOriginalHtml = launchSystemBtn ? launchSystemBtn.innerHTML : '';
             
             if (!identifier) {
                 showToast('Please enter your Login ID or Email', 'error');
                 return;
+            }
+
+            if (launchSystemBtn) {
+                launchSystemBtn.disabled = true;
+                launchSystemBtn.style.opacity = '0.8';
+                launchSystemBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${t('loading')}`;
             }
             
             try {
@@ -2641,6 +2863,7 @@ function updateFieldLabels() {
                 
                 const data = await response.json();
                 localStorage.setItem('auth_token', data.access_token);
+                localStorage.setItem('token', data.access_token);
                 
                 // Store user data from server response
                 const userData = {
@@ -2653,9 +2876,12 @@ function updateFieldLabels() {
                 localStorage.setItem('tashiro_user', JSON.stringify(userData));
                 
                 // Phase 5E: Role-based redirect
-                if (userData.role === 'ADMIN' || userData.role === 'HQ') {
-                    // Redirect to office view for admins
+                if (userData.role === 'ADMIN') {
                     window.location = '/office';
+                    return;
+                }
+                if (userData.role === 'HQ') {
+                    window.location = '/hq';
                     return;
                 }
                 
@@ -2675,6 +2901,12 @@ function updateFieldLabels() {
                 showToast(t('welcomeMessage', {name: userData.name}), 'success');
             } catch (error) {
                 showToast('Login failed: ' + error.message, 'error');
+            } finally {
+                if (launchSystemBtn) {
+                    launchSystemBtn.disabled = false;
+                    launchSystemBtn.style.opacity = '1';
+                    launchSystemBtn.innerHTML = loginBtnOriginalHtml;
+                }
             }
         });
 
@@ -3168,32 +3400,60 @@ function updateFieldLabels() {
             });
             formData.append('ocr_engine', selectedEngine);  // ✅ ADDED: Send OCR engine to backend
 
+            let timeoutId = null;
+            let stillWorkingTicker = null;
+
             try {
-            // Create abort controller for timeout
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
+                // Create abort controller for timeout
+                const controller = new AbortController();
+                timeoutId = setTimeout(() => controller.abort(), 120000); // 2 minutes
+                const requestStartedAt = Date.now();
 
-            console.log('🌐 Making API call to /api/drafts/batch-upload...');
-            const response = await apiFetch('/api/drafts/batch-upload', {
-                method: 'POST',
-                body: formData,
-                signal: controller.signal
-            });
+                // Keep reassuring status while long OCR runs
+                stillWorkingTicker = setInterval(() => {
+                    const elapsedSec = Math.max(1, Math.round((Date.now() - requestStartedAt) / 1000));
+                    if (loadingSubtext) loadingSubtext.textContent = `Processing OCR... still working (${elapsedSec}s)`;
+                }, 8000);
 
-            clearTimeout(timeoutId);
-            console.log('📡 API response received, status:', response.status);
+                console.log('🌐 Making API call to /api/drafts/batch-upload...');
+                const response = await apiFetch('/api/drafts/batch-upload', {
+                    method: 'POST',
+                    body: formData,
+                    signal: controller.signal
+                });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                console.error('❌ API error:', errorData);
-                throw new Error(errorData.detail || 'Batch upload failed');
-            }
+                clearTimeout(timeoutId);
+                timeoutId = null;
+                if (stillWorkingTicker) clearInterval(stillWorkingTicker);
+                stillWorkingTicker = null;
+                console.log('📡 API response received, status:', response.status);
 
-            console.log('📡 Step 2: Extracting fields...');
-            updateLoadingSteps(2);
-            if (loadingSubtext) loadingSubtext.textContent = engineSubtext.replace('processing your receipts', 'extracting receipt fields...');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('❌ API error:', errorData);
+                    throw new Error(errorData.detail || 'Batch upload failed');
+                }
 
-            const result = await response.json();
+                console.log('📡 Step 2: Extracting fields...');
+                updateLoadingSteps(2);
+
+                const queueWaitHeader = response.headers.get('X-OCR-Queue-Wait-Ms');
+                const queueWaitHeaderMs = queueWaitHeader ? parseInt(queueWaitHeader, 10) : 0;
+                const result = await response.json();
+                const queueWaitBodyMs = Number(result?.ocr_queue_wait_ms || 0);
+                const queueWaitMs = Number.isFinite(queueWaitHeaderMs) && queueWaitHeaderMs > 0
+                    ? queueWaitHeaderMs
+                    : (Number.isFinite(queueWaitBodyMs) ? queueWaitBodyMs : 0);
+
+                if (queueWaitMs > 0) {
+                    const queueWaitSec = Math.max(1, Math.round(queueWaitMs / 1000));
+                    if (loadingSubtext) {
+                        loadingSubtext.textContent = `Queued (OCR busy) for ~${queueWaitSec}s → Processing will start automatically.`;
+                    }
+                } else {
+                    if (loadingSubtext) loadingSubtext.textContent = engineSubtext.replace('processing your receipts', 'extracting receipt fields...');
+                }
+
             console.log('📋 API result:', result);
             console.log('📊 Batch processing summary:');
             console.log(`   Total: ${result.total || 0}`);
@@ -3354,6 +3614,8 @@ function updateFieldLabels() {
                 }
 
             } catch (error) {
+                if (timeoutId) clearTimeout(timeoutId);
+                if (stillWorkingTicker) clearInterval(stillWorkingTicker);
                 hideLoadingOverlay();
                 showToast(error.message || 'OCR processing failed', 'error');
                 console.error('OCR processing error:', error);
@@ -4128,16 +4390,22 @@ function updateFieldLabels() {
                 const selectedDraftIds = Array.from(selectedCheckboxes).map(cb => cb.value);
 
                 if (selectedDraftIds.length === 0) {
-                    showToast('No drafts selected', 'warning');
+                    showToast(t('noDraftsSelected'), 'warning');
                     return;
                 }
 
                 // Confirm before sending
-                if (!confirm(`Send ${selectedDraftIds.length} draft(s) to Excel?`)) {
+                if (!confirm(t('sendConfirm', { count: selectedDraftIds.length }))) {
                     return;
                 }
 
                 // Send to backend
+                // Show loading state on button
+                sendSelectedDraftsBtn.disabled = true;
+                sendSelectedDraftsBtn.style.opacity = '0.7';
+                const origBtnHTML = sendSelectedDraftsBtn.innerHTML;
+                sendSelectedDraftsBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t('savingReceipt');
+                
                 try {
                     const response = await apiFetch('/api/drafts/send', {
                         method: 'POST',
@@ -4154,7 +4422,7 @@ function updateFieldLabels() {
                     // Check if any failed with validation errors
                     const validationFailures = data.results?.filter(r => r.status === 'validation_failed') || [];
                     if (validationFailures.length > 0) {
-                        let errorDetails = 'Some receipts failed validation:\n\n';
+                        let errorDetails = t('alertValidationHeader') + '\n\n';
                         validationFailures.forEach(failure => {
                             errorDetails += `Receipt ${failure.draft_id}:\n`;
                             if (failure.validation_errors) {
@@ -4167,7 +4435,7 @@ function updateFieldLabels() {
                         alert(errorDetails);
                     }
 
-                    showToast(`Sent: ${data.sent}, Failed: ${data.failed}`, data.failed > 0 ? 'warning' : 'success');
+                    showToast(t('sendResultSummary', { sent: data.sent, failed: data.failed }), data.failed > 0 ? 'warning' : 'success');
 
                     // Show results modal
                     displaySendResults(data.results);
@@ -4178,6 +4446,10 @@ function updateFieldLabels() {
                 } catch (error) {
                     console.error('Error sending drafts:', error);
                     showToast(`Error: ${error.message}`, 'error');
+                } finally {
+                    sendSelectedDraftsBtn.disabled = false;
+                    sendSelectedDraftsBtn.style.opacity = '1';
+                    sendSelectedDraftsBtn.innerHTML = origBtnHTML;
                 }
             });
         }
@@ -4367,7 +4639,15 @@ function updateFieldLabels() {
             const imageSection = document.getElementById('draftImagePreviewSection');
             const draftImage = document.getElementById('draftModalImage');
             const imagePlaceholder = document.getElementById('draftModalImagePlaceholder');
-
+// Disable the send button to prevent double-clicks and show loading state
+            const sendBtn = document.getElementById('saveAccumulationBtn');
+            if (sendBtn) {
+                sendBtn.disabled = true;
+                sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + t('savingReceipt');
+                sendBtn.style.opacity = '0.7';
+            }
+            
+            
             // Handle image display (if preview section exists)
             if (imageSection && draftImage && imagePlaceholder) {
                 imageSection.style.display = 'block';
@@ -4501,12 +4781,12 @@ function updateFieldLabels() {
 
             // ✅ VALIDATION: Ensure location and staff are selected BEFORE sending
             if (!locationValue) {
-                alert('❌ Please select a Business Location before sending to Excel!');
+                alert('❌ ' + t('alertSelectLocation'));
                 return;
             }
             
             if (!staffValue) {
-                alert('❌ Please select a Staff Member before sending to Excel!');
+                alert('❌ ' + t('alertSelectStaff'));
                 return;
             }
 
@@ -4609,7 +4889,7 @@ function updateFieldLabels() {
                         showToast(errorMsg, 'error');
                         
                         // Also show in a more prominent alert
-                        alert(`Receipt cannot be sent. Please fix these errors:\n\n${draftResult.validation_errors.join('\n\n')}`);
+                        alert(`${t('alertValidationFailed')}\n\n${draftResult.validation_errors.join('\n\n')}`);
                     } else {
                         showToast(`❌ ${errorMsg} (Attempt: ${attemptCount})`, 'error');
                     }
@@ -4627,6 +4907,14 @@ function updateFieldLabels() {
             } catch (error) {
                 console.error('Send error:', error);
                 showToast(error.message || 'Failed to send', 'error');
+            } finally {
+                // Re-enable send button
+                const sendBtn = document.getElementById('saveAccumulationBtn');
+                if (sendBtn) {
+                    sendBtn.disabled = false;
+                    sendBtn.style.opacity = '1';
+                    updateSendButtonLabel();
+                }
             }
         }
 
@@ -5086,23 +5374,14 @@ function updateFieldLabels() {
 
         // Apply theme
         function applyTheme(theme) {
+            // Light mode only
             const root = document.documentElement;
-            if (theme === 'dark') {
-                root.style.setProperty('--primary-blue', '#4A90E2');
-                root.style.setProperty('--text-dark', '#E0E0E0');
-                root.style.setProperty('--light-gray', '#2A2A2A');
-                root.style.setProperty('--medium-gray', '#404040');
-                root.style.setProperty('--dark-gray', '#B0B0B0');
-                document.body.style.background = 'linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%)';
-            } else {
-                // Reset to light theme
-                root.style.setProperty('--primary-blue', '#007BFF');
-                root.style.setProperty('--text-dark', '#343A40');
-                root.style.setProperty('--light-gray', '#F8F9FA');
-                root.style.setProperty('--medium-gray', '#E9ECEF');
-                root.style.setProperty('--dark-gray', '#6C757D');
-                document.body.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%)';
-            }
+            root.style.setProperty('--primary-blue', '#007BFF');
+            root.style.setProperty('--text-dark', '#343A40');
+            root.style.setProperty('--light-gray', '#F8F9FA');
+            root.style.setProperty('--medium-gray', '#E9ECEF');
+            root.style.setProperty('--dark-gray', '#6C757D');
+            document.body.style.background = 'linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%)';
         }
 
         // Load account classifications from CSV
@@ -5262,19 +5541,6 @@ function updateFieldLabels() {
             
             updateHistoryDisplay();
             restoreLatestAnalysis();
-
-            // Force reapply language after DOM is fully loaded
-            setTimeout(() => {
-                const currentSettings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
-                applyLanguage(currentSettings.language || 'en');
-            }, 500);
-
-            // Additional delayed update for OCR tips and dynamic elements
-            setTimeout(() => {
-                const currentSettings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
-                applyLanguage(currentSettings.language || 'en');
-                console.log('Final language update applied for language:', currentSettings.language || 'en');
-            }, 1500);
         }
 
         // Start the application
@@ -5287,14 +5553,14 @@ function updateFieldLabels() {
             <!-- Modal Header -->
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
                 <div>
-                    <h2 style="font-size: 20px; font-weight: 600; color: #1e293b; margin: 0;">Receipt Drafts</h2>
-                    <p style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">Manage and send receipt drafts</p>
+                    <h2 id="draftModalTitleEl" style="font-size: 20px; font-weight: 600; color: #1e293b; margin: 0;">Receipt Drafts</h2>
+                    <p id="draftModalSubtitleEl" style="font-size: 13px; color: #64748b; margin: 4px 0 0 0;">Manage and send receipt drafts</p>
                     <p id="draftUserIndicator" style="font-size: 12px; color: #3b82f6; margin: 4px 0 0 0; display: none;"></p>
                 </div>
                 <div style="display: flex; align-items: center; gap: 12px;">
                     <!-- Phase 5D-2: Logout button -->
-                    <button onclick="logout()" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">
-                        <i class="fas fa-sign-out-alt"></i> Logout
+                    <button onclick="logout()" id="draftLogoutBtn" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer; transition: all 0.2s;" onmouseover="this.style.background='#cbd5e1'" onmouseout="this.style.background='#e2e8f0'">
+                        <i class="fas fa-sign-out-alt"></i> <span data-i18n-worker="draftLogout">Logout</span>
                     </button>
                     <button id="closeDraftModalBtn" style="background: none; border: none; font-size: 28px; cursor: pointer; color: #64748b; padding: 0; width: 32px; height: 32px;">×</button>
                 </div>
@@ -5303,18 +5569,18 @@ function updateFieldLabels() {
             <!-- Filters Section -->
             <div style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
                 <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-                    <span style="font-size: 14px; color: #475569; font-weight: 500;">Filter:</span>
-                    <button id="filterAll" class="draft-filter-btn" data-filter="all" style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">All</button>
-                    <button id="filterDraft" class="draft-filter-btn" data-filter="DRAFT" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Draft</button>
-                    <button id="filterSent" class="draft-filter-btn" data-filter="SENT" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Sent</button>
-                    <button id="filterError" class="draft-filter-btn" data-filter="ERROR" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;">Errors</button>
+                    <span style="font-size: 14px; color: #475569; font-weight: 500;" data-i18n-worker="draftFilterLabel">Filter:</span>
+                    <button id="filterAll" class="draft-filter-btn" data-filter="all" style="padding: 6px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;" data-i18n-worker="draftFilterAll">All</button>
+                    <button id="filterDraft" class="draft-filter-btn" data-filter="DRAFT" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;" data-i18n-worker="draftFilterDraft">Draft</button>
+                    <button id="filterSent" class="draft-filter-btn" data-filter="SENT" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;" data-i18n-worker="draftFilterSent">Sent</button>
+                    <button id="filterError" class="draft-filter-btn" data-filter="ERROR" style="padding: 6px 16px; background: #e2e8f0; color: #475569; border: none; border-radius: 6px; font-size: 13px; cursor: pointer;" data-i18n-worker="draftFilterErrors">Errors</button>
                     <div style="margin-left: auto; display: flex; align-items: center; gap: 12px;">
                         <label for="selectAllDrafts" style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #475569; cursor: pointer;">
                             <input type="checkbox" id="selectAllDrafts" name="selectAllDrafts" style="width: 16px; height: 16px; cursor: pointer;">
-                            Select All
+                            <span data-i18n-worker="draftSelectAll">Select All</span>
                         </label>
                         <button id="refreshDraftsBtn" style="padding: 6px 12px; background: none; border: 1px solid #e2e8f0; border-radius: 6px; cursor: pointer; color: #475569;">
-                            <i class="fas fa-sync-alt"></i> Refresh
+                            <i class="fas fa-sync-alt"></i> <span data-i18n-worker="draftRefresh">Refresh</span>
                         </button>
                     </div>
                 </div>
@@ -5326,7 +5592,7 @@ function updateFieldLabels() {
                 <div id="draftListContainer" style="border-right: 1px solid #e2e8f0; padding-right: 20px;">
                     <div style="text-align: center; padding: 40px 20px; color: #64748b;">
                         <i class="fas fa-spinner fa-spin" style="font-size: 24px; margin-bottom: 8px;"></i>
-                        <div>Loading drafts...</div>
+                        <div data-i18n-worker="draftLoadingText">Loading drafts...</div>
                     </div>
                 </div>
                 
@@ -5338,13 +5604,13 @@ function updateFieldLabels() {
                             <img id="draftModalImage" style="max-width: 100%; display: none;">
                             <div id="draftModalImagePlaceholder" style="display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px; color: #94a3b8;">
                                 <i class="fas fa-receipt" style="font-size: 32px; margin-bottom: 8px;"></i>
-                                <p style="margin: 0;">No image available</p>
+                                <p style="margin: 0;" data-i18n-worker="draftNoImage">No image available</p>
                             </div>
                         </div>
                     </div>
                     
                     <!-- Empty State -->
-                    <div id="draftEmptyState" style="text-align: center; padding: 40px 20px; color: #64748b;">
+                    <div id="draftEmptyState" style="text-align: center; padding: 40px 20px; color: #64748b;" data-i18n-worker="draftSelectToView">
                         Select a draft to view details
                     </div>
                     
@@ -5359,7 +5625,7 @@ function updateFieldLabels() {
             <div style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
                 <span id="draftSelectionCount" style="color: #64748b; font-size: 14px;">0 drafts selected</span>
                 <button id="sendSelectedDraftsBtn" disabled style="padding: 10px 24px; background: #1e40af; color: white; border: none; border-radius: 6px; font-size: 14px; font-weight: 500; cursor: not-allowed; transition: all 0.2s; opacity: 0.5;">
-                    <i class="fas fa-paper-plane"></i> Send
+                    <i class="fas fa-paper-plane"></i> <span data-i18n-worker="draftSendBtn">Send</span>
                 </button>
             </div>
         </div>
@@ -5369,16 +5635,16 @@ function updateFieldLabels() {
     <div id="sendResultsModal" style="display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.6); z-index: 2100; overflow-y: auto;">
         <div style="background: white; margin: 40px auto; max-width: 700px; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);">
             <div style="padding: 20px 24px; border-bottom: 1px solid #e2e8f0;">
-                <h2 style="font-size: 18px; font-weight: 600; color: #1e293b; margin: 0;">Send Results</h2>
+                <h2 style="font-size: 18px; font-weight: 600; color: #1e293b; margin: 0;" data-i18n-worker="sendResultsTitle">Send Results</h2>
             </div>
             <div id="sendResultsContainer" style="padding: 24px; max-height: 400px; overflow-y: auto;"></div>
             <div style="padding: 16px 24px; border-top: 1px solid #e2e8f0; text-align: right;">
-                <button id="closeSendResultsBtn" style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;">Close</button>
+                <button id="closeSendResultsBtn" style="padding: 8px 20px; background: #3b82f6; color: white; border: none; border-radius: 6px; font-size: 14px; cursor: pointer;" data-i18n-worker="sendResultsClose">Close</button>
             </div>
         </div>
     </div>
 
     <!-- Phase 4D.1: Draft Management Script -->
-    <script src="/static/js/drafts.js"></script>
+    <script src="/static/js/drafts.js?v=20260223"></script>
 </body>
 </html>

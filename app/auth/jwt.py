@@ -31,19 +31,19 @@ class TokenData(BaseModel):
     
     Attributes:
         user_id: User UUID
-        email: User email
+        email: Optional user email (None for HQ users without email)
         role: User role (WORKER, ADMIN, HQ)
         login_id: Optional login ID (Phase 5D-4.1)
     """
     user_id: UUID
-    email: EmailStr
+    email: Optional[str] = None
     role: UserRole
     login_id: Optional[str] = None
 
 
 def create_access_token(
     user_id: UUID,
-    email: str,
+    email: Optional[str],
     role: UserRole,
     name: Optional[str] = None,
     login_id: Optional[str] = None,
@@ -74,10 +74,13 @@ def create_access_token(
     
     to_encode = {
         "sub": str(user_id),  # Subject: user_id
-        "email": email,
         "role": role_str,
         "exp": expire
     }
+    
+    # Only include email if provided (HQ users may not have email)
+    if email:
+        to_encode["email"] = email
     
     # Phase 5D-4: Add name if provided
     if name:
@@ -112,16 +115,18 @@ def verify_access_token(token: str) -> Optional[TokenData]:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         
         user_id_str: str = payload.get("sub")
-        email: str = payload.get("email")
+        email: Optional[str] = payload.get("email")  # Optional for HQ users
         role_str: str = payload.get("role")
+        login_id: Optional[str] = payload.get("login_id")  # Phase 7.2: Include login_id
         
-        if not user_id_str or not email or not role_str:
+        if not user_id_str or not role_str:
             return None
         
         return TokenData(
             user_id=UUID(user_id_str),
             email=email,
-            role=UserRole(role_str)
+            role=UserRole(role_str),
+            login_id=login_id
         )
     except JWTError:
         return None

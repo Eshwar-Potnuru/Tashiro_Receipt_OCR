@@ -1,0 +1,664 @@
+{
+  "config": {
+    "base_url": "http://127.0.0.1:8001",
+    "workers": 4,
+    "admins": 1,
+    "receipts_per_worker": 2,
+    "receipt_glob": "Sample reciepts/*.png",
+    "stagger_seconds": 0.5,
+    "poll_interval": 1.0,
+    "duration_seconds": 35
+  },
+  "summary": {
+    "GET /api/drafts": {
+      "count": 37,
+      "ok": 37,
+      "errors": 0,
+      "avg_ms": 981.34,
+      "p95_ms": 1151.02,
+      "max_ms": 2254.86
+    },
+    "GET /api/drafts/sent-records/all": {
+      "count": 37,
+      "ok": 37,
+      "errors": 0,
+      "avg_ms": 292.99,
+      "p95_ms": 402.17,
+      "max_ms": 789.99
+    },
+    "POST /api/drafts/batch-upload": {
+      "count": 4,
+      "ok": 4,
+      "errors": 0,
+      "avg_ms": 50865.64,
+      "p95_ms": 49426.24,
+      "max_ms": 81750.18
+    }
+  },
+  "results": [
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 2254.8646999930497,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 765.1803999906406,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 876.2046000047121,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 253.43929999507964,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 874.673399986932,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 232.75479998847004,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 822.7954000030877,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 267.8416999988258,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 880.9609999880195,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 251.53999999747612,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 856.0815000091679,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 244.74029999691993,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 910.5763000115985,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 254.89559999550693,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 802.9843999975128,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 255.08459999400657,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 866.3512000057381,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 252.5683999992907,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 969.8853000008967,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 238.43179999676067,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 853.353500002413,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 321.3980000000447,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 987.5853999983519,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 227.84479999972973,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 888.3322000037879,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 281.2341999961063,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 891.2995999999112,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 254.18790000549052,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1119.0894000028493,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 309.0048000012757,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 869.8080000031041,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 264.8366000066744,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "status_code": 200,
+      "elapsed_ms": 36047.762699992745,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1092.334300003131,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "status_code": 200,
+      "elapsed_ms": 36238.39379999845,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 402.16560001135804,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 940.9180999937234,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 274.85779998824,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1124.5679000130622,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 242.29569999442901,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 846.8861000001198,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 251.38539999898057,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 979.2523999931291,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 228.70229999534786,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1021.7570999957388,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 296.5732000011485,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "status_code": 200,
+      "elapsed_ms": 49426.2444999913,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1151.0168999957386,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 789.9949999991804,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 900.5302999867126,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 301.5688000014052,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 939.8870000004536,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 257.4070999980904,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 964.9780000036117,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 238.92889999842737,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 942.8501999936998,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 268.9427000004798,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 906.1621000000741,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 256.64949999190867,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1061.578400011058,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 251.1050999892177,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 898.1500000081724,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 319.03590000001714,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 932.4692000081996,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 259.570199996233,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 922.9000000050291,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 244.17879999964498,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 948.3209999889368,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 249.70609998854343,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1000.3133999998681,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 238.60330000752583,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 907.7375000051688,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 288.5344999958761,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 919.2244000005303,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 263.26350000454113,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "status_code": 200,
+      "elapsed_ms": 81750.17830000434,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "status_code": 200,
+      "elapsed_ms": 1182.962699997006,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "status_code": 200,
+      "elapsed_ms": 242.3521000018809,
+      "ok": true,
+      "error": ""
+    }
+  ]
+}

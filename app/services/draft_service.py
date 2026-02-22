@@ -18,6 +18,9 @@ Critical Rules:
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from difflib import SequenceMatcher
+import re
 from typing import Any, Dict, List, Optional, Tuple
 from uuid import UUID
 
@@ -33,6 +36,14 @@ import logging
 import os
 
 logger = logging.getLogger(__name__) 
+
+
+class StaffLocationMismatchError(Exception):
+    """Raised when selected staff does not belong to selected location."""
+
+    def __init__(self, message: str, error_code: str = "STAFF_LOCATION_MISMATCH"):
+        super().__init__(message)
+        self.error_code = error_code
 
 
 class DraftService:
@@ -616,7 +627,7 @@ class DraftService:
             "results": results,
         }
 
-    def list_drafts(self, status: DraftStatus | None = None, user_id: str | None = None, include_image_data: bool = False) -> List[DraftReceipt]:
+    def list_drafts(self, status: DraftStatus | None = None, user_id: str | None = None, include_image_data: bool = False, limit: int | None = 1000) -> List[DraftReceipt]:
         """List all drafts, optionally filtered by status and user.
         
         Args:
@@ -627,9 +638,11 @@ class DraftService:
             include_image_data: If True, includes base64 image_data for UI previews.
                                Use for admin/office views that need image display.
                                Default False to keep response payload small.
+            limit: Maximum number of drafts to return. Default 1000 for performance.
+                  Set to None for no limit (use with caution).
         
         Returns:
-            List of DraftReceipt objects, most recent first
+            List of DraftReceipt objects, most recent first, limited to `limit` rows
         
         Example:
             # Get all unsent drafts for a user
@@ -642,7 +655,7 @@ class DraftService:
         if isinstance(user_id, UUID):
             user_id = str(user_id)
         
-        return self.repository.list_all(status=status, user_id=user_id, include_image_data=include_image_data)
+        return self.repository.list_all(status=status, user_id=user_id, include_image_data=include_image_data, limit=limit)
 
     def get_draft(self, draft_id: UUID) -> DraftReceipt | None:
         """Retrieve a single draft by ID.
@@ -693,7 +706,12 @@ class DraftService:
         
         return deleted
 
-    def send_drafts(self, draft_ids: List[UUID]) -> Dict:
+    def send_drafts(
+        self,
+        draft_ids: List[UUID],
+        sent_by_user_id: Optional[str] = None,
+        sent_by_role: Optional[str] = None,
+    ) -> Dict:
         """Send multiple drafts to Excel in bulk (DRAFT → SENT transition).
         
         This is the critical Phase 4 operation that:
@@ -867,6 +885,40 @@ class DraftService:
         
         # Only proceed with drafts that passed validation
         drafts_to_send = validated_drafts
+
+        # Phase 6A-2: Duplicate detection (warning only, no blocking)
+        # Performance: Limit to recent 200 SENT records for duplicate checks
+        # This balances duplicate detection coverage with query speed
+        sent_reference_pool = self.repository.list_all(status=DraftStatus.SENT, limit=200)
+        duplicate_matches_by_draft: Dict[str, List[Dict[str, Any]]] = {}
+        duplicate_warning_entries: List[Dict[str, Any]] = []
+        tax_warning_by_draft: Dict[str, Dict[str, Any]] = {}
+        tax_warning_entries: List[Dict[str, Any]] = []
+
+        for draft in drafts_to_send:
+            matches = self.detect_duplicate_candidates(
+                receipt=draft.receipt,
+                sent_records=sent_reference_pool,
+                current_draft_id=draft.draft_id,
+            )
+            if matches:
+                draft_key = str(draft.draft_id)
+                duplicate_matches_by_draft[draft_key] = matches
+                for match in matches:
+                    duplicate_warning_entries.append({
+                        "draft_id": draft_key,
+                        **match,
+                    })
+
+            tax_mismatch_warning = self.compute_tax_mismatch_warning(draft.receipt)
+            if tax_mismatch_warning:
+                draft_key = str(draft.draft_id)
+                entry = {
+                    "draft_id": draft_key,
+                    **tax_mismatch_warning,
+                }
+                tax_warning_by_draft[draft_key] = entry
+                tax_warning_entries.append(entry)
         
         # Phase 5C-1: Record send attempt BEFORE calling Excel writers
         # This ensures we track attempts even if Excel write fails completely
@@ -937,11 +989,16 @@ class DraftService:
                 "sent": sent_count,
                 "failed": failed_count,
                 "results": results,
+                "warnings": self._build_send_warnings(
+                    duplicate_warning_entries,
+                    tax_warning_entries,
+                ),
             }
         
         # Process per-receipt results from SummaryService
         # summary_result["results"] contains per-receipt write status
         excel_results = summary_result.get("results", [])
+        batch_sent_at = datetime.utcnow()
         
         logger.info(f"SEND_DRAFTS: Processing {len(excel_results)} Excel results for {len(drafts_to_send)} drafts")
         logger.info(f"SEND_DRAFTS: summary_result = {summary_result}")
@@ -973,7 +1030,12 @@ class DraftService:
             if success:
                 # Mark draft as SENT
                 try:
-                    draft.mark_as_sent()
+                    draft.mark_as_sent(sent_at=batch_sent_at)
+                    draft.sent_by_user_id = str(sent_by_user_id) if sent_by_user_id is not None else None
+                    draft.sent_by_role = str(sent_by_role) if sent_by_role is not None else None
+                    draft.hq_status = draft.hq_status or "PENDING"
+                    draft.hq_batch_id = None
+                    draft.hq_transferred_at = None
                     # Phase 5C-1: Clear error on successful send
                     draft.last_send_error = None
                     draft.updated_at = datetime.utcnow()
@@ -983,6 +1045,10 @@ class DraftService:
                         "draft_id": str(draft.draft_id),
                         "status": "sent",
                         "excel_result": excel_result,
+                        "warnings": {
+                            "duplicates": duplicate_matches_by_draft.get(str(draft.draft_id), []),
+                            "tax_mismatch": tax_warning_by_draft.get(str(draft.draft_id)),
+                        },
                         "attempt_count": draft.send_attempt_count,  # Phase 5C-3
                         "last_send_attempt_at": draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,  # Phase 5C-3
                         "last_send_error": draft.last_send_error,  # Phase 5C-3 (should be None on success)
@@ -1025,6 +1091,10 @@ class DraftService:
                         "status": "error",
                         "error": error_msg,
                         "excel_result": excel_result,
+                        "warnings": {
+                            "duplicates": duplicate_matches_by_draft.get(str(draft.draft_id), []),
+                            "tax_mismatch": tax_warning_by_draft.get(str(draft.draft_id)),
+                        },
                         "attempt_count": draft.send_attempt_count,  # Phase 5C-3
                         "last_send_attempt_at": draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,  # Phase 5C-3
                         "last_send_error": draft.last_send_error,  # Phase 5C-3
@@ -1066,6 +1136,10 @@ class DraftService:
                     "status": "error",
                     "error": error_msg,
                     "excel_result": excel_result,
+                    "warnings": {
+                        "duplicates": duplicate_matches_by_draft.get(str(draft.draft_id), []),
+                        "tax_mismatch": tax_warning_by_draft.get(str(draft.draft_id)),
+                    },
                     "attempt_count": draft.send_attempt_count,  # Phase 5C-3
                     "last_send_attempt_at": draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,  # Phase 5C-3
                     "last_send_error": draft.last_send_error,  # Phase 5C-3
@@ -1087,12 +1161,341 @@ class DraftService:
                     # Audit failures must not interrupt business operations
                     pass
         
+        logger.info(
+            "send_audit_saved count=%s sent_at=%s user_id=%s role=%s hq_status=%s",
+            sent_count,
+            batch_sent_at.isoformat() if sent_count > 0 else None,
+            sent_by_user_id,
+            sent_by_role,
+            "PENDING" if sent_count > 0 else None,
+        )
+
         return {
             "total": len(draft_ids),
             "sent": sent_count,
             "failed": failed_count,
             "results": results,
+            "warnings": self._build_send_warnings(
+                duplicate_warning_entries,
+                tax_warning_entries,
+            ),
         }
+
+    def precheck_send_duplicates(self, draft_ids: List[UUID]) -> Dict[str, Any]:
+        """Preview duplicate warnings before send (no Excel write, no state mutation)."""
+        drafts = self.repository.get_by_ids(draft_ids)
+        drafts_by_id = {draft.draft_id: draft for draft in drafts}
+
+        missing_ids: List[str] = []
+        drafts_to_check: List[DraftReceipt] = []
+        for draft_id in draft_ids:
+            draft = drafts_by_id.get(draft_id)
+            if draft is None:
+                missing_ids.append(str(draft_id))
+                continue
+            if draft.status == DraftStatus.DRAFT:
+                drafts_to_check.append(draft)
+
+        # Performance: Limit to recent 200 SENT records for duplicate checks
+        sent_reference_pool = self.repository.list_all(status=DraftStatus.SENT, limit=200)
+        duplicates: List[Dict[str, Any]] = []
+        by_draft: List[Dict[str, Any]] = []
+
+        for draft in drafts_to_check:
+            matches = self.detect_duplicate_candidates(
+                receipt=draft.receipt,
+                sent_records=sent_reference_pool,
+                current_draft_id=draft.draft_id,
+            )
+            if not matches:
+                continue
+
+            draft_id_str = str(draft.draft_id)
+            current_payload = {
+                "draft_id": draft_id_str,
+                "vendor_name": getattr(draft.receipt, "vendor_name", None),
+                "invoice_number": getattr(draft.receipt, "invoice_number", None),
+                "receipt_date": getattr(draft.receipt, "receipt_date", None),
+                "total_amount": str(getattr(draft.receipt, "total_amount", "")) if getattr(draft.receipt, "total_amount", None) is not None else None,
+                "matches": matches,
+            }
+            by_draft.append(current_payload)
+
+            for match in matches:
+                duplicates.append({
+                    "draft_id": draft_id_str,
+                    **match,
+                })
+
+        return {
+            "total": len(draft_ids),
+            "checked": len(drafts_to_check),
+            "missing": missing_ids,
+            "has_duplicates": len(duplicates) > 0,
+            "duplicates": duplicates,
+            "by_draft": by_draft,
+        }
+
+    def _build_send_warnings(
+        self,
+        duplicate_warning_entries: List[Dict[str, Any]],
+        tax_warning_entries: List[Dict[str, Any]],
+    ) -> Dict[str, Any]:
+        warnings: Dict[str, Any] = {
+            "duplicates": duplicate_warning_entries,
+        }
+        if tax_warning_entries:
+            warnings["tax_mismatch"] = {
+                "count": len(tax_warning_entries),
+                "items": tax_warning_entries,
+            }
+        return warnings
+
+    def compute_tax_mismatch_warning(self, receipt: Receipt) -> Optional[Dict[str, Any]]:
+        """Compute tax mismatch warning payload (non-blocking).
+
+        Japanese Receipt Formula: Total = Subtotal + Tax(10%) + Tax(8%)
+        
+        This check validates that:
+        1. Tax amounts are not negative
+        2. Sum of taxes is less than total (taxes can't exceed total)
+        3. Implied subtotal (total - taxes) is positive and reasonable
+        4. Tax rates roughly make sense when back-calculated
+        
+        Conservative rule:
+        - Only evaluates when total_amount, tax_10_amount, and tax_8_amount are all present
+        - Warns if taxes seem inconsistent with expected Japanese tax calculations
+        """
+        total_amount = self._normalize_amount(getattr(receipt, "total_amount", None))
+        tax_10_amount = self._normalize_amount(getattr(receipt, "tax_10_amount", None))
+        tax_8_amount = self._normalize_amount(getattr(receipt, "tax_8_amount", None))
+
+        fields_present = {
+            "total_amount": total_amount is not None,
+            "tax_10_amount": tax_10_amount is not None,
+            "tax_8_amount": tax_8_amount is not None,
+        }
+
+        # Skip check if any field is missing
+        if total_amount is None or tax_10_amount is None or tax_8_amount is None:
+            return None
+
+        # Skip check if either tax is negative (validation error, not warning territory)
+        if tax_10_amount < 0 or tax_8_amount < 0:
+            return None
+
+        total_yen = int(total_amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        tax_10_yen = int(tax_10_amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        tax_8_yen = int(tax_8_amount.quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+        total_tax_yen = tax_10_yen + tax_8_yen
+        
+        # Calculate implied subtotal (before tax)
+        implied_subtotal_yen = total_yen - total_tax_yen
+        
+        # Sanity check 1: Taxes should not exceed total
+        if total_tax_yen >= total_yen:
+            return {
+                "total_yen": total_yen,
+                "total_tax_yen": total_tax_yen,
+                "implied_subtotal_yen": implied_subtotal_yen,
+                "rule": "tax_exceeds_total",
+                "notes": "Tax amounts exceed or equal total amount - this is likely incorrect",
+                "fields_present": fields_present,
+            }
+        
+        # Sanity check 2: Implied subtotal should be positive and reasonable
+        # (at least 50% of total, since max combined tax rate is ~10%)
+        if implied_subtotal_yen <= 0 or implied_subtotal_yen < (total_yen * 0.5):
+            return {
+                "total_yen": total_yen,
+                "total_tax_yen": total_tax_yen,
+                "implied_subtotal_yen": implied_subtotal_yen,
+                "rule": "subtotal_unreasonable",
+                "notes": "Implied subtotal (total - taxes) seems unreasonably small",
+                "fields_present": fields_present,
+            }
+        
+        # Sanity check 3: Effective tax rate should be reasonable (between 7% and 11%)
+        # This catches cases where tax amounts are swapped or drastically wrong
+        effective_tax_rate = float(total_tax_yen) / float(implied_subtotal_yen) * 100
+        if effective_tax_rate < 7.0 or effective_tax_rate > 11.0:
+            return {
+                "total_yen": total_yen,
+                "total_tax_yen": total_tax_yen,
+                "implied_subtotal_yen": implied_subtotal_yen,
+                "effective_tax_rate_pct": round(effective_tax_rate, 2),
+                "rule": "tax_rate_out_of_range",
+                "notes": f"Effective tax rate {effective_tax_rate:.1f}% is outside expected range (7-11%)",
+                "fields_present": fields_present,
+            }
+        
+        # All checks passed - no warning needed
+        return None
+
+    def detect_duplicate_candidates(
+        self,
+        receipt: Receipt,
+        sent_records: Optional[List[DraftReceipt]] = None,
+        current_draft_id: Optional[UUID] = None,
+    ) -> List[Dict[str, Any]]:
+        """Detect likely duplicate SENT records for a receipt (warning-only).
+
+        Scoring:
+        - invoice match (if both present): +3 (also forces warning)
+        - vendor match: +2
+        - same date: +1
+        - total match (±1 yen): +2
+
+        Warn when score >= 4 OR invoice match exists.
+        
+        Performance: Checks against recent 200 SENT records by default.
+        """
+        candidates = sent_records
+        if candidates is None:
+            # Performance: Limit to recent 200 records when not provided
+            candidates = self.repository.list_all(status=DraftStatus.SENT, limit=200)
+
+        source_invoice = self._normalize_invoice(receipt.invoice_number)
+        source_vendor = self._normalize_vendor(receipt.vendor_name)
+        source_date = self._normalize_date(receipt.receipt_date)
+        source_total = self._normalize_amount(receipt.total_amount)
+
+        matches: List[Dict[str, Any]] = []
+
+        for sent_draft in candidates:
+            if current_draft_id is not None and sent_draft.draft_id == current_draft_id:
+                continue
+
+            sent_receipt = sent_draft.receipt
+
+            candidate_invoice = self._normalize_invoice(sent_receipt.invoice_number)
+            candidate_vendor = self._normalize_vendor(sent_receipt.vendor_name)
+            candidate_date = self._normalize_date(sent_receipt.receipt_date)
+            candidate_total = self._normalize_amount(sent_receipt.total_amount)
+
+            invoice_match = bool(source_invoice and candidate_invoice and source_invoice == candidate_invoice)
+            vendor_match = self._is_vendor_match(source_vendor, candidate_vendor)
+            date_match = bool(source_date and candidate_date and source_date == candidate_date)
+            total_match = self._is_total_match(source_total, candidate_total)
+
+            score = 0
+            if invoice_match:
+                score += 3
+            if vendor_match:
+                score += 2
+            if date_match:
+                score += 1
+            if total_match:
+                score += 2
+
+            should_warn = invoice_match or score >= 4
+            if not should_warn:
+                continue
+
+            reason = self._build_duplicate_reason(invoice_match, vendor_match, date_match, total_match)
+            scope = self._resolve_duplicate_scope(receipt, sent_receipt)
+
+            matches.append({
+                "matched_draft_id": str(sent_draft.draft_id),
+                "matched_receipt_id": str(sent_receipt.receipt_id),
+                "matched_vendor_name": getattr(sent_receipt, "vendor_name", None),
+                "matched_invoice_number": getattr(sent_receipt, "invoice_number", None),
+                "matched_receipt_date": getattr(sent_receipt, "receipt_date", None),
+                "matched_total_amount": str(getattr(sent_receipt, "total_amount", "")) if getattr(sent_receipt, "total_amount", None) is not None else None,
+                "matched_business_location_id": getattr(sent_receipt, "business_location_id", None),
+                "matched_staff_id": getattr(sent_receipt, "staff_id", None),
+                "scope": scope,
+                "reason": reason,
+                "score": score,
+                "invoice_match": invoice_match,
+                "vendor_match": vendor_match,
+                "date_match": date_match,
+                "total_match": total_match,
+            })
+
+        matches.sort(key=lambda item: (item.get("score", 0), item.get("invoice_match", False)), reverse=True)
+        return matches
+
+    def _normalize_vendor(self, vendor_name: Optional[str]) -> str:
+        if not vendor_name:
+            return ""
+        lowered = vendor_name.strip().lower()
+        lowered = re.sub(r"\s+", " ", lowered)
+        return lowered
+
+    def _normalize_invoice(self, invoice_number: Optional[str]) -> str:
+        if not invoice_number:
+            return ""
+        normalized = invoice_number.strip().lower()
+        normalized = re.sub(r"\s+", "", normalized)
+        return normalized
+
+    def _normalize_date(self, receipt_date: Any) -> Optional[str]:
+        if receipt_date is None:
+            return None
+        if isinstance(receipt_date, str):
+            try:
+                return datetime.fromisoformat(receipt_date).date().isoformat()
+            except ValueError:
+                return receipt_date.strip()[:10]
+        if hasattr(receipt_date, "date"):
+            return receipt_date.date().isoformat()
+        return str(receipt_date)[:10]
+
+    def _normalize_amount(self, amount: Any) -> Optional[Decimal]:
+        if amount is None:
+            return None
+        try:
+            return Decimal(str(amount))
+        except (InvalidOperation, ValueError, TypeError):
+            return None
+
+    def _is_total_match(self, source_total: Optional[Decimal], candidate_total: Optional[Decimal]) -> bool:
+        if source_total is None or candidate_total is None:
+            return False
+        return abs(source_total - candidate_total) <= Decimal("1")
+
+    def _is_vendor_match(self, source_vendor: str, candidate_vendor: str) -> bool:
+        if not source_vendor or not candidate_vendor:
+            return False
+        if source_vendor == candidate_vendor:
+            return True
+        return SequenceMatcher(None, source_vendor, candidate_vendor).ratio() >= 0.88
+
+    def _build_duplicate_reason(
+        self,
+        invoice_match: bool,
+        vendor_match: bool,
+        date_match: bool,
+        total_match: bool,
+    ) -> str:
+        if invoice_match:
+            return "invoice match"
+
+        parts: List[str] = []
+        if date_match:
+            parts.append("date")
+        if total_match:
+            parts.append("total")
+        if vendor_match:
+            parts.append("vendor")
+
+        if parts:
+            return "same " + "+".join(parts)
+        return "likely duplicate"
+
+    def _resolve_duplicate_scope(self, source_receipt: Receipt, candidate_receipt: Receipt) -> str:
+        source_location = getattr(source_receipt, "business_location_id", None)
+        candidate_location = getattr(candidate_receipt, "business_location_id", None)
+        source_staff = getattr(source_receipt, "staff_id", None)
+        candidate_staff = getattr(candidate_receipt, "staff_id", None)
+
+        if source_location and candidate_location and source_location == candidate_location:
+            if source_staff and candidate_staff and source_staff == candidate_staff:
+                return "same_staff"
+            return "cross_staff_same_office"
+
+        return "same_office"
     
     # ============================================================
     # PHASE 4C: READY-TO-SEND Contract Enforcement
@@ -1229,15 +1632,6 @@ class DraftService:
         if not receipt.vendor_name or receipt.vendor_name.strip() == "":
             errors.append("vendor_name is required")
         
-        # F. Image Reference (Phase 4C-3)
-        # Enforce that draft has a link to the source image for RDV UI verification.
-        # This prevents drafts created without proper image tracking from being sent.
-        if not draft.image_ref or draft.image_ref.strip() == "":
-            errors.append(
-                "image_ref is required (source image reference missing). "
-                "Draft must be linked to uploaded image."
-            )
-        
         # Return validation result
         is_valid = len(errors) == 0
         return (is_valid, errors)
@@ -1273,3 +1667,22 @@ class DraftService:
                 return True
         
         return False
+
+    def validate_staff_location_or_raise(
+        self,
+        staff_id: Optional[str],
+        business_location_id: Optional[str],
+    ) -> None:
+        """Validate staff/location mapping and raise on mismatch.
+
+        SEND-only hard enforcement helper.
+        Missing fields are ignored here so existing READY-TO-SEND validation
+        behavior remains unchanged for incomplete drafts.
+        """
+        if not staff_id or not business_location_id:
+            return
+
+        if not self._is_staff_valid_for_location(staff_id, business_location_id):
+            raise StaffLocationMismatchError(
+                "Selected staff does not belong to the selected location. Please reselect."
+            )

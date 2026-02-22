@@ -1,0 +1,1356 @@
+{
+  "meta": {
+    "suite": "phase6_pre6b_full_system_validation",
+    "started_at": "2026-02-22T22:06:50.341595Z",
+    "finished_at": "2026-02-22T22:08:30.139586Z",
+    "base_url": "http://127.0.0.1:8001"
+  },
+  "config": {
+    "workers": 4,
+    "admins": 1,
+    "receipts_per_worker": 2,
+    "stagger_seconds": 1.0,
+    "poll_interval": 1.0,
+    "tail_poll_seconds": 12,
+    "ocr_engine": "auto",
+    "receipt_root": "C:\\Users\\eshwa\\Downloads\\Desktop\\Tashiro_receiptORC\\Receipt-ocr-v1-git\\Sample reciepts",
+    "seed_users": "C:\\Users\\eshwa\\Downloads\\Desktop\\Tashiro_receiptORC\\Receipt-ocr-v1-git\\config\\users_seed_dev.json",
+    "thresholds": {
+      "p95_ms": 2000.0,
+      "error_rate": 0.05
+    }
+  },
+  "workers": [
+    {
+      "actor": "worker_1",
+      "uploaded_files": [
+        "IMG_1982.png",
+        "IMG_1984.png"
+      ],
+      "created_count": 2,
+      "edited_ok": 2,
+      "sent_count": 2,
+      "send_failed": 0,
+      "upload_queue_wait_ms": null,
+      "warnings": {
+        "duplicate": "true",
+        "tax_mismatch": "true"
+      }
+    },
+    {
+      "actor": "worker_2",
+      "uploaded_files": [
+        "Reciept_02.png",
+        "IMG_1979.png"
+      ],
+      "created_count": 2,
+      "edited_ok": 2,
+      "sent_count": 2,
+      "send_failed": 0,
+      "upload_queue_wait_ms": null,
+      "warnings": {
+        "duplicate": "true",
+        "tax_mismatch": "true"
+      }
+    },
+    {
+      "actor": "worker_3",
+      "uploaded_files": [
+        "Reciept_01.png",
+        "IMG_1986.png"
+      ],
+      "created_count": 2,
+      "edited_ok": 2,
+      "sent_count": 2,
+      "send_failed": 0,
+      "upload_queue_wait_ms": null,
+      "warnings": {
+        "duplicate": "true",
+        "tax_mismatch": "true"
+      }
+    },
+    {
+      "actor": "worker_4",
+      "uploaded_files": [
+        "Reciept_01.png",
+        "IMG_1978.png"
+      ],
+      "created_count": 2,
+      "edited_ok": 2,
+      "sent_count": 2,
+      "send_failed": 0,
+      "upload_queue_wait_ms": 32271,
+      "warnings": {
+        "duplicate": "true",
+        "tax_mismatch": "true"
+      }
+    }
+  ],
+  "metrics": {
+    "GET /api/drafts": {
+      "count": 19,
+      "ok": 19,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 2779.2,
+      "p95_ms": 5947.28,
+      "max_ms": 11107.25
+    },
+    "GET /api/drafts/sent-records/all": {
+      "count": 14,
+      "ok": 14,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 659.17,
+      "p95_ms": 1424.43,
+      "max_ms": 1497.83
+    },
+    "GET /api/drafts/ledger-preview?format=staff": {
+      "count": 14,
+      "ok": 14,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 897.68,
+      "p95_ms": 1815.83,
+      "max_ms": 1834.62
+    },
+    "POST /api/drafts/batch-upload": {
+      "count": 4,
+      "ok": 4,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 42537.27,
+      "p95_ms": 38247.05,
+      "max_ms": 59369.12
+    },
+    "GET /api/drafts/{id}": {
+      "count": 8,
+      "ok": 8,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 122.92,
+      "p95_ms": 184.54,
+      "max_ms": 225.46
+    },
+    "PUT /api/drafts/{id}": {
+      "count": 8,
+      "ok": 8,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 348.51,
+      "p95_ms": 585.76,
+      "max_ms": 995.88
+    },
+    "POST /api/drafts/send": {
+      "count": 10,
+      "ok": 8,
+      "errors": 2,
+      "error_rate": 0.2,
+      "avg_ms": 5494.0,
+      "p95_ms": 9769.36,
+      "max_ms": 15193.25
+    },
+    "POST /api/drafts": {
+      "count": 5,
+      "ok": 5,
+      "errors": 0,
+      "error_rate": 0.0,
+      "avg_ms": 45.13,
+      "p95_ms": 42.71,
+      "max_ms": 63.66
+    }
+  },
+  "policy_checks": {
+    "duplicate_warning_only": {
+      "expected": "header X-Duplicate-Warning=true and send not blocked",
+      "status_code": 200,
+      "header": "true",
+      "pass": true,
+      "response_preview": "{\"total\":1,\"sent\":1,\"failed\":0,\"results\":[{\"draft_id\":\"ca23567a-8e3c-49b6-b5a4-a5fb974a089b\",\"status\":\"sent\",\"excel_result\":{\"receipt_id\":\"30d1452e-1645-469d-9b77-f4ede8081a5d\",\"branch\":{\"status\":\"written\",\"location\":\"To"
+    },
+    "tax_warning_only": {
+      "expected": "header X-Tax-Mismatch-Warning=true and send not blocked",
+      "status_code": 200,
+      "header": "true",
+      "pass": true,
+      "response_preview": "{\"total\":1,\"sent\":1,\"failed\":0,\"results\":[{\"draft_id\":\"e407586d-b8ab-4401-abb1-72a0168b2ea3\",\"status\":\"sent\",\"excel_result\":{\"receipt_id\":\"30cd8cd4-8da3-4e2e-8277-740b04aab99d\",\"branch\":{\"status\":\"written\",\"location\":\"To"
+    },
+    "staff_location_mismatch_block": {
+      "expected": "409 with STAFF_LOCATION_MISMATCH",
+      "status_code": 409,
+      "error_code": "STAFF_LOCATION_MISMATCH",
+      "detail_preview": "{'message': 'Selected staff does not belong to the selected location. Please reselect.', 'error_code': 'STAFF_LOCATION_MISMATCH'}",
+      "pass": true
+    },
+    "sent_immutability_block": {
+      "expected": "409 on re-send of already SENT draft",
+      "status_code": 409,
+      "detail_preview": "{\"detail\":\"This receipt has already been sent and is immutable. Sent receipts cannot be modified or deleted.\"}",
+      "pass": true
+    }
+  },
+  "gates": {
+    "A_api_stability": true,
+    "B_polling_latency": false,
+    "C_send_completeness": true,
+    "D_policy_behavior": true,
+    "E_excel_smoke_optional": true,
+    "overall_pass": false,
+    "send_success_ratio": 1.0,
+    "normal_send_total": 4,
+    "normal_send_ok": 4,
+    "worker_created_total": 8,
+    "worker_sent_total": 8
+  },
+  "excel_smoke_output": "artifacts/excel_smoke_verify_results.json",
+  "calls": [
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 11107.251700013876,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 902.9115000157617,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1815.8275000168942,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 2157.0823999936692,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 350.27319999062456,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 562.9695999959949,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 2038.5406999848783,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 325.87770000100136,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 671.9209000002593,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 2774.5318000088446,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 579.3837000092026,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 647.2117000084836,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1825.0807000149507,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 291.2192000076175,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 571.8104999978095,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1818.7363999895751,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 390.57769998908043,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 740.9012999851257,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 2067.8459999908227,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 289.1689000243787,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1834.61860002717,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 34458.03879998857,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 26.537500001722947,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 82.8388000081759,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 132.5139999971725,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 585.7636000146158,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1069.53040001099,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 8746.503100002883,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 5947.281700005988,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1424.4301000144333,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1133.5083000012673,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 38247.0486999955,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 179.1226000059396,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 260.19439997617155,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 225.46169999986887,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 995.882299990626,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 2248.473300016485,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_1",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 9769.364800013136,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 4991.41679998138,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1366.7844000156038,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 812.1324999956414,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 38074.85400000587,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 58.93969998578541,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 66.38490001205355,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 184.538799978327,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 339.27729999413714,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1535.5108999938238,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_3",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 15193.247999995947,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 2800.0964999955613,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 445.2750000054948,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 988.4432000108063,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 4205.995399999665,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1497.826000006171,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 59369.12210000446,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": "32271"
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 35.603500000433996,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 55.21359998965636,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "GET /api/drafts/{id}",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 140.6466000189539,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "PUT /api/drafts/{id}",
+      "method": "PUT",
+      "status_code": 200,
+      "elapsed_ms": 402.5114999967627,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 250.54680000175722,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "worker_4",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 6492.3669999989215,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 824.6901000093203,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1824.5299000118393,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 622.9870000097435,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 686.132800008636,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1763.4366999845952,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 383.6812999797985,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 680.2199000085238,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 1867.1275999804493,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/sent-records/all",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 357.929999998305,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "admin_1",
+      "endpoint": "GET /api/drafts/ledger-preview?format=staff",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 597.1553999988828,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "GET /api/drafts",
+      "method": "GET",
+      "status_code": 200,
+      "elapsed_ms": 511.7677999951411,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts",
+      "method": "POST",
+      "status_code": 201,
+      "elapsed_ms": 42.71040001185611,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts",
+      "method": "POST",
+      "status_code": 201,
+      "elapsed_ms": 39.6669999754522,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 3785.342999995919,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 3610.637099976884,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts",
+      "method": "POST",
+      "status_code": 201,
+      "elapsed_ms": 63.66149999666959,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 3745.3276999876834,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts",
+      "method": "POST",
+      "status_code": 201,
+      "elapsed_ms": 40.15280000749044,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 409,
+      "elapsed_ms": 12.471099995309487,
+      "ok": false,
+      "error": "{\"detail\":{\"message\":\"Selected staff does not belong to the selected location. Please reselect.\",\"error_code\":\"STAFF_LOCATION_MISMATCH\"}}",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts",
+      "method": "POST",
+      "status_code": 201,
+      "elapsed_ms": 39.44449999835342,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 200,
+      "elapsed_ms": 3569.8675999883562,
+      "ok": true,
+      "error": "",
+      "headers": {
+        "X-Duplicate-Warning": "true",
+        "X-Tax-Mismatch-Warning": "true",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    },
+    {
+      "actor": "policy_worker",
+      "endpoint": "POST /api/drafts/send",
+      "method": "POST",
+      "status_code": 409,
+      "elapsed_ms": 14.911900012521073,
+      "ok": false,
+      "error": "{\"detail\":\"This receipt has already been sent and is immutable. Sent receipts cannot be modified or deleted.\"}",
+      "headers": {
+        "X-Duplicate-Warning": "",
+        "X-Tax-Mismatch-Warning": "",
+        "X-OCR-Queue-Wait-Ms": ""
+      }
+    }
+  ]
+}

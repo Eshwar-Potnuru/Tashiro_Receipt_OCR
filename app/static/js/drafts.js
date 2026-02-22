@@ -21,6 +21,168 @@
  */
 
 // ============================================================================
+// i18n: Draft module translations
+// ============================================================================
+const draftsI18n = {
+    // Draft list table headers
+    th_vendor:         { en: 'Vendor',  ja: '取引先' },
+    th_amount:         { en: 'Amount',  ja: '金額' },
+    th_date:           { en: 'Date',    ja: '日付' },
+    th_status:         { en: 'Status',  ja: 'ステータス' },
+
+    // Validation tooltips
+    ready_to_send:     { en: 'Ready to send', ja: '送信可能' },
+    incomplete_fields: { en: 'Incomplete - missing required fields', ja: '未完了 — 必須項目が不足' },
+
+    // Empty states
+    no_drafts:         { en: 'No{filter} receipt drafts found', ja: '{filter}レシート下書きはありません' },
+    empty_hint_all:    { en: 'Drafts are created when you save OCR results without sending.', ja: 'OCR結果を送信せずに保存すると下書きが作成されます。' },
+    empty_hint_filter: { en: 'No drafts match the {filter} filter.', ja: '{filter}フィルターに一致する下書きはありません。' },
+
+    // Selection
+    drafts_selected:   { en: '{count} draft(s) selected', ja: '{count}件選択中' },
+
+    // Detail panel
+    receipt_info:      { en: 'Receipt Information', ja: 'レシート情報' },
+    vendor_name:       { en: 'Vendor Name', ja: '取引先名' },
+    date:              { en: 'Date', ja: '日付' },
+    total_amount:      { en: 'Total Amount', ja: '合計金額' },
+    tax_10:            { en: 'Tax (10%)', ja: '税額（10%）' },
+    tax_8:             { en: 'Tax (8%)', ja: '税額（8%）' },
+    invoice_number:    { en: 'Invoice Number', ja: '請求書番号' },
+    location_staff:    { en: 'Location & Staff', ja: '事業所 & 担当者' },
+    business_location: { en: 'Business Location', ja: '事業所' },
+    staff_member:      { en: 'Staff Member', ja: '担当者' },
+    draft_metadata:    { en: '📋 Draft Metadata', ja: '📋 下書きメタデータ' },
+    status:            { en: 'Status', ja: 'ステータス' },
+    draft_id:          { en: 'Draft ID', ja: '下書きID' },
+    created_at:        { en: 'Created At', ja: '作成日時' },
+    last_updated:      { en: 'Last Updated', ja: '最終更新' },
+    sent_at:           { en: 'Sent At', ja: '送信日時' },
+    image_ref:         { en: 'Image Reference', ja: '画像参照' },
+
+    // Sent status banner
+    sent_to_excel:     { en: '✅ Sent to Excel', ja: '✅ Excel送信済み' },
+    sent_success_msg:  { en: 'This receipt has been successfully sent to HQ', ja: 'このレシートはHQに正常に送信されました' },
+    sent_at_label:     { en: 'Sent at:', ja: '送信日時:' },
+
+    // Validation errors
+    validation_errors: { en: 'Validation Errors', ja: '検証エラー' },
+    cannot_send_yet:   { en: '⚠️ This draft cannot be sent yet', ja: '⚠️ この下書きはまだ送信できません' },
+    fix_errors:        { en: 'Fix the errors below before sending to HQ', ja: 'HQに送信する前に以下のエラーを修正してください' },
+
+    // Receipt image
+    receipt_image:     { en: '📷 Receipt Image', ja: '📷 レシート画像' },
+    no_preview:        { en: 'No preview available', ja: 'プレビューなし' },
+
+    // Action buttons
+    edit_draft:        { en: 'Edit Draft', ja: '下書き編集' },
+    delete_btn:        { en: 'Delete', ja: '削除' },
+
+    // Edit mode
+    editing_draft:     { en: '✏️ Editing Draft', ja: '✏️ 下書き編集中' },
+    edit_hint:         { en: 'Make changes and click Save to update the draft', ja: '変更してから保存ボタンをクリックしてください' },
+    total_amount_yen:  { en: 'Total Amount (¥)', ja: '合計金額（¥）' },
+    tax_10_yen:        { en: 'Tax 10% (¥)', ja: '税額10%（¥）' },
+    tax_8_yen:         { en: 'Tax 8% (¥)', ja: '税額8%（¥）' },
+    cancel:            { en: 'Cancel', ja: 'キャンセル' },
+    save_changes:      { en: '💾 Save Changes', ja: '💾 変更を保存' },
+    select_location:   { en: 'Select location...', ja: '事業所を選択...' },
+    select_staff:      { en: 'Select staff...', ja: '担当者を選択...' },
+    loading:           { en: 'Loading...', ja: '読込中...' },
+    error_load_staff:  { en: 'Error loading staff', ja: '担当者の読込失敗' },
+
+    // Save/delete messages
+    draft_updated:     { en: '✅ Draft updated successfully!', ja: '✅ 下書きを更新しました！' },
+    save_failed:       { en: '❌ Failed to save changes: ', ja: '❌ 保存に失敗: ' },
+    delete_confirm:    { en: '⚠️ Delete draft "{name}"?\n\nThis action cannot be undone.', ja: '⚠️ 下書き「{name}」を削除しますか？\n\nこの操作は元に戻せません。' },
+    draft_deleted:     { en: '✅ Draft deleted successfully', ja: '✅ 下書きを削除しました' },
+    delete_failed:     { en: '❌ Failed to delete draft: ', ja: '❌ 削除に失敗: ' },
+    select_to_view:    { en: 'Select a draft to view details', ja: '下書きを選択して詳細を表示' },
+
+    // Send flow
+    send_incomplete:   { en: '⚠️ Cannot send incomplete drafts!\n\nLocation and Staff are required fields.\n\nIncomplete drafts ({count}):\n{list}\n\nPlease edit these drafts to add Location and Staff before sending.', ja: '⚠️ 不完全な下書きは送信できません！\n\n事業所と担当者は必須項目です。\n\n不完全な下書き（{count}件）:\n{list}\n\n送信前に事業所と担当者を追加してください。' },
+    missing_location:  { en: 'Location', ja: '事業所' },
+    missing_staff:     { en: 'Staff', ja: '担当者' },
+    send_confirm_one:  { en: 'Send this receipt to HQ? This action cannot be undone.', ja: 'このレシートをHQに送信しますか？この操作は元に戻せません。' },
+    send_confirm_many: { en: 'Send {count} receipts to HQ? This action cannot be undone.', ja: '{count}件のレシートをHQに送信しますか？この操作は元に戻せません。' },
+    sending:           { en: 'Sending...', ja: '送信中...' },
+    send:              { en: 'Send', ja: '送信' },
+    send_failed:       { en: 'Failed to send drafts. Please try again.', ja: '送信に失敗しました。再試行してください。' },
+    precheck_failed:   { en: 'Failed to run duplicate precheck. Please try again.', ja: '重複チェックに失敗しました。再試行してください。' },
+
+    // Send results
+    send_completed:    { en: 'Send completed:', ja: '送信完了:' },
+    sent_count:        { en: '✓ Sent: {count}', ja: '✓ 送信: {count}件' },
+    failed_count:      { en: '✗ Failed: {count}', ja: '✗ 失敗: {count}件' },
+    duplicate_warn:    { en: '⚠ Possible duplicate detected. Please verify (Invoice/Date/Total).', ja: '⚠ 重複の可能性があります。請求書番号/日付/合計を確認してください。' },
+    reasons:           { en: 'Reasons: ', ja: '理由: ' },
+    tax_warning:       { en: '⚠ Tax Warning: Please verify tax calculations.', ja: '⚠ 税額警告: 税額計算を確認してください。' },
+    issue:             { en: 'Issue: ', ja: '問題: ' },
+
+    // Duplicate precheck
+    dup_detected:      { en: '⚠ Duplicate candidate(s) detected before send.', ja: '⚠ 送信前に重複候補が検出されました。' },
+    dup_review:        { en: 'Please review and choose:', ja: '確認して選択してください:' },
+    dup_ok:            { en: '- OK = Continue sending to Excel', ja: '- OK = Excelへ送信を続行' },
+    dup_cancel:        { en: '- Cancel = Return to draft menu', ja: '- キャンセル = 下書きメニューに戻る' },
+    dup_more:          { en: '...and {count} more receipt(s).', ja: '...他{count}件のレシート。' },
+    dup_continue:      { en: 'Continue with send?', ja: '送信を続行しますか？' },
+
+    // Auth / loading
+    initializing:      { en: 'Initializing...', ja: '初期化中...' },
+    not_logged_in:     { en: 'Not logged in', ja: '未ログイン' },
+    please_login:      { en: 'Please log in to view drafts.', ja: 'ログインして下書きを表示してください。' },
+    logged_in_as:      { en: 'Logged in as: {name} ({role})', ja: 'ログイン中: {name}（{role}）' },
+    session_expired:   { en: 'Session expired', ja: 'セッション期限切れ' },
+    please_login_again:{ en: 'Please log in again to view drafts.', ja: '再ログインして下書きを表示してください。' },
+    loading_drafts:    { en: 'Loading drafts...', ja: '下書きを読込中...' },
+    failed_load_drafts:{ en: 'Failed to load drafts', ja: '下書きの読込に失敗' },
+    retry:             { en: 'Retry', ja: '再試行' },
+    loading_details:   { en: 'Loading details...', ja: '詳細を読込中...' },
+    failed_load_details:{ en: 'Failed to load details.', ja: '詳細の読込に失敗しました。' },
+    staff_loc_mismatch:{ en: '❌ Staff/Location mismatch. Please reselect staff and location, then send again.', ja: '❌ 担当者/事業所の不一致。担当者と事業所を再選択して送信してください。' },
+};
+
+function getDraftsLanguage() {
+    if (typeof window !== 'undefined' && typeof window.currentLanguage === 'string' && window.currentLanguage) {
+        return window.currentLanguage;
+    }
+
+    const langSelectEl = document.getElementById('languageSelect');
+    const selectLang = langSelectEl ? langSelectEl.value : null;
+    if (selectLang) {
+        return selectLang;
+    }
+
+    const appLang = localStorage.getItem('appLang');
+    if (appLang) {
+        return appLang;
+    }
+
+    try {
+        const settings = JSON.parse(localStorage.getItem('tashiro_settings') || '{}');
+        if (settings.language) {
+            return settings.language;
+        }
+    } catch (e) {
+        // ignore settings parse errors
+    }
+
+    return 'ja';
+}
+
+function dt(key, params) {
+    const lang = getDraftsLanguage();
+    let text = (draftsI18n[key] && draftsI18n[key][lang]) || key;
+    if (params) {
+        Object.keys(params).forEach(k => {
+            text = text.replace(new RegExp('\\{' + k + '\\}', 'g'), params[k]);
+        });
+    }
+    return text;
+}
+
+// ============================================================================
 // Phase 5D-2: Auth State Management (Single Source of Truth)
 // ============================================================================
 
@@ -181,7 +343,7 @@ function openDraftModal() {
     // Phase 5D-2: Wait for AuthState to be ready
     if (!window.AuthState.ready) {
         const container = document.getElementById('draftListContainer');
-        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Initializing...</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">' + dt('initializing') + '</div>';
         
         // Poll until ready (should be immediate, but defensive)
         const checkReady = setInterval(() => {
@@ -217,8 +379,8 @@ function initializeDraftModal() {
         const container = document.getElementById('draftListContainer');
         container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
             <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
-            <div style="font-size: 16px; margin-bottom: 8px;">Not logged in</div>
-            <div style="font-size: 13px; color: #64748b;">Please log in to view drafts.</div>
+            <div style="font-size: 16px; margin-bottom: 8px;">${dt('not_logged_in')}</div>
+            <div style="font-size: 13px; color: #64748b;">${dt('please_login')}</div>
         </div>`;
         return;
     }
@@ -245,7 +407,7 @@ function closeDraftModal() {
     const detailContainer = document.getElementById('draftDetailContainer');
     if (detailContainer) {
         detailContainer.innerHTML = 
-            '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+            '<div style="text-align: center; padding: 40px 20px; color: #64748b;">' + dt('select_to_view') + '</div>';
     }
     
     updateSelectionCount();
@@ -263,7 +425,7 @@ function displayCurrentUser() {
     if (window.AuthState.token && window.AuthState.email) {
         const displayName = window.AuthState.name || window.AuthState.email;
         const role = window.AuthState.role || 'WORKER';
-        userIndicator.textContent = `Logged in as: ${displayName} (${role})`;
+        userIndicator.textContent = dt('logged_in_as', { name: displayName, role: role });
         userIndicator.style.display = 'block';
         if (DEBUG_DRAFTS) {
             console.log('DEBUG: Draft user indicator set:', {
@@ -341,14 +503,14 @@ async function loadDrafts() {
     if (!token) {
         container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
             <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
-            <div style="font-size: 16px; margin-bottom: 8px;">Session expired</div>
-            <div style="font-size: 13px; color: #64748b;">Please log in again to view drafts.</div>
+            <div style="font-size: 16px; margin-bottom: 8px;">${dt('session_expired')}</div>
+            <div style="font-size: 13px; color: #64748b;">${dt('please_login_again')}</div>
         </div>`;
         return;
     }
     
     try {
-        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Loading drafts...</div>';
+        container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #64748b;">${dt('loading_drafts')}</div>`;
         
         // Phase 5D-3: Debug multi-user isolation
         if (DEBUG_DRAFTS) {
@@ -370,8 +532,8 @@ async function loadDrafts() {
         if (response.status === 401 || response.status === 403) {
             container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
                 <i class="fas fa-exclamation-triangle" style="font-size: 48px; opacity: 0.3; margin-bottom: 12px;"></i>
-                <div style="font-size: 16px; margin-bottom: 8px;">Session expired</div>
-                <div style="font-size: 13px; color: #64748b;">Please log in again to view drafts.</div>
+                <div style="font-size: 16px; margin-bottom: 8px;">${dt('session_expired')}</div>
+                <div style="font-size: 13px; color: #64748b;">${dt('please_login_again')}</div>
             </div>`;
             return;
         }
@@ -405,10 +567,10 @@ async function loadDrafts() {
         console.error('Error loading drafts:', error);
         const errorMsg = error.message || 'Unknown error';
         container.innerHTML = `<div style="text-align: center; padding: 40px 20px; color: #dc3545;">
-            <div style="font-size: 16px; margin-bottom: 8px;">Failed to load drafts</div>
+            <div style="font-size: 16px; margin-bottom: 8px;">${dt('failed_load_drafts')}</div>
             <div style="font-size: 13px; color: #64748b;">${errorMsg}</div>
             <button onclick="loadDrafts()" style="margin-top: 12px; padding: 8px 16px; background: #3b82f6; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                <i class="fas fa-sync-alt"></i> Retry
+                <i class="fas fa-sync-alt"></i> ${dt('retry')}
             </button>
         </div>`;
     }
@@ -442,11 +604,11 @@ function renderDraftList() {
         container.innerHTML = `
             <div style="text-align: center; padding: 40px 20px; color: #64748b;">
                 <div style="font-size: 16px; font-weight: 500; color: #475569; margin-bottom: 8px;">
-                    📋 No${filterName} receipt drafts found
+                    ${dt('no_drafts', {filter: filterName})}
                 </div>
                 <div style="font-size: 14px; line-height: 1.6;">
-                    ${currentFilter === 'all' ? 'Drafts are created when you save OCR results without sending.' : 
-                      `No drafts match the ${currentFilter.toLowerCase()} filter.`}
+                    ${currentFilter === 'all' ? dt('empty_hint_all') : 
+                      dt('empty_hint_filter', {filter: currentFilter.toLowerCase()})}
                 </div>
             </div>
         `;
@@ -459,10 +621,10 @@ function renderDraftList() {
                 <tr style="background: #f8fafc; border-bottom: 2px solid #e2e8f0;">
                     <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #64748b; width: 40px;"></th>
                     <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #64748b; width: 30px;"></th>
-                    <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #64748b;">Vendor</th>
-                    <th style="padding: 12px 8px; text-align: right; font-weight: 600; color: #64748b;">Amount</th>
-                    <th style="padding: 12px 8px; text-align: center; font-weight: 600; color: #64748b;">Date</th>
-                    <th style="padding: 12px 8px; text-align: center; font-weight: 600; color: #64748b;">Status</th>
+                    <th style="padding: 12px 8px; text-align: left; font-weight: 600; color: #64748b;">${dt('th_vendor')}</th>
+                    <th style="padding: 12px 8px; text-align: right; font-weight: 600; color: #64748b;">${dt('th_amount')}</th>
+                    <th style="padding: 12px 8px; text-align: center; font-weight: 600; color: #64748b;">${dt('th_date')}</th>
+                    <th style="padding: 12px 8px; text-align: center; font-weight: 600; color: #64748b;">${dt('th_status')}</th>
                 </tr>
             </thead>
             <tbody>
@@ -491,7 +653,7 @@ function renderDraftList() {
                                        onclick="event.stopPropagation(); toggleDraftSelection('${draft.draft_id}')"
                                        style="cursor: ${isDisabled ? 'not-allowed' : 'pointer'};">
                             </td>
-                            <td style="padding: 12px 8px; text-align: center; font-size: 16px;" title="${isValid ? 'Ready to send' : 'Incomplete - missing required fields'}">
+                            <td style="padding: 12px 8px; text-align: center; font-size: 16px;" title="${isValid ? dt('ready_to_send') : dt('incomplete_fields')}">
                                 <span style="color: ${validationColor};">${validationIcon}</span>
                             </td>
                             <td style="padding: 12px 8px; font-weight: 500; color: #1e293b;">
@@ -549,7 +711,7 @@ function updateSelectionCount() {
     const sendBtn = document.getElementById('sendSelectedDraftsBtn');
     
     if (countEl) {
-        countEl.textContent = `${count} draft${count !== 1 ? 's' : ''} selected`;
+        countEl.textContent = dt('drafts_selected', { count: count });
     }
     if (sendBtn) {
         const disabled = count === 0;
@@ -571,7 +733,7 @@ async function loadDraftDetails(draftId) {
         console.warn('draftDetailContainer not found, skipping detail display');
         return;
     }
-    container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Loading details...</div>';
+    container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #64748b;">' + dt('loading_details') + '</div>';
     
     try {
         // Find draft in current list (includes validation status)
@@ -597,7 +759,7 @@ async function loadDraftDetails(draftId) {
         }
     } catch (error) {
         console.error('Error loading draft details:', error);
-        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #dc3545;">Failed to load details.</div>';
+        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #dc3545;">' + dt('failed_load_details') + '</div>';
     }
 }
 
@@ -628,11 +790,11 @@ async function renderDraftDetails(draft, validationErrors) {
         <div style="margin-bottom: 24px; display: flex; gap: 12px; justify-content: flex-end;">
             <button onclick="enterEditMode('${draft.draft_id}')" 
                     style="padding: 10px 20px; background: var(--primary-blue, #3b82f6); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                <i class="fas fa-edit"></i> Edit Draft
+                <i class="fas fa-edit"></i> ${dt('edit_draft')}
             </button>
             <button onclick="confirmDeleteDraft('${draft.draft_id}')" 
                     style="padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                <i class="fas fa-trash"></i> Delete
+                <i class="fas fa-trash"></i> ${dt('delete_btn')}
             </button>
         </div>
     ` : '';
@@ -642,43 +804,43 @@ async function renderDraftDetails(draft, validationErrors) {
         
         <!-- Receipt Information -->
         <div style="margin-bottom: 24px;">
-            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">Receipt Information</h4>
+            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">${dt('receipt_info')}</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                ${renderField('Vendor Name', r.vendor_name || 'N/A')}
-                ${renderField('Date', r.receipt_date || 'N/A')}
-                ${renderField('Total Amount', `¥${formatAmount(r.total_amount)}`)}
-                ${renderField('Tax (10%)', `¥${formatAmount(r.tax_10_amount || 0)}`)}
-                ${renderField('Tax (8%)', `¥${formatAmount(r.tax_8_amount || 0)}`)}
-                ${renderField('Invoice Number', r.invoice_number || 'N/A')}
+                ${renderField(dt('vendor_name'), r.vendor_name || 'N/A')}
+                ${renderField(dt('date'), r.receipt_date || 'N/A')}
+                ${renderField(dt('total_amount'), `¥${formatAmount(r.total_amount)}`)}
+                ${renderField(dt('tax_10'), `¥${formatAmount(r.tax_10_amount || 0)}`)}
+                ${renderField(dt('tax_8'), `¥${formatAmount(r.tax_8_amount || 0)}`)}
+                ${renderField(dt('invoice_number'), r.invoice_number || 'N/A')}
             </div>
         </div>
         
         <!-- Location & Staff -->
         <div style="margin-bottom: 24px;">
-            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">Location & Staff</h4>
+            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">${dt('location_staff')}</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                ${renderField('Business Location', r.business_location_id || 'N/A')}
-                ${renderField('Staff Member', staffDisplay)}
+                ${renderField(dt('business_location'), r.business_location_id || 'N/A')}
+                ${renderField(dt('staff_member'), staffDisplay)}
             </div>
         </div>
         
         <!-- Phase 4F.5: Draft Metadata -->
         <div style="margin-bottom: 24px;">
-            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📋 Draft Metadata</h4>
+            <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">${dt('draft_metadata')}</h4>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Status</div>
+                    <div style="font-size: 12px; color: #64748b; margin-bottom: 4px;">${dt('status')}</div>
                     <span style="padding: 4px 12px; border-radius: 12px; font-size: 12px; font-weight: 600; display: inline-block;
                                  background: ${draft.status === 'SENT' ? '#d1fae5' : '#fef3c7'}; 
                                  color: ${draft.status === 'SENT' ? '#065f46' : '#92400e'};">
                         ${draft.status}
                     </span>
                 </div>
-                ${renderField('Draft ID', draft.draft_id.substring(0, 8) + '...')}
-                ${renderField('Created At', formatDateTime(draft.created_at))}
-                ${renderField('Last Updated', formatDateTime(draft.updated_at))}
-                ${draft.sent_at ? renderField('Sent At', formatDateTime(draft.sent_at)) : ''}
-                ${draft.image_ref ? renderField('Image Reference', draft.image_ref.substring(0, 12) + '...') : ''}
+                ${renderField(dt('draft_id'), draft.draft_id.substring(0, 8) + '...')}
+                ${renderField(dt('created_at'), formatDateTime(draft.created_at))}
+                ${renderField(dt('last_updated'), formatDateTime(draft.updated_at))}
+                ${draft.sent_at ? renderField(dt('sent_at'), formatDateTime(draft.sent_at)) : ''}
+                ${draft.image_ref ? renderField(dt('image_ref'), draft.image_ref.substring(0, 12) + '...') : ''}
             </div>
         </div>
         
@@ -686,17 +848,17 @@ async function renderDraftDetails(draft, validationErrors) {
         ${draft.status === 'SENT' ? `
         <div style="margin-bottom: 24px;">
             <div style="background: #d1fae5; border-left: 4px solid #10b981; border-radius: 4px; padding: 16px; text-align: center;">
-                <div style="font-weight: 600; color: #065f46; font-size: 16px; margin-bottom: 4px;">✅ Sent to Excel</div>
-                <div style="font-size: 13px; color: #047857;">This receipt has been successfully sent to HQ</div>
-                ${draft.sent_at ? `<div style="font-size: 12px; color: #059669; margin-top: 8px;">Sent at: ${formatDateTime(draft.sent_at)}</div>` : ''}
+                <div style="font-weight: 600; color: #065f46; font-size: 16px; margin-bottom: 4px;">${dt('sent_to_excel')}</div>
+                <div style="font-size: 13px; color: #047857;">${dt('sent_success_msg')}</div>
+                ${draft.sent_at ? `<div style="font-size: 12px; color: #059669; margin-top: 8px;">${dt('sent_at_label')} ${formatDateTime(draft.sent_at)}</div>` : ''}
             </div>
         </div>
         ` : validationErrors.length > 0 ? `
         <div id="validationErrorsSection" style="margin-bottom: 24px;">
-            <h4 style="font-size: 14px; font-weight: 600; color: #dc3545; margin-bottom: 8px; text-transform: uppercase;">Validation Errors</h4>
+            <h4 style="font-size: 14px; font-weight: 600; color: #dc3545; margin-bottom: 8px; text-transform: uppercase;">${dt('validation_errors')}</h4>
             <div style="background: #fee; border-left: 4px solid #dc3545; border-radius: 4px; padding: 12px 16px; margin-bottom: 12px;">
-                <div style="font-weight: 600; color: #991b1b; font-size: 13px;">⚠️ This draft cannot be sent yet</div>
-                <div style="font-size: 12px; color: #7f1d1d; margin-top: 4px;">Fix the errors below before sending to HQ</div>
+                <div style="font-weight: 600; color: #991b1b; font-size: 13px;">${dt('cannot_send_yet')}</div>
+                <div style="font-size: 12px; color: #7f1d1d; margin-top: 4px;">${dt('fix_errors')}</div>
             </div>
             <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 16px;">
                 ${validationErrors.map(err => `
@@ -716,22 +878,22 @@ async function renderDraftDetails(draft, validationErrors) {
             if (previewSrc) {
                 return `
                 <div style="margin-bottom: 24px;">
-                    <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📷 Receipt Image</h4>
+                    <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">${dt('receipt_image')}</h4>
                     <div style="position: relative; background: #f8fafc; border-radius: 8px; padding: 12px; text-align: center;">
                         <img id="draftImage_${draft.draft_id}" 
                              src="${previewSrc}" 
                              style="width: 100%; max-width: 500px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.15); cursor: pointer;"
-                             alt="Receipt Image"
+                             alt="${dt('receipt_image')}"
                              onclick="window.open(this.src, '_blank')">
                     </div>
                 </div>`;
             } else {
                 return `
                 <div style="margin-bottom: 24px;">
-                    <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">📷 Receipt Image</h4>
+                    <h4 style="font-size: 14px; font-weight: 600; color: #64748b; margin-bottom: 12px; text-transform: uppercase;">${dt('receipt_image')}</h4>
                     <div style="position: relative; background: #f8fafc; border-radius: 8px; padding: 40px; text-align: center;">
                         <i class="fas fa-image" style="font-size: 48px; opacity: 0.2; color: #94a3b8;"></i>
-                        <div style="color: #64748b; font-size: 14px; margin-top: 12px;">No preview available</div>
+                        <div style="color: #64748b; font-size: 14px; margin-top: 12px;">${dt('no_preview')}</div>
                     </div>
                 </div>`;
             }
@@ -742,12 +904,17 @@ async function renderDraftDetails(draft, validationErrors) {
     
     // Phase 4D.2: Auto-scroll to validation errors if they exist
     if (validationErrors.length > 0) {
-        setTimeout(() => {
+        requestAnimationFrame(() => {
             const errorSection = document.getElementById('validationErrorsSection');
-            if (errorSection) {
-                errorSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            if (!errorSection) return;
+
+            const rect = errorSection.getBoundingClientRect();
+            const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+            const isVisible = rect.top >= 0 && rect.bottom <= viewportHeight;
+            if (!isVisible) {
+                errorSection.scrollIntoView({ behavior: 'auto', block: 'start' });
             }
-        }, 100);
+        });
     }
 }
 
@@ -755,6 +922,9 @@ async function renderDraftDetails(draft, validationErrors) {
  * Helper: Get staff name from ID by fetching from API
  */
 async function getStaffName(location, staffId) {
+    if (!location || String(location).startsWith('INVALID_')) {
+        return null;
+    }
     try {
         const response = await fetch(`/api/staff?location=${encodeURIComponent(location)}`, {
             headers: getAuthHeaders()
@@ -797,30 +967,65 @@ async function sendSelectedDrafts() {
     
     if (invalidDrafts.length > 0) {
         const invalidList = invalidDrafts.map(d => 
-            `• ${d.receipt.vendor_name || 'Unknown'} - Missing: ${!d.receipt.business_location_id ? 'Location' : ''} ${!d.receipt.staff_id ? 'Staff' : ''}`
+            `• ${d.receipt.vendor_name || 'Unknown'} - Missing: ${!d.receipt.business_location_id ? dt('missing_location') : ''} ${!d.receipt.staff_id ? dt('missing_staff') : ''}`
         ).join('\n');
         
-        alert(`⚠️ Cannot send incomplete drafts!\n\nLocation and Staff are required fields.\n\nIncomplete drafts (${invalidDrafts.length}):\n${invalidList}\n\nPlease edit these drafts to add Location and Staff before sending.`);
+        alert(dt('send_incomplete', {count: invalidDrafts.length, list: invalidList}));
         return;
     }
     
+    const draftIds = Array.from(selectedDraftIds);
+
+    // Pre-send duplicate warning check (warning-only, no Excel write)
+    let precheckResult = null;
+    try {
+        const precheckResponse = await fetch('/api/drafts/send/precheck', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...getAuthHeaders()
+            },
+            body: JSON.stringify({ draft_ids: draftIds })
+        });
+
+        if (!precheckResponse.ok) {
+            const err = await precheckResponse.json().catch(() => ({}));
+            const detail = err && err.detail ? err.detail : {};
+            const message = (typeof detail === 'string' ? detail : detail.message) || 'Failed to run duplicate precheck';
+            throw new Error(message);
+        }
+
+        precheckResult = await precheckResponse.json();
+    } catch (error) {
+        console.error('Duplicate precheck error:', error);
+        alert(dt('precheck_failed'));
+        return;
+    }
+
+    if (precheckResult && precheckResult.has_duplicates) {
+        const warningMessage = buildDuplicatePrecheckMessage(precheckResult);
+        const continueSend = confirm(warningMessage);
+        if (!continueSend) {
+            return;
+        }
+    }
+
     // Phase 4D.2: Send confirmation dialog
     const count = selectedDraftIds.size;
     const confirmMessage = count === 1 
-        ? "Send this receipt to HQ? This action cannot be undone."
-        : `Send ${count} receipts to HQ? This action cannot be undone.`;
+        ? dt('send_confirm_one')
+        : dt('send_confirm_many', {count});
     
     if (!confirm(confirmMessage)) {
         return; // User cancelled
     }
     
-    const draftIds = Array.from(selectedDraftIds);
     const btn = document.getElementById('sendSelectedDraftsBtn');
     
     // Phase 4D.2: Set sending state and disable UI
     isSending = true;
     btn.disabled = true;
-    btn.textContent = 'Sending...';
+    btn.textContent = dt('sending');
     renderDraftList(); // Re-render to disable checkboxes and row clicks
     
     try {
@@ -832,13 +1037,37 @@ async function sendSelectedDrafts() {
             },
             body: JSON.stringify({ draft_ids: draftIds })
         });
+
+        const duplicateWarningHeader = (response.headers.get('X-Duplicate-Warning') || 'false').toLowerCase() === 'true';
+        const taxMismatchWarningHeader = (response.headers.get('X-Tax-Mismatch-Warning') || 'false').toLowerCase() === 'true';
         
-        if (!response.ok) throw new Error('Send request failed');
+        if (!response.ok) {
+            let errorPayload = {};
+            try {
+                errorPayload = await response.json();
+            } catch (e) {
+                errorPayload = {};
+            }
+
+            const detail = errorPayload && errorPayload.detail ? errorPayload.detail : {};
+            const errorCode = errorPayload.error_code || detail.error_code;
+
+            if (errorCode === 'STAFF_LOCATION_MISMATCH') {
+                alert(dt('staff_loc_mismatch'));
+                return;
+            }
+
+            const detailMessage =
+                (typeof detail === 'string' ? detail : detail.message) ||
+                errorPayload.message ||
+                'Send request failed';
+            throw new Error(detailMessage);
+        }
         
         const result = await response.json();
         
         // Show result summary
-        showSendResults(result);
+        showSendResults(result, duplicateWarningHeader, taxMismatchWarningHeader);
         
         // Refresh draft list
         selectedDraftIds.clear();
@@ -850,32 +1079,126 @@ async function sendSelectedDrafts() {
             const detailContainer = document.getElementById('draftDetailContainer');
             if (detailContainer) {
                 detailContainer.innerHTML = 
-                    '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+                    `<div style="text-align: center; padding: 40px 20px; color: #64748b;">${dt('select_to_view')}</div>`;
             }
         }
         
     } catch (error) {
         console.error('Send error:', error);
-        alert('Failed to send drafts. Please try again.');
+        alert(dt('send_failed'));
     } finally {
         // Phase 4D.2: Re-enable UI
         isSending = false;
         btn.disabled = false;
-        btn.textContent = 'Send';
+        btn.textContent = dt('send');
         renderDraftList(); // Re-render to re-enable interactions
     }
+}
+
+function buildDuplicatePrecheckMessage(precheckResult) {
+    const byDraft = Array.isArray(precheckResult.by_draft) ? precheckResult.by_draft : [];
+    const lines = [];
+    lines.push(dt('dup_detected'));
+    lines.push(dt('dup_review'));
+    lines.push(dt('dup_ok'));
+    lines.push(dt('dup_cancel'));
+    lines.push('');
+
+    byDraft.slice(0, 6).forEach((entry, index) => {
+        const vendor = entry.vendor_name || 'Unknown vendor';
+        const invoice = entry.invoice_number || 'N/A';
+        const receiptDate = entry.receipt_date || 'N/A';
+        lines.push(`${index + 1}) ${vendor} | Invoice: ${invoice} | Date: ${receiptDate}`);
+
+        const matches = Array.isArray(entry.matches) ? entry.matches : [];
+        matches.slice(0, 3).forEach(match => {
+            const reason = match.reason || 'possible duplicate';
+            const matchedInvoice = match.matched_invoice_number || 'N/A';
+            const matchedVendor = match.matched_vendor_name || 'Unknown vendor';
+            const matchedDate = match.matched_receipt_date || 'N/A';
+            lines.push(`   • ${reason} -> ${matchedVendor} | Inv: ${matchedInvoice} | Date: ${matchedDate}`);
+        });
+        lines.push('');
+    });
+
+    if (byDraft.length > 6) {
+        lines.push(dt('dup_more', {count: byDraft.length - 6}));
+        lines.push('');
+    }
+
+    lines.push(dt('dup_continue'));
+    return lines.join('\n');
 }
 
 /**
  * Show send results in alert/notification
  */
-function showSendResults(result) {
+function showSendResults(result, hasDuplicateWarning = false, hasTaxMismatchWarning = false) {
     const successCount = result.sent || 0;
     const failedCount = result.failed || 0;
+    const duplicateMatches = (result.warnings && Array.isArray(result.warnings.duplicates))
+        ? result.warnings.duplicates
+        : [];
+    const taxMismatchItems = (result.warnings && result.warnings.tax_mismatch && Array.isArray(result.warnings.tax_mismatch.items))
+        ? result.warnings.tax_mismatch.items
+        : [];
     
-    let message = `Send completed:\n`;
-    message += `✓ Sent: ${successCount}\n`;
-    message += `✗ Failed: ${failedCount}\n\n`;
+    let message = `${dt('send_completed')}\n`;
+    message += `${dt('sent_count', {count: successCount})}\n`;
+    message += `${dt('failed_count', {count: failedCount})}\n\n`;
+
+    if (duplicateMatches.length > 0 || hasDuplicateWarning) {
+        message += `${dt('duplicate_warn')}\n`;
+
+        if (duplicateMatches.length > 0) {
+            const reasons = [...new Set(
+                duplicateMatches
+                    .map(match => match.reason)
+                    .filter(reason => typeof reason === 'string' && reason.trim().length > 0)
+            )].slice(0, 2);
+
+            if (reasons.length > 0) {
+                message += `${dt('reasons')}${reasons.join('; ')}\n`;
+            }
+        }
+
+        message += `\n`;
+    }
+
+    if (taxMismatchItems.length > 0 || hasTaxMismatchWarning) {
+        message += `${dt('tax_warning')}\n`;
+
+        if (taxMismatchItems.length > 0) {
+            const firstMismatch = taxMismatchItems[0];
+            
+            // New format: detailed error messages
+            if (firstMismatch.rule && firstMismatch.notes) {
+                message += `${dt('issue')}${firstMismatch.notes}\n`;
+                
+                if (firstMismatch.total_yen && firstMismatch.total_tax_yen) {
+                    message += `Total: ¥${firstMismatch.total_yen}, Taxes: ¥${firstMismatch.total_tax_yen}`;
+                    if (firstMismatch.implied_subtotal_yen !== undefined) {
+                        message += `, Subtotal: ¥${firstMismatch.implied_subtotal_yen}`;
+                    }
+                    message += `\n`;
+                }
+                
+                if (firstMismatch.effective_tax_rate_pct !== undefined) {
+                    message += `Effective tax rate: ${firstMismatch.effective_tax_rate_pct}% (expected: 7-11%)\n`;
+                }
+            }
+            // Legacy format fallback (for old data)
+            else if (
+                typeof firstMismatch.total_yen === 'number' &&
+                typeof firstMismatch.computed_yen === 'number' &&
+                typeof firstMismatch.diff_yen === 'number'
+            ) {
+                message += `Tax check: total=${firstMismatch.total_yen}, computed=${firstMismatch.computed_yen}, diff=${firstMismatch.diff_yen}.\n`;
+            }
+        }
+
+        message += `\n`;
+    }
     
     if (result.results && result.results.length > 0) {
         result.results.forEach(r => {
@@ -909,8 +1232,8 @@ async function enterEditMode(draftId) {
     const r = draft.receipt;
     
     // Fetch locations and staff for dropdowns
-    let locationsHtml = '<option value="">Select location...</option>';
-    let staffHtml = '<option value="">Select staff...</option>';
+    let locationsHtml = `<option value="">${dt('select_location')}</option>`;
+    let staffHtml = `<option value="">${dt('select_staff')}</option>`;
     
     try {
         const locResponse = await fetch('/api/locations', {
@@ -943,25 +1266,25 @@ async function enterEditMode(draftId) {
     
     container.innerHTML = `
         <div style="margin-bottom: 20px;">
-            <h4 style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">✏️ Editing Draft</h4>
-            <p style="font-size: 13px; color: #64748b;">Make changes and click Save to update the draft</p>
+            <h4 style="font-size: 16px; font-weight: 600; color: #1e293b; margin-bottom: 8px;">${dt('editing_draft')}</h4>
+            <p style="font-size: 13px; color: #64748b;">${dt('edit_hint')}</p>
         </div>
         
         <form id="editDraftForm" style="display: grid; gap: 16px;">
             <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Vendor Name</label>
+                  <label for="edit_vendor" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('vendor_name')}</label>
                 <input type="text" id="edit_vendor" value="${escapeHtml(r.vendor_name || '')}" 
                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Date</label>
+                          <label for="edit_date" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('date')}</label>
                     <input type="date" id="edit_date" value="${r.receipt_date || ''}" 
                            style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                 </div>
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Total Amount (¥)</label>
+                          <label for="edit_total" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('total_amount_yen')}</label>
                     <input type="number" step="0.01" id="edit_total" value="${r.total_amount || 0}" 
                            style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                 </div>
@@ -969,33 +1292,33 @@ async function enterEditMode(draftId) {
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Tax 10% (¥)</label>
+                          <label for="edit_tax10" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('tax_10_yen')}</label>
                     <input type="number" step="0.01" id="edit_tax10" value="${r.tax_10_amount || 0}" 
                            style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                 </div>
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Tax 8% (¥)</label>
+                          <label for="edit_tax8" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('tax_8_yen')}</label>
                     <input type="number" step="0.01" id="edit_tax8" value="${r.tax_8_amount || 0}" 
                            style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                 </div>
             </div>
             
             <div>
-                <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Invoice Number</label>
+                  <label for="edit_invoice" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('invoice_number')}</label>
                 <input type="text" id="edit_invoice" value="${escapeHtml(r.invoice_number || '')}" 
                        style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
             </div>
             
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Business Location</label>
+                    <label for="edit_location" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('business_location')}</label>
                     <select id="edit_location" onchange="loadStaffForEdit(this.value)" 
                             style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                         ${locationsHtml}
                     </select>
                 </div>
                 <div>
-                    <label style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">Staff Member</label>
+                    <label for="edit_staff" style="display: block; font-size: 13px; font-weight: 600; color: #475569; margin-bottom: 6px;">${dt('staff_member')}</label>
                     <select id="edit_staff" 
                             style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px;">
                         ${staffHtml}
@@ -1006,11 +1329,11 @@ async function enterEditMode(draftId) {
             <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 12px;">
                 <button type="button" onclick="cancelEdit('${draftId}')" 
                         style="padding: 10px 24px; background: white; color: #64748b; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                    Cancel
+                    ${dt('cancel')}
                 </button>
                 <button type="button" onclick="saveDraftEdit('${draftId}')" 
                         style="padding: 10px 24px; background: var(--primary-blue, #3b82f6); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
-                    💾 Save Changes
+                    ${dt('save_changes')}
                 </button>
             </div>
         </form>
@@ -1024,7 +1347,7 @@ async function loadStaffForEdit(locationId) {
     const staffSelect = document.getElementById('edit_staff');
     if (!staffSelect) return;
     
-    staffSelect.innerHTML = '<option value="">Loading...</option>';
+    staffSelect.innerHTML = `<option value="">${dt('loading')}</option>`;
     
     try {
         const response = await fetch(`/api/staff?location=${encodeURIComponent(locationId)}`, {
@@ -1035,11 +1358,11 @@ async function loadStaffForEdit(locationId) {
         const data = await response.json();
         const staffList = data.staff || [];
         
-        staffSelect.innerHTML = '<option value="">Select staff...</option>' +
+        staffSelect.innerHTML = `<option value="">${dt('select_staff')}</option>` +
             staffList.map(staff => `<option value="${staff.id}">${staff.name}</option>`).join('');
     } catch (error) {
         console.error('Error loading staff:', error);
-        staffSelect.innerHTML = '<option value="">Error loading staff</option>';
+        staffSelect.innerHTML = `<option value="">${dt('error_load_staff')}</option>`;
     }
 }
 
@@ -1079,10 +1402,10 @@ async function saveDraftEdit(draftId) {
         isEditing = false;
         await loadDraftDetails(draftId);
         
-        alert('✅ Draft updated successfully!');
+        alert(dt('draft_updated'));
     } catch (error) {
         console.error('Error saving draft:', error);
-        alert('❌ Failed to save changes: ' + error.message);
+        alert(dt('save_failed') + error.message);
     }
 }
 
@@ -1101,7 +1424,7 @@ async function confirmDeleteDraft(draftId) {
     const draft = allDrafts.find(d => d.draft_id === draftId);
     const vendorName = draft ? draft.receipt.vendor_name : 'this draft';
     
-    if (!confirm(`⚠️ Delete draft "${vendorName}"?\n\nThis action cannot be undone.`)) {
+    if (!confirm(dt('delete_confirm', {name: vendorName}))) {
         return;
     }
     
@@ -1119,12 +1442,12 @@ async function confirmDeleteDraft(draftId) {
         // Clear detail panel
         currentDraftId = null;
         document.getElementById('draftDetailContainer').innerHTML = 
-            '<div style="text-align: center; padding: 40px 20px; color: #64748b;">Select a draft to view details</div>';
+            `<div style="text-align: center; padding: 40px 20px; color: #64748b;">${dt('select_to_view')}</div>`;
         
-        alert('✅ Draft deleted successfully');
+        alert(dt('draft_deleted'));
     } catch (error) {
         console.error('Error deleting draft:', error);
-        alert('❌ Failed to delete draft: ' + error.message);
+        alert(dt('delete_failed') + error.message);
     }
 }
 
@@ -1229,6 +1552,18 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    window.addEventListener('app-language-changed', () => {
+        const draftModal = document.getElementById('draftModal');
+        if (draftModal && draftModal.style.display === 'block') {
+            renderDraftList();
+            updateSelectionCount();
+            displayCurrentUser();
+            if (currentDraftId) {
+                loadDraftDetails(currentDraftId);
+            }
+        }
+    });
 });
 
 /**

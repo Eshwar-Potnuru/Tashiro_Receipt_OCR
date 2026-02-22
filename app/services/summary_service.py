@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from typing import Dict, Iterable, List
 import logging
+import threading
 
 from app.excel.branch_ledger_writer import BranchLedgerWriter
 from app.excel.staff_ledger_writer import StaffLedgerWriter
 
 logger = logging.getLogger(__name__)
+_excel_send_lock = threading.Lock()
 
 
 class SummaryService:
@@ -31,41 +33,43 @@ class SummaryService:
         writer failures so one target cannot block the other.
         """
 
-        logger.info(f"SUMMARY_SERVICE: send_receipts called with {len(list(receipts)) if receipts else 0} receipts")
-        
         normalized: List = list(self._coerce_iterable(receipts))
-        ordered = sorted(
-            normalized,
-            key=lambda r: (r.receipt_date is None, r.receipt_date or ""),
-        )
+        logger.info(f"SUMMARY_SERVICE: send_receipts called with {len(normalized)} receipts")
 
-        logger.info(f"SUMMARY_SERVICE: Processing {len(ordered)} receipts")
-        
-        results = []
-        counts: Dict[str, int] = {"success": 0, "skipped": 0, "error": 0}
-
-        for i, receipt in enumerate(ordered):
-            logger.info(f"SUMMARY_SERVICE: Processing receipt {i+1}/{len(ordered)} - ID: {getattr(receipt, 'receipt_id', 'N/A')}")
-            logger.info(f"SUMMARY_SERVICE: Receipt details - vendor={receipt.vendor_name}, location={receipt.business_location_id}, staff={receipt.staff_id}, invoice={receipt.invoice_number}")
-            
-            branch_res = self._safe_write(self.branch_writer.write_receipt, receipt)
-            staff_res = self._safe_write(self.staff_writer.write_receipt, receipt)
-
-            logger.info(f"SUMMARY_SERVICE: Receipt {i+1} - branch_res={branch_res}, staff_res={staff_res}")
-            
-            self._tally(branch_res, counts)
-            self._tally(staff_res, counts)
-
-            results.append(
-                {
-                    "receipt_id": str(getattr(receipt, "receipt_id", "")),
-                    "branch": branch_res,
-                    "staff": staff_res,
-                }
+        with _excel_send_lock:
+            logger.info("SUMMARY_SERVICE: acquired excel send lock")
+            ordered = sorted(
+                normalized,
+                key=lambda r: (r.receipt_date is None, r.receipt_date or ""),
             )
 
-        logger.info(f"SUMMARY_SERVICE: Completed - counts={counts}")
-        return {"processed": len(ordered), "counts": counts, "results": results}
+            logger.info(f"SUMMARY_SERVICE: Processing {len(ordered)} receipts")
+            
+            results = []
+            counts: Dict[str, int] = {"success": 0, "skipped": 0, "error": 0}
+
+            for i, receipt in enumerate(ordered):
+                logger.info(f"SUMMARY_SERVICE: Processing receipt {i+1}/{len(ordered)} - ID: {getattr(receipt, 'receipt_id', 'N/A')}")
+                logger.info(f"SUMMARY_SERVICE: Receipt details - vendor={receipt.vendor_name}, location={receipt.business_location_id}, staff={receipt.staff_id}, invoice={receipt.invoice_number}")
+                
+                branch_res = self._safe_write(self.branch_writer.write_receipt, receipt)
+                staff_res = self._safe_write(self.staff_writer.write_receipt, receipt)
+
+                logger.info(f"SUMMARY_SERVICE: Receipt {i+1} - branch_res={branch_res}, staff_res={staff_res}")
+                
+                self._tally(branch_res, counts)
+                self._tally(staff_res, counts)
+
+                results.append(
+                    {
+                        "receipt_id": str(getattr(receipt, "receipt_id", "")),
+                        "branch": branch_res,
+                        "staff": staff_res,
+                    }
+                )
+
+            logger.info(f"SUMMARY_SERVICE: Completed - counts={counts}")
+            return {"processed": len(ordered), "counts": counts, "results": results}
 
     def _coerce_iterable(self, receipts) -> Iterable:
         if receipts is None:

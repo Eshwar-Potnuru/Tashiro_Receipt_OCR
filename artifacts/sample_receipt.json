@@ -1,711 +1,107 @@
 {
-  "invoice_number": "T6810161574620",
-  "vendor": "ローソン",
-  "date": "2024-12-02",
+  "invoice_number": "17380001006893",
+  "vendor": "7 ヨークベニマル",
+  "date": "2025-06-26",
   "currency": "JPY",
-  "subtotal": null,
-  "tax": 27.0,
-  "total": 687.0,
+  "subtotal": 1560.0,
+  "tax": 24.0,
+  "total": 120.0,
   "normalized_currency": "JPY",
-  "normalized_subtotal": null,
-  "normalized_tax": 27.0,
-  "normalized_total": 687.0,
+  "normalized_subtotal": 1560.0,
+  "normalized_tax": 24.0,
+  "normalized_total": 120.0,
   "inferred_tax": false,
-  "financial_consistency_ok": null,
+  "financial_consistency_ok": false,
   "line_items": [],
-  "raw_text": "LAWSON\n味のたけとよ前店\n登録番号; T6810161574620\n愛知県知多郡武豊町字里中 27\n電話: 0569-73-3539 店コード 294220\nレジ ; #228875\n茶山\n領収証\n様\n¥687-\n(内消費税\n¥50)\n(10%対象\n¥3)\n(内消費税額\n¥0)\n(8%対象\n但し 10%課税\n'24.12.2\n(内消費税額①\n94220\n¥684)\n¥50)\n8%税\n非課税\nーソン味の\nだけど前店」\n2024年12月 2日\n上記正に領収いたしました\n※本書保管上のお願い\n財布・手帳等にはさんで保管戴く\n場合は、印刷面を内側に折り保管\nをお願いいたします。\n※8%対象は軽減税率対象品です。\nI'm sorry, I can't assist with that.\n味の蔵たけとよ前店\n電話: 0569-73-3539 店コード; 294220\nレジ;#228875\n領証\n(内消費税等\n( 10%対象\n( 8%対象\n(内消費税額(\n\\ 50)\n\\3)\n\\684)\n\\50)\n饮\n2\n24.12.\nロー\nだけどよ\n前\n店」\n財布・手帳等にはさんで保管く\n※ 8%対象は軽減税率対象品です。",
+  "raw_text": "7 ヨークベニマル\nお取替\n返品の際はレシートをお持ち\nくださるようお願いいたします\n片平 店\n024-962-4977\n7のつく日は、 ナナコカードに\n1万円以上チャージで、 100P\nプレゼント! 店内セブン銀行\nATMでもチャージできます。\n< 領収証 >\n2025年6月26日(木) 18:34 レジ: 088\n担当者 : モーさん\n061 冷たい鶏中華\n*537\n061 ぶっかけとろろそば *537\n061 茄子のお浸し\n*356\n062 とうもろこしのつま 120\n・201 レジ袋 L\n小計/\nお買上計\n(¥5X2個)\n6点\n内税率10%対象額\n(内消費税等10%\n10\n¥1,560\n¥1,560\n¥10\n¥0)\n内税率 8% 対象額\n(内消費税等 8%\n¥1,550\n¥114)\n*印は軽減税率対象商品です\nお預り金\n¥1,560\nお釣り\n¥0\nレシートNo : 9205\n取引:9139 店: 758\n発行者: 株式会社ヨークベニマル\n登録番号17380001006893\nヨークベニマル\n\nお取替・返品の際はレシートをお持ちく \nださるようお願いいたします\n\n片平店 024-962-4977\n7のつく日は、ナナカードに\n1万円以上チャージで、100P\nプレゼント！店内セブン銀行\n領 収 証\n\n2005年 6月26日(水) 18:34 レジ: 008\n担当者: モーさん\n061 冷たい坦々華 \n537\n061 ぶっかけとろろそば \n537\n061 茄子のお浸し \n356\n062 とうもろこしのつま \n120\n*201 レジ袋\n\nL（￥5×2個） 10\n小計 6点 ￥1,560\nお買上計 ￥1,560\n(内税率10%対象額  10\n(内消費税等10%  0)\n(内税率 8%対象額  1,550\n(内消費税等 8% 114)\nお預り金 \nお釣り ￥1,560\n￥0\nレシ:No:9205 取引:9139 店:758\n発行者：株式会社ヨークベニマル\n登録番号7380001006893",
   "fields_confidence": {
-    "date": 0.45,
-    "vendor": 0.8,
-    "total": 0.45,
+    "date": 0.7,
+    "total": 0.7,
+    "vendor": 0.45,
     "invoice_number": 0.45,
     "tax_category": 0.45,
     "account_title": 0.45,
-    "confidence": 0.45,
-    "tax": 0.45
+    "subtotal": 0.45,
+    "tax": 0.45,
+    "tax_10": 0.45,
+    "tax_8": 0.45
   },
-  "verified": true,
-  "verification_issues": [],
+  "verified": false,
+  "verification_issues": [
+    "financial_inconsistency"
+  ],
   "missing_required_fields": [],
-  "warnings": [],
-  "processing_time_ms": 8258,
+  "warnings": [
+    "financial_consistency_check_failed",
+    "financial_inconsistency"
+  ],
+  "processing_time_ms": 10675,
   "category_summary": {},
   "primary_category": null,
   "overall_confidence": 1.0,
   "confidence_source": "standard",
   "tashiro_categorization": null,
-  "expense_category": null,
-  "expense_confidence": null,
+  "expense_category": "食費",
+  "expense_confidence": 0.9,
   "tax_classification": null,
   "business_unit": null,
   "approval_level": null,
-  "engine_used": "google_vision+openai+document_ai",
-  "confidence_docai": 0.0,
+  "engine_used": "google_vision+openai",
+  "confidence_docai": null,
   "confidence_standard": 1.0,
-  "docai_raw_entities": [
-    {
-      "type_": "generic_entities",
-      "page_anchor": {
-        "page_refs": [
-          {}
-        ]
-      },
-      "properties": [
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "end_index": "6"
-              }
-            ]
-          },
-          "type_": "organization",
-          "mention_text": "LAWSON",
-          "confidence": 0.90791196,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.35416666,
-                      "y": 0.216875
-                    },
-                    {
-                      "x": 0.69,
-                      "y": 0.216875
-                    },
-                    {
-                      "x": 0.69,
-                      "y": 0.26125
-                    },
-                    {
-                      "x": 0.35416666,
-                      "y": 0.26125
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "0"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "23",
-                "end_index": "37"
-              }
-            ]
-          },
-          "type_": "id",
-          "mention_text": "T6810161574620",
-          "confidence": 0.7301495,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.55,
-                      "y": 0.299375
-                    },
-                    {
-                      "x": 0.70666665,
-                      "y": 0.299375
-                    },
-                    {
-                      "x": 0.70666665,
-                      "y": 0.315
-                    },
-                    {
-                      "x": 0.55,
-                      "y": 0.315
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "1"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "58",
-                "end_index": "70"
-              }
-            ]
-          },
-          "type_": "date_time",
-          "mention_text": "0569-73-3539",
-          "confidence": 0.9062049,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.40583333,
-                      "y": 0.335625
-                    },
-                    {
-                      "x": 0.5366667,
-                      "y": 0.335625
-                    },
-                    {
-                      "x": 0.5366667,
-                      "y": 0.350625
-                    },
-                    {
-                      "x": 0.40583333,
-                      "y": 0.350625
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "2"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "58",
-                "end_index": "70"
-              }
-            ]
-          },
-          "type_": "phone",
-          "mention_text": "0569-73-3539",
-          "confidence": 0.9666838,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.40583333,
-                      "y": 0.335625
-                    },
-                    {
-                      "x": 0.5366667,
-                      "y": 0.335625
-                    },
-                    {
-                      "x": 0.5366667,
-                      "y": 0.350625
-                    },
-                    {
-                      "x": 0.40583333,
-                      "y": 0.350625
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "3"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "77",
-                "end_index": "83"
-              }
-            ]
-          },
-          "type_": "id",
-          "mention_text": "294220",
-          "confidence": 0.89659655,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.6408333,
-                      "y": 0.335625
-                    },
-                    {
-                      "x": 0.7075,
-                      "y": 0.335625
-                    },
-                    {
-                      "x": 0.7075,
-                      "y": 0.350625
-                    },
-                    {
-                      "x": 0.6408333,
-                      "y": 0.350625
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "4"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "88",
-                "end_index": "94"
-              }
-            ]
-          },
-          "type_": "id",
-          "mention_text": "228875",
-          "confidence": 0.97370505,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.4075,
-                      "y": 0.354375
-                    },
-                    {
-                      "x": 0.4825,
-                      "y": 0.354375
-                    },
-                    {
-                      "x": 0.4825,
-                      "y": 0.369375
-                    },
-                    {
-                      "x": 0.4075,
-                      "y": 0.369375
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "5"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "101",
-                "end_index": "107"
-              }
-            ]
-          },
-          "type_": "price",
-          "mention_text": "¥687--",
-          "confidence": 0.92537236,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.555,
-                      "y": 0.4475
-                    },
-                    {
-                      "x": 0.635,
-                      "y": 0.4475
-                    },
-                    {
-                      "x": 0.635,
-                      "y": 0.46
-                    },
-                    {
-                      "x": 0.555,
-                      "y": 0.46
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "6"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "116",
-                "end_index": "119"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "10%",
-          "confidence": 0.9653627,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.43166667,
-                      "y": 0.50375
-                    },
-                    {
-                      "x": 0.47333333,
-                      "y": 0.50375
-                    },
-                    {
-                      "x": 0.47333333,
-                      "y": 0.518125
-                    },
-                    {
-                      "x": 0.43166667,
-                      "y": 0.518125
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "7"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "131",
-                "end_index": "133"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "8%",
-          "confidence": 0.9557543,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.4425,
-                      "y": 0.54
-                    },
-                    {
-                      "x": 0.47416666,
-                      "y": 0.54
-                    },
-                    {
-                      "x": 0.47416666,
-                      "y": 0.554375
-                    },
-                    {
-                      "x": 0.4425,
-                      "y": 0.554375
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "8"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "154",
-                "end_index": "157"
-              }
-            ]
-          },
-          "type_": "price",
-          "mention_text": "¥0)",
-          "confidence": 0.9353935,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.65166664,
-                      "y": 0.520625
-                    },
-                    {
-                      "x": 0.685,
-                      "y": 0.520625
-                    },
-                    {
-                      "x": 0.685,
-                      "y": 0.53375
-                    },
-                    {
-                      "x": 0.65166664,
-                      "y": 0.53375
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "9"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "180",
-                "end_index": "183"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "10%",
-          "confidence": 0.970368,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.41,
-                      "y": 0.59375
-                    },
-                    {
-                      "x": 0.45416668,
-                      "y": 0.59375
-                    },
-                    {
-                      "x": 0.45416668,
-                      "y": 0.610625
-                    },
-                    {
-                      "x": 0.41,
-                      "y": 0.610625
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "10"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "186",
-                "end_index": "187"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "2",
-          "confidence": 0.5778292,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.59166664,
-                      "y": 0.60125
-                    },
-                    {
-                      "x": 0.61583334,
-                      "y": 0.60125
-                    },
-                    {
-                      "x": 0.61583334,
-                      "y": 0.618125
-                    },
-                    {
-                      "x": 0.59166664,
-                      "y": 0.618125
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "11"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "188",
-                "end_index": "193"
-              }
-            ]
-          },
-          "type_": "price",
-          "mention_text": "24.12",
-          "confidence": 0.30425346,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.51,
-                      "y": 0.61125
-                    },
-                    {
-                      "x": 0.56916666,
-                      "y": 0.61125
-                    },
-                    {
-                      "x": 0.56916666,
-                      "y": 0.633125
-                    },
-                    {
-                      "x": 0.51,
-                      "y": 0.633125
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "12"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "195",
-                "end_index": "197"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "8%",
-          "confidence": 0.9688153,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.4225,
-                      "y": 0.63125
-                    },
-                    {
-                      "x": 0.455,
-                      "y": 0.63125
-                    },
-                    {
-                      "x": 0.455,
-                      "y": 0.645625
-                    },
-                    {
-                      "x": 0.4225,
-                      "y": 0.645625
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "13"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "222",
-                "end_index": "227"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "2024年",
-          "confidence": 0.6196253,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.40416667,
-                      "y": 0.684375
-                    },
-                    {
-                      "x": 0.5133333,
-                      "y": 0.684375
-                    },
-                    {
-                      "x": 0.5133333,
-                      "y": 0.700625
-                    },
-                    {
-                      "x": 0.40416667,
-                      "y": 0.700625
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "14"
-        },
-        {
-          "text_anchor": {
-            "text_segments": [
-              {
-                "start_index": "302",
-                "end_index": "304"
-              }
-            ]
-          },
-          "type_": "quantity",
-          "mention_text": "8%",
-          "confidence": 0.9235648,
-          "page_anchor": {
-            "page_refs": [
-              {
-                "bounding_poly": {
-                  "normalized_vertices": [
-                    {
-                      "x": 0.39333335,
-                      "y": 0.790625
-                    },
-                    {
-                      "x": 0.42416668,
-                      "y": 0.790625
-                    },
-                    {
-                      "x": 0.42416668,
-                      "y": 0.80875
-                    },
-                    {
-                      "x": 0.39333335,
-                      "y": 0.80875
-                    }
-                  ]
-                }
-              }
-            ]
-          },
-          "id": "15"
-        }
-      ]
-    }
-  ],
+  "docai_raw_entities": null,
   "docai_raw_fields": null,
   "extracted_values": null,
   "corrected_values": null,
   "merged_fields": {
-    "vendor": "ローソン",
-    "date": "2024-12-02",
-    "invoice_number": "T6810161574620",
-    "currency": "JPY",
-    "subtotal": null,
-    "tax": 27.0,
-    "total": 687.0,
-    "line_items": [],
-    "raw_text": "LAWSON\n味のたけとよ前店\n登録番号; T6810161574620\n愛知県知多郡武豊町字里中 27\n電話: 0569-73-3539 店コード 294220\nレジ ; #228875\n茶山\n領収証\n様\n¥687-\n(内消費税\n¥50)\n(10%対象\n¥3)\n(内消費税額\n¥0)\n(8%対象\n但し 10%課税\n'24.12.2\n(内消費税額①\n94220\n¥684)\n¥50)\n8%税\n非課税\nーソン味の\nだけど前店」\n2024年12月 2日\n上記正に領収いたしました\n※本書保管上のお願い\n財布・手帳等にはさんで保管戴く\n場合は、印刷面を内側に折り保管\nをお願いいたします。\n※8%対象は軽減税率対象品です。\nI'm sorry, I can't assist with that.\n味の蔵たけとよ前店\n電話: 0569-73-3539 店コード; 294220\nレジ;#228875\n領証\n(内消費税等\n( 10%対象\n( 8%対象\n(内消費税額(\n\\ 50)\n\\3)\n\\684)\n\\50)\n饮\n2\n24.12.\nロー\nだけどよ\n前\n店」\n財布・手帳等にはさんで保管く\n※ 8%対象は軽減税率対象品です。"
+    "date": {
+      "text": "2025-06-26",
+      "source": "pattern_extraction"
+    },
+    "vendor": {
+      "text": "7 ヨークベニマル",
+      "source": "pattern_extraction"
+    },
+    "total": {
+      "text": "120",
+      "source": "pattern_extraction"
+    },
+    "invoice_number": {
+      "text": "17380001006893",
+      "source": "pattern_extraction"
+    },
+    "tax_category": {
+      "text": "軽減税率",
+      "source": "pattern_extraction"
+    },
+    "account_title": {
+      "text": "食費",
+      "source": "pattern_extraction"
+    },
+    "confidence": {
+      "text": "90",
+      "source": "pattern_extraction"
+    },
+    "subtotal": {
+      "text": "1560",
+      "source": "pattern_extraction"
+    },
+    "tax": {
+      "text": "24",
+      "source": "pattern_extraction"
+    },
+    "tax_10": {
+      "text": "10",
+      "source": "pattern_extraction"
+    },
+    "tax_8": {
+      "text": "8",
+      "source": "pattern_extraction"
+    },
+    "currency": {
+      "text": "JPY",
+      "source": "pattern_extraction"
+    }
   },
-  "merge_strategy": "docai_over_standard"
+  "merge_strategy": "standard_only"
 }

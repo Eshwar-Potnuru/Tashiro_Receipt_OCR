@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Receipt OCR — HQ View</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-50);
+            color: var(--gray-900);
+            padding-bottom: 80px;
+        }
+
+        /* Top Bar */
+        .top-bar {
+            background: white;
+            border-bottom: 1px solid var(--gray-200);
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .top-bar-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .top-bar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        .top-bar-subtitle {
+            font-size: 12px;
+            color: var(--gray-600);
+            font-weight: 400;
+            margin-top: 2px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .logout-btn:active {
+            opacity: 0.8;
+        }
+
+        /* Main Content */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 16px;
+        }
+
+        /* Filters Section */
+        .filters-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .filters-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--gray-900);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .filter-label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--gray-700);
+        }
+
+        .filter-select,
+        .filter-input {
+            padding: 8px 12px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
+            font-size: 14px;
+            background: white;
+            color: var(--gray-900);
+        }
+
+        .filter-select:focus,
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--gray-200);
+            color: var(--gray-700);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-300);
+        }
+
+        /* Summary Stats */
+        .stats-row {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px 20px;
+            flex: 1;
+            min-width: 200px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--gray-600);
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--gray-900);
+        }
+
+        /* Batches Section */
+        .batches-section {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .batch-card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .batch-header {
+            padding: 16px 20px;
+            background: var(--gray-50);
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .batch-header:hover {
+            background: var(--gray-100);
+        }
+
+        .batch-info {
+            flex: 1;
+        }
+
+        .batch-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .batch-meta {
+            font-size: 13px;
+            color: var(--gray-600);
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .batch-toggle {
+            color: var(--gray-600);
+            font-size: 20px;
+            transition: transform 0.2s;
+        }
+
+        .batch-toggle.expanded {
+            transform: rotate(180deg);
+        }
+
+        .batch-body {
+            display: none;
+            padding: 0;
+        }
+
+        .batch-body.expanded {
+            display: block;
+        }
+
+        /* Receipt Table */
+        .receipt-table-wrapper {
+            overflow-x: auto;
+            padding: 20px;
+        }
+
+        .receipt-table {
+            width: 100%;
+            min-width: 1000px;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .receipt-table thead {
+            background: var(--gray-50);
+        }
+
+        .receipt-table th {
+            padding: 10px 12px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--gray-700);
+            border-bottom: 2px solid var(--gray-200);
+            white-space: nowrap;
+        }
+
+        .receipt-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .receipt-table tbody tr:hover {
+            background: var(--gray-50);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--gray-600);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: var(--gray-400);
+        }
+
+        .empty-state-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--gray-700);
+        }
+
+        .empty-state-text {
+            font-size: 14px;
+        }
+
+        /* Change Logs Placeholder */
+        .change-logs-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .change-logs-header {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--gray-900);
+        }
+
+        .change-logs-placeholder {
+            padding: 40px;
+            text-align: center;
+            color: var(--gray-500);
+            font-size: 13px;
+            background: var(--gray-50);
+            border-radius: 6px;
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            border: 3px solid var(--gray-200);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--gray-900);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            display: none;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            display: block;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Bar -->
+    <div class="top-bar">
+        <div class="top-bar-content">
+            <div>
+                <div class="top-bar-title">Receipt OCR — HQ View (Read-Only)</div>
+                <div class="top-bar-subtitle">Phase 7.2: Office-Month Batches</div>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="userName">HQ Admin</span>
+                <button class="logout-btn" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <!-- Filters Section -->
+        <div class="filters-section">
+            <div class="filters-header">
+                <i class="fas fa-filter"></i> Filters
+            </div>
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Office</label>
+                    <select class="filter-select" id="officeFilter">
+                        <option value="">All Offices</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Month</label>
+                    <select class="filter-select" id="monthFilter">
+                        <option value="">All Months</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Search</label>
+                    <input type="text" class="filter-input" id="searchInput" placeholder="Search by vendor, staff...">
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary" onclick="applyFilters()">
+                    <i class="fas fa-search"></i>
+                    Apply Filters
+                </button>
+                <button class="btn btn-secondary" onclick="clearFilters()">
+                    <i class="fas fa-times"></i>
+                    Clear
+                </button>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="stats-row" id="statsRow">
+            <div class="stat-card">
+                <div class="stat-label">Total Batches</div>
+                <div class="stat-value" id="totalBatches">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Total Receipts</div>
+                <div class="stat-value" id="totalReceipts">0</div>
+            </div>
+        </div>
+
+        <!-- Batches Section -->
+        <div id="batchesContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <div>Loading batches...</div>
+            </div>
+        </div>
+
+        <!-- Change Logs Placeholder -->
+        <div class="change-logs-section">
+            <div class="change-logs-header">
+                <i class="fas fa-history"></i> Change Logs
+            </div>
+            <div class="change-logs-placeholder">
+                Change log tracking will be implemented in a future phase.
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // Auth check
+        const token = localStorage.getItem('token');
+        if (!token) {
+            window.location.href = '/';
+        }
+
+        // Parse JWT to get user info
+        function parseJWT(token) {
+            try {
+                const base64Url = token.split('.')[1];
+                const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+                const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                    return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+                }).join(''));
+                return JSON.parse(jsonPayload);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const userData = parseJWT(token);
+        if (userData && userData.name) {
+            document.getElementById('userName').textContent = userData.name;
+        }
+
+        // Check role (HQ or ADMIN only)
+        if (userData && userData.role !== 'HQ' && userData.role !== 'ADMIN') {
+            showToast('Access denied. HQ or ADMIN role required.');
+            setTimeout(() => window.location.href = '/', 2000);
+        }
+
+        // API calls
+        async function fetchBatches(office = null, month = null) {
+            try {
+                const params = new URLSearchParams();
+                if (office) params.append('office', office);
+                if (month) params.append('month', month);
+
+                const response = await fetch(`/api/hq-view/batches?${params.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching batches:', error);
+                showToast('Failed to load batches');
+                return null;
+            }
+        }
+
+        async function fetchOffices() {
+            try {
+                const response = await fetch('/api/hq-view/offices', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching offices:', error);
+                return [];
+            }
+        }
+
+        async function fetchMonths() {
+            try {
+                const response = await fetch('/api/hq-view/months', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error ${response.status}`);
+                }
+
+                return await response.json();
+            } catch (error) {
+                console.error('Error fetching months:', error);
+                return [];
+            }
+        }
+
+        // Render functions
+        function renderBatches(data) {
+            const container = document.getElementById('batchesContainer');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+
+            if (!data || !data.batches || data.batches.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox"></i>
+                        <div class="empty-state-title">No Batches Found</div>
+                        <div class="empty-state-text">No SENT receipts match the current filters.</div>
+                    </div>
+                `;
+                return;
+            }
+
+            // Filter by search term
+            let filteredBatches = data.batches;
+            if (searchTerm) {
+                filteredBatches = data.batches.map(batch => {
+                    const filteredReceipts = batch.receipts.filter(receipt => {
+                        const searchableText = [
+                            receipt.vendor,
+                            receipt.staff_name,
+                            receipt.business_location,
+                        ].filter(Boolean).join(' ').toLowerCase();
+                        return searchableText.includes(searchTerm);
+                    });
+                    return { ...batch, receipts: filteredReceipts };
+                }).filter(batch => batch.receipts.length > 0);
+            }
+
+            // Update stats
+            document.getElementById('totalBatches').textContent = filteredBatches.length;
+            const totalReceipts = filteredBatches.reduce((sum, batch) => sum + batch.receipts.length, 0);
+            document.getElementById('totalReceipts').textContent = totalReceipts;
+
+            // Render batch cards
+            const batchesHTML = filteredBatches.map((batch, index) => `
+                <div class="batch-card">
+                    <div class="batch-header" onclick="toggleBatch(${index})">
+                        <div class="batch-info">
+                            <div class="batch-title">${batch.office} — ${batch.month_display}</div>
+                            <div class="batch-meta">
+                                <span><i class="fas fa-receipt"></i> ${batch.receipts.length} receipts</span>
+                                ${batch.sent_timestamp ? `<span><i class="fas fa-clock"></i> Sent: ${formatDateTime(batch.sent_timestamp)}</span>` : ''}
+                                ${batch.batch_id ? `<span><i class="fas fa-tag"></i> Batch: ${batch.batch_id}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="batch-toggle" id="toggle-${index}">
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                    </div>
+                    <div class="batch-body" id="batch-${index}">
+                        <div class="receipt-table-wrapper">
+                            <table class="receipt-table">
+                                <thead>
+                                    <tr>
+                                        <th>支払日</th>
+                                        <th>摘要</th>
+                                        <th>担当者</th>
+                                        <th>支出</th>
+                                        <th>インボイス</th>
+                                        <th>10％税込額</th>
+                                        <th>8％税込額</th>
+                                        <th>非課税額</th>
+                                        <th>税込合計</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${batch.receipts.map(receipt => `
+                                        <tr>
+                                            <td>${receipt.receipt_date || '-'}</td>
+                                            <td>${receipt.vendor || '-'}</td>
+                                            <td>${receipt.staff_name || '-'}</td>
+                                            <td>${formatCurrency(receipt.total)}</td>
+                                            <td>${receipt.invoice_flag || '-'}</td>
+                                            <td>${formatCurrency(receipt.tax_10)}</td>
+                                            <td>${formatCurrency(receipt.tax_8)}</td>
+                                            <td>${formatCurrency(receipt.tax_exempt)}</td>
+                                            <td>${formatCurrency(receipt.total)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            container.innerHTML = `<div class="batches-section">${batchesHTML}</div>`;
+        }
+
+        function toggleBatch(index) {
+            const body = document.getElementById(`batch-${index}`);
+            const toggle = document.getElementById(`toggle-${index}`);
+            
+            body.classList.toggle('expanded');
+            toggle.classList.toggle('expanded');
+        }
+
+        function formatDateTime(isoString) {
+            if (!isoString) return '-';
+            try {
+                const dt = new Date(isoString);
+                return dt.toLocaleString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } catch (e) {
+                return isoString;
+            }
+        }
+
+        function formatCurrency(value) {
+            if (value == null) return '-';
+            return `¥${Number(value).toLocaleString('ja-JP')}`;
+        }
+
+        // Filter actions
+        async function applyFilters() {
+            const office = document.getElementById('officeFilter').value || null;
+            const month = document.getElementById('monthFilter').value || null;
+
+            const data = await fetchBatches(office, month);
+            if (data) {
+                renderBatches(data);
+            }
+        }
+
+        async function clearFilters() {
+            document.getElementById('officeFilter').value = '';
+            document.getElementById('monthFilter').value = '';
+            document.getElementById('searchInput').value = '';
+            await applyFilters();
+        }
+
+        // Initialize
+        async function initialize() {
+            // Populate office dropdown
+            const offices = await fetchOffices();
+            const officeSelect = document.getElementById('officeFilter');
+            offices.forEach(office => {
+                const option = document.createElement('option');
+                option.value = office;
+                option.textContent = office;
+                officeSelect.appendChild(option);
+            });
+
+            // Populate month dropdown
+            const months = await fetchMonths();
+            const monthSelect = document.getElementById('monthFilter');
+            months.forEach(month => {
+                const option = document.createElement('option');
+                option.value = month;
+                // Format YYYYMM to display format
+                const year = month.substring(0, 4);
+                const mon = month.substring(4, 6);
+                option.textContent = `${year}年${mon}月`;
+                monthSelect.appendChild(option);
+            });
+
+            // Load initial data
+            await applyFilters();
+        }
+
+        // Real-time search filter
+        document.getElementById('searchInput').addEventListener('input', () => {
+            // Re-render with current data filtered by search
+            const container = document.getElementById('batchesContainer');
+            if (container.querySelector('.batches-section')) {
+                // Re-apply current filters
+                applyFilters();
+            }
+        });
+
+        // Utility functions
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = '/';
+        }
+
+        // Start
+        initialize();
+    </script>
+</body>
+</html>

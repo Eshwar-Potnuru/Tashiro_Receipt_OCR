@@ -1,0 +1,40 @@
+{
+  "config": {
+    "base_url": "http://127.0.0.1:8001",
+    "workers": 2,
+    "admins": 0,
+    "receipts_per_worker": 2,
+    "receipt_glob": "Sample reciepts/*.png",
+    "stagger_seconds": 0.0,
+    "poll_interval": 1.0,
+    "duration_seconds": 6
+  },
+  "summary": {
+    "POST /api/drafts/batch-upload": {
+      "count": 2,
+      "ok": 2,
+      "errors": 0,
+      "avg_ms": 45184.3,
+      "p95_ms": 44175.79,
+      "max_ms": 46192.8
+    }
+  },
+  "results": [
+    {
+      "actor": "worker_1",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "status_code": 200,
+      "elapsed_ms": 44175.79449999903,
+      "ok": true,
+      "error": ""
+    },
+    {
+      "actor": "worker_2",
+      "endpoint": "POST /api/drafts/batch-upload",
+      "status_code": 200,
+      "elapsed_ms": 46192.800100005115,
+      "ok": true,
+      "error": ""
+    }
+  ]
+}

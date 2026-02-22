@@ -121,6 +121,33 @@ class DraftReceipt(BaseModel):
         default=None,
         description="Timestamp when status changed to SENT (None if still DRAFT)",
     )
+
+    # Phase 6A-5: SEND audit metadata
+    sent_by_user_id: Optional[str] = Field(
+        default=None,
+        description="User ID of actor who successfully sent this draft.",
+    )
+
+    sent_by_role: Optional[str] = Field(
+        default=None,
+        description="Role of actor who successfully sent this draft (WORKER/ADMIN/HQ).",
+    )
+
+    # Phase 6A-5: HQ transfer placeholders (no HQ transfer action in this phase)
+    hq_status: Optional[str] = Field(
+        default=None,
+        description="HQ transfer status placeholder. Set to PENDING on successful send.",
+    )
+
+    hq_batch_id: Optional[str] = Field(
+        default=None,
+        description="HQ batch identifier placeholder (nullable).",
+    )
+
+    hq_transferred_at: Optional[datetime] = Field(
+        default=None,
+        description="Timestamp placeholder for HQ transfer completion (nullable).",
+    )
     
     image_ref: Optional[str] = Field(
         default=None,
@@ -178,7 +205,7 @@ class DraftReceipt(BaseModel):
         """Pydantic configuration."""
         use_enum_values = False  # Keep enum instances, not strings
 
-    def mark_as_sent(self) -> DraftReceipt:
+    def mark_as_sent(self, sent_at: Optional[datetime] = None) -> DraftReceipt:
         """Transition DRAFT → SENT (for bulk send operation).
         
         This is a helper method for state transition logic.
@@ -200,7 +227,7 @@ class DraftReceipt(BaseModel):
             )
         
         self.status = DraftStatus.SENT
-        self.sent_at = datetime.utcnow()
+        self.sent_at = sent_at or datetime.utcnow()
         self.updated_at = datetime.utcnow()
         return self
 
