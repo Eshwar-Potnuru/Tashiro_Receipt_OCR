@@ -17,10 +17,12 @@ from pydantic import BaseModel, Field
 from app.auth.dependencies import get_current_user
 from app.models.user import User
 from app.repositories.draft_repository import DraftRepository
+from app.services.config_service import ConfigService
 
 
 logger = logging.getLogger("uvicorn.error")
 router = APIRouter(prefix="/api/hq-view", tags=["hq-view"])
+config_service = ConfigService()
 
 
 def _ensure_hq_or_admin(current_user: User) -> None:
@@ -113,11 +115,13 @@ def get_hq_batches(
     """
     _ensure_hq_or_admin(current_user)
     
+    canonical_office_filter = config_service.normalize_location(office) if office else None
+
     logger.info(
         "hq_view_batches user_id=%s role=%s office=%s month=%s",
         getattr(current_user, "user_id", None),
         getattr(current_user, "role", None),
-        office,
+        canonical_office_filter or office,
         month,
     )
     
@@ -148,12 +152,13 @@ def get_hq_batches(
         receipt = draft["receipt"]
         
         # Extract grouping keys using correct Receipt model fields
-        draft_office = receipt.get("business_location_id") or  "Unknown Office"
+        raw_office = receipt.get("business_location_id")
+        draft_office = config_service.normalize_location(raw_office) or raw_office or "Unknown Office"
         receipt_date = receipt.get("receipt_date")  # ISO format YYYY-MM-DD
         draft_month = _compute_month_key(receipt_date) or "000000"
         
         # Apply filters
-        if office and draft_office != office:
+        if canonical_office_filter and draft_office != canonical_office_filter:
             continue
         if month and draft_month != month:
             continue
@@ -190,12 +195,15 @@ def get_hq_batches(
             draft = item["draft"]
             receipt = item["receipt"]
             
+            staff_id = receipt.get("staff_id")
+            resolved_staff_name = config_service.get_staff_name(staff_id, draft_office) if staff_id else None
+
             receipt_details.append(ReceiptDetail(
                 draft_id=str(draft.get("draft_id", "")),
                 receipt_date=receipt.get("receipt_date"),  # ISO format
                 vendor=receipt.get("vendor_name"),
                 total=float(receipt.get("total_amount")) if receipt.get("total_amount") else None,
-                staff_name=str(receipt.get("staff_id")) if receipt.get("staff_id") else None,  # Convert UUID to string
+                staff_name=resolved_staff_name or (str(staff_id) if staff_id else None),
                 business_location=str(receipt.get("business_location_id")) if receipt.get("business_location_id") else None,  # Convert UUID to string
                 invoice_flag=None,  # Not in Receipt model
                 tax_10=float(receipt.get("tax_10_amount")) if receipt.get("tax_10_amount") else None,
@@ -232,18 +240,8 @@ def get_offices(
 ):
     """Get unique office list for filter dropdown."""
     _ensure_hq_or_admin(current_user)
-    
-    repo = DraftRepository()
-    from app.models.draft import DraftStatus
-    drafts_list = repo.list_all(status=DraftStatus.SENT, include_image_data=False, limit=None)
-    
-    offices = set()
-    for draft_obj in drafts_list:
-        receipt_dict = draft_obj.receipt.model_dump() if hasattr(draft_obj.receipt, 'model_dump') else draft_obj.receipt.dict()
-        office = receipt_dict.get("business_location_id") or "Unknown Office"
-        offices.add(office)
-    
-    return sorted(list(offices))
+
+    return config_service.get_locations()
 
 
 @router.get("/months", response_model=List[str])

@@ -1757,6 +1757,7 @@
             
             // Manual Entry Modal
             manual_modal_title:{ ja: '事務所手入力（OCRなし）', en: 'Office Manual Entry (No OCR)' },
+            manual_modal_edit_title:{ ja: '手入力下書き編集（OCRなし）', en: 'Edit Manual Draft (No OCR)' },
             manual_note:       { ja: '保存すると下書きが作成されます。送信するとExcel（Format①/②）に書き込まれます。', en: 'Save creates a draft only. Send writes to Excel (Format①/②).' },
             section_receipt:   { ja: 'セクション1：領収書フィールド', en: 'Section 1: Receipt Fields' },
             section_additional:{ ja: 'セクション2：追加情報', en: 'Section 2: Additional Information' },
@@ -1985,6 +1986,7 @@
         let manualReferenceData = { business_locations: [], staff: [] };
         let manualLocationIds = new Set();
         let manualStaffIds = new Set();
+        let referenceDataPromise = null;
         let manualEditingDraftId = null;
         const manualTaxCategories = [
             { value: '軽減税率', label: '軽減税率 (Reduced Tax Rate 8%)' },
@@ -2079,32 +2081,132 @@
             resetManualEntryForm();
         }
 
-        async function loadManualReferenceData() {
+        async function ensureReferenceDataLoaded() {
+            if (
+                Array.isArray(manualReferenceData.business_locations) &&
+                manualReferenceData.business_locations.length > 0 &&
+                Array.isArray(manualReferenceData.staff)
+            ) {
+                return manualReferenceData;
+            }
+
+            if (referenceDataPromise) {
+                return referenceDataPromise;
+            }
+
             const token = localStorage.getItem('auth_token');
-            const response = await fetch('/api/drafts/config/reference-data', {
+            referenceDataPromise = fetch('/api/drafts/config/reference-data', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 },
                 cache: 'no-store'
+            }).then(async response => {
+                if (!response.ok) {
+                    throw new Error(`Failed to load location/staff data (HTTP ${response.status})`);
+                }
+
+                const payload = await response.json();
+                const businessLocations = Array.isArray(payload.business_locations)
+                    ? payload.business_locations
+                        .filter(location => location && typeof location.id === 'string' && location.id.trim() !== '')
+                        .map(location => ({
+                            id: location.id.trim(),
+                            name: (location.name || location.id || '').toString().trim() || location.id.trim(),
+                        }))
+                    : [];
+
+                const locationSet = new Set(businessLocations.map(location => location.id));
+                const staff = Array.isArray(payload.staff)
+                    ? payload.staff
+                        .filter(item => {
+                            const locationId = String(item && item.business_location_id ? item.business_location_id : '').trim();
+                            const staffId = String(item && item.staff_id ? item.staff_id : '').trim();
+                            return locationSet.has(locationId) && staffId !== '';
+                        })
+                        .map(item => ({
+                            staff_id: String(item.staff_id).trim(),
+                            name: (item.name || item.staff_id || '').toString().trim() || String(item.staff_id).trim(),
+                            business_location_id: String(item.business_location_id).trim(),
+                        }))
+                    : [];
+
+                manualReferenceData = {
+                    business_locations: businessLocations,
+                    staff,
+                };
+
+                return manualReferenceData;
+            }).finally(() => {
+                referenceDataPromise = null;
             });
 
-            if (!response.ok) {
-                throw new Error(`Failed to load location/staff data (HTTP ${response.status})`);
-            }
+            return referenceDataPromise;
+        }
 
-            manualReferenceData = await response.json();
-            const locations = Array.isArray(manualReferenceData.business_locations) ? manualReferenceData.business_locations : [];
+        function getConfiguredLocations() {
+            const locations = Array.isArray(manualReferenceData.business_locations)
+                ? manualReferenceData.business_locations
+                : [];
+            return locations.map(location => location.id);
+        }
+
+        function getConfiguredStaff(locationId = '') {
+            const staffList = Array.isArray(manualReferenceData.staff) ? manualReferenceData.staff : [];
+            if (!locationId) {
+                return staffList;
+            }
+            return staffList.filter(staff => String(staff.business_location_id || '').trim() === locationId);
+        }
+
+        function populateLocationLedgerStaffFilter() {
+            const locationValue = document.getElementById('locationLocationFilter').value || '';
+            const staffFilter = document.getElementById('locationStaffFilter');
+            const previousValue = staffFilter.value;
+            const staffList = getConfiguredStaff(locationValue);
+
+            staffFilter.innerHTML = '<option value="">All Staff</option>';
+            staffList
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(staff => {
+                    staffFilter.innerHTML += `<option value="${staff.staff_id}">${staff.name}</option>`;
+                });
+
+            if (previousValue && staffList.some(staff => staff.staff_id === previousValue)) {
+                staffFilter.value = previousValue;
+            } else {
+                staffFilter.value = '';
+            }
+        }
+
+        function populateStaffLedgerStaffFilter() {
+            const locationValue = document.getElementById('staffLocationFilter').value || '';
+            const staffFilter = document.getElementById('staffStaffFilter');
+            const previousValue = staffFilter.value;
+            const staffList = getConfiguredStaff(locationValue);
+
+            staffFilter.innerHTML = '<option value="">All Staff</option>';
+            staffList
+                .slice()
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .forEach(staff => {
+                    staffFilter.innerHTML += `<option value="${staff.staff_id}">${staff.name}</option>`;
+                });
+
+            if (previousValue && staffList.some(staff => staff.staff_id === previousValue)) {
+                staffFilter.value = previousValue;
+            } else {
+                staffFilter.value = '';
+            }
+        }
+
+        async function loadManualReferenceData() {
+            const referenceData = await ensureReferenceDataLoaded();
+            const locations = Array.isArray(referenceData.business_locations) ? referenceData.business_locations : [];
             manualLocationIds = new Set();
 
-            const normalizedLocations = locations.filter(location => {
-                return location && typeof location.id === 'string' && location.id.trim() !== '';
-            }).map(location => ({
-                id: location.id.trim(),
-                name: (location.name || location.id || '').toString().trim() || location.id.trim(),
-            }));
-
             manualLocationSelect.innerHTML = '<option value="">Select location</option>';
-            normalizedLocations.forEach(location => {
+            locations.forEach(location => {
                 manualLocationIds.add(location.id);
                 const option = document.createElement('option');
                 option.value = location.id;
@@ -2227,7 +2329,7 @@
                 await loadManualReferenceData();
                 manualEditingDraftId = null;
                 const title = document.querySelector('.manual-entry-title');
-                if (title) title.textContent = 'Office Manual Entry (No OCR)';
+                if (title) title.textContent = tA('manual_modal_title');
                 manualEntryModal.classList.add('show');
             } catch (error) {
                 console.error('Failed to open manual entry modal:', error);
@@ -2267,7 +2369,7 @@
                 updateTaxCategoryHint();
 
                 const title = document.querySelector('.manual-entry-title');
-                if (title) title.textContent = 'Edit Manual Draft (No OCR)';
+                if (title) title.textContent = tA('manual_modal_edit_title');
                 manualEntryModal.classList.add('show');
             } catch (error) {
                 console.error('Failed to open edit modal:', error);
@@ -3226,6 +3328,7 @@
             
             // Location Ledger: Location filter
             document.getElementById('locationLocationFilter').addEventListener('change', () => {
+                populateLocationLedgerStaffFilter();
                 filterLocationLedger(document.getElementById('locationSearchInput').value);
             });
             
@@ -3241,6 +3344,7 @@
             
             // Staff Ledger: Location filter
             document.getElementById('staffLocationFilter').addEventListener('change', () => {
+                populateStaffLedgerStaffFilter();
                 filterStaffLedger(document.getElementById('staffSearchInput').value);
             });
             
@@ -3262,6 +3366,7 @@
             const tbody = document.getElementById('locationLedgerBody');
             
             try {
+                await ensureReferenceDataLoaded();
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="9" style="text-align: center; padding: 40px; color: #6c757d;">
@@ -3337,36 +3442,23 @@
                 monthFilter.innerHTML += '</optgroup>';
             });
             
-            // Populate Location filter with all configured locations
+            // Populate Location filter strictly from config/locations.json
             const locationFilter = document.getElementById('locationLocationFilter');
-            const locations = new Set();
-            
-            // Add all configured locations from system (7 locations)
-            const configuredLocations = ['Tokyo', 'Osaka', 'Sagami', 'Aichi', 'Keihin', 'Kashima', 'Takasago'];
-            configuredLocations.forEach(loc => locations.add(loc));
-            
-            // Add any additional locations from actual data
-            allLocationLedgerRows.forEach(row => {
-                if (row.location) locations.add(row.location);
-            });
+            const previousLocation = locationFilter.value;
+            const locations = getConfiguredLocations();
             
             locationFilter.innerHTML = '<option value="">All Locations</option>';
-            Array.from(locations).sort().forEach(location => {
+            locations.slice().sort().forEach(location => {
                 locationFilter.innerHTML += `<option value="${location}">${location}</option>`;
             });
+            if (previousLocation && locations.includes(previousLocation)) {
+                locationFilter.value = previousLocation;
+            } else {
+                locationFilter.value = '';
+            }
             
-            // Populate Staff filter for Location Ledger
-            const staffFilter = document.getElementById('locationStaffFilter');
-            const staffMap = new Map();
-            allLocationLedgerRows.forEach(row => {
-                if (row.staff_id && row.D_person_in_charge) {
-                    staffMap.set(row.staff_id, row.D_person_in_charge);
-                }
-            });
-            staffFilter.innerHTML = '<option value="">All Staff</option>';
-            Array.from(staffMap.entries()).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, name]) => {
-                staffFilter.innerHTML += `<option value="${id}">${name}</option>`;
-            });
+            // Populate Staff filter strictly from config/staff_config.json
+            populateLocationLedgerStaffFilter();
         }
         
         function filterLocationLedger(searchText) {
@@ -3374,6 +3466,13 @@
             const monthFilter = document.getElementById('locationMonthFilter').value;
             const locationFilter = document.getElementById('locationLocationFilter').value;
             const staffFilter = document.getElementById('locationStaffFilter').value;
+            const configuredLocations = new Set(getConfiguredLocations());
+            const configuredStaffByLocation = new Map(
+                Array.from(configuredLocations).map(location => [
+                    location,
+                    new Set(getConfiguredStaff(location).map(staff => staff.staff_id)),
+                ])
+            );
             
             // Check if search is a month shorthand (e.g., "01" or "02/2026" or "12/2025")
             let searchMonth = null;
@@ -3395,6 +3494,10 @@
             const search = searchMonth ? '' : rawSearch.toLowerCase();
             
             filteredLocationLedgerRows = allLocationLedgerRows.filter(row => {
+                if (!configuredLocations.has(row.location)) return false;
+                const allowedStaff = configuredStaffByLocation.get(row.location) || new Set();
+                if (!allowedStaff.has(row.staff_id)) return false;
+
                 // Apply month search shorthand or dropdown filter
                 if (searchMonth) {
                     if (searchMonth.type === 'exact') {
@@ -3501,6 +3604,7 @@
             const tbody = document.getElementById('staffLedgerBody');
             
             try {
+                await ensureReferenceDataLoaded();
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="15" style="text-align: center; padding: 40px; color: #6c757d;">
@@ -3576,36 +3680,23 @@
                 monthFilter.innerHTML += '</optgroup>';
             });
             
-            // Populate Location filter with all configured locations
+            // Populate Location filter strictly from config/locations.json
             const locationFilter = document.getElementById('staffLocationFilter');
-            const locations = new Set();
-            
-            // Add all configured locations from system (7 locations)
-            const configuredLocations = ['Tokyo', 'Osaka', 'Sagami', 'Aichi', 'Keihin', 'Kashima', 'Takasago'];
-            configuredLocations.forEach(loc => locations.add(loc));
-            
-            // Add any additional locations from actual data
-            allStaffLedgerRows.forEach(row => {
-                if (row.location) locations.add(row.location);
-            });
+            const previousLocation = locationFilter.value;
+            const locations = getConfiguredLocations();
             
             locationFilter.innerHTML = '<option value="">All Locations</option>';
-            Array.from(locations).sort().forEach(location => {
+            locations.slice().sort().forEach(location => {
                 locationFilter.innerHTML += `<option value="${location}">${location}</option>`;
             });
+            if (previousLocation && locations.includes(previousLocation)) {
+                locationFilter.value = previousLocation;
+            } else {
+                locationFilter.value = '';
+            }
             
-            // Populate Staff filter with all staff from data
-            const staffFilter = document.getElementById('staffStaffFilter');
-            const staffMap = new Map();
-            allStaffLedgerRows.forEach(row => {
-                if (row.staff_id && row.A_person_in_charge) {
-                    staffMap.set(row.staff_id, row.A_person_in_charge);
-                }
-            });
-            staffFilter.innerHTML = '<option value="">All Staff</option>';
-            Array.from(staffMap.entries()).sort((a, b) => a[1].localeCompare(b[1])).forEach(([id, name]) => {
-                staffFilter.innerHTML += `<option value="${id}">${name}</option>`;
-            });
+            // Populate Staff filter strictly from config/staff_config.json
+            populateStaffLedgerStaffFilter();
         }
         
         function filterStaffLedger(searchText) {
@@ -3613,6 +3704,13 @@
             const monthFilter = document.getElementById('staffMonthFilter').value;
             const locationFilter = document.getElementById('staffLocationFilter').value;
             const staffFilter = document.getElementById('staffStaffFilter').value;
+            const configuredLocations = new Set(getConfiguredLocations());
+            const configuredStaffByLocation = new Map(
+                Array.from(configuredLocations).map(location => [
+                    location,
+                    new Set(getConfiguredStaff(location).map(staff => staff.staff_id)),
+                ])
+            );
             
             // Check if search is a month shorthand (e.g., "01" or "02/2026" or "12/2025")
             let searchMonth = null;
@@ -3634,6 +3732,10 @@
             const search = searchMonth ? '' : rawSearch.toLowerCase();
             
             filteredStaffLedgerRows = allStaffLedgerRows.filter(row => {
+                if (!configuredLocations.has(row.location)) return false;
+                const allowedStaff = configuredStaffByLocation.get(row.location) || new Set();
+                if (!allowedStaff.has(row.staff_id)) return false;
+
                 // Apply month search shorthand or dropdown filter
                 if (searchMonth) {
                     if (searchMonth.type === 'exact') {
