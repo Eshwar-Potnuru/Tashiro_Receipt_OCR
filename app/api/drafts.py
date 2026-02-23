@@ -77,6 +77,10 @@ def _is_worker(user: User) -> bool:
     return str(getattr(user, "role", "")).upper() == "WORKER"
 
 
+def _is_admin_or_hq(user: User) -> bool:
+    return str(getattr(user, "role", "")).upper() in {"ADMIN", "HQ"}
+
+
 def _assert_draft_access(current_user: User, draft: DraftReceipt) -> None:
     if not _is_worker(current_user):
         return
@@ -494,7 +498,7 @@ def list_drafts(
     
     # Set role-based default limits
     if limit is None:
-        if current_user.role in ["ADMIN", "HQ"]:
+        if _is_admin_or_hq(current_user):
             limit = 200  # Higher limit for admins to monitor all workers
         else:
             limit = 50   # Conservative limit for workers
@@ -519,7 +523,7 @@ def list_drafts(
     
     # Phase 5D-3: Multi-user isolation - WORKER sees only their drafts, ADMIN/HQ see all
     filter_by_user = None
-    if current_user.role == "WORKER":
+    if _is_worker(current_user):
         filter_by_user = user_id
     
     # Phase 5E.2: Do NOT include image_data in list endpoint to avoid memory issues
@@ -653,8 +657,7 @@ def get_reference_data(
     - ADMIN, HQ: allowed
     - WORKER: forbidden
     """
-    role = str(getattr(current_user, "role", "")).upper()
-    if role not in {"ADMIN", "HQ"}:
+    if not _is_admin_or_hq(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Forbidden: ADMIN or HQ role required",
