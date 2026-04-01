@@ -1038,6 +1038,28 @@ class DraftService:
                     draft.hq_transferred_at = None
                     # Phase 5C-1: Clear error on successful send
                     draft.last_send_error = None
+                    
+                    # Phase 9.R.3: Populate Graph API write audit fields
+                    # Format① (staff ledger) metadata
+                    staff_result = excel_result.get("staff", {})
+                    draft.format1_file_id = staff_result.get("file_id")
+                    draft.format1_etag = staff_result.get("new_etag")
+                    draft.format1_row_index = staff_result.get("row")
+                    
+                    # Format② (branch/location ledger) metadata
+                    branch_result = excel_result.get("branch", {})
+                    draft.format2_file_id = branch_result.get("file_id")
+                    draft.format2_etag = branch_result.get("new_etag")
+                    draft.format2_row_index = branch_result.get("row")
+                    
+                    # Mark as confirmed if both writes returned file metadata
+                    both_confirmed = (
+                        draft.format1_file_id is not None and
+                        draft.format2_file_id is not None
+                    )
+                    draft.graph_api_write_confirmed = both_confirmed
+                    draft.write_completed_at = datetime.utcnow() if both_confirmed else None
+                    
                     draft.updated_at = datetime.utcnow()
                     self.repository.save(draft)
                     
@@ -1052,6 +1074,17 @@ class DraftService:
                         "attempt_count": draft.send_attempt_count,  # Phase 5C-3
                         "last_send_attempt_at": draft.last_send_attempt_at.isoformat() if draft.last_send_attempt_at else None,  # Phase 5C-3
                         "last_send_error": draft.last_send_error,  # Phase 5C-3 (should be None on success)
+                        # Phase 9.R.3: Graph API audit metadata in response
+                        "graph_api": {
+                            "format1_file_id": draft.format1_file_id,
+                            "format1_etag": draft.format1_etag,
+                            "format1_row_index": draft.format1_row_index,
+                            "format2_file_id": draft.format2_file_id,
+                            "format2_etag": draft.format2_etag,
+                            "format2_row_index": draft.format2_row_index,
+                            "write_confirmed": draft.graph_api_write_confirmed,
+                            "write_completed_at": draft.write_completed_at.isoformat() if draft.write_completed_at else None,
+                        },
                     })
                     sent_count += 1
                     
@@ -1069,6 +1102,17 @@ class DraftService:
                                     "branch_row": excel_result.get("branch", {}).get("row"),
                                     "staff_status": excel_result.get("staff", {}).get("status"),
                                     "staff_row": excel_result.get("staff", {}).get("row"),
+                                },
+                                # Phase 9.R.3: Graph API audit metadata
+                                "graph_api": {
+                                    "format1_file_id": draft.format1_file_id,
+                                    "format1_etag": draft.format1_etag,
+                                    "format1_row_index": draft.format1_row_index,
+                                    "format2_file_id": draft.format2_file_id,
+                                    "format2_etag": draft.format2_etag,
+                                    "format2_row_index": draft.format2_row_index,
+                                    "write_confirmed": draft.graph_api_write_confirmed,
+                                    "write_completed_at": draft.write_completed_at.isoformat() if draft.write_completed_at else None,
                                 },
                             },
                         )

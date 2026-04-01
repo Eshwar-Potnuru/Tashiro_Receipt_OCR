@@ -234,6 +234,121 @@ class DraftRepository:
             except sqlite3.OperationalError:
                 pass  # Column already exists
             
+            # Phase 9.R.3: Add Graph API write audit fields
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format1_file_id TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format1_etag TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format1_row_index INTEGER
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format2_file_id TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format2_etag TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format2_row_index INTEGER
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN graph_api_write_confirmed INTEGER DEFAULT 0
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN write_completed_at TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            # Phase 11B-1: Add worksheet name fields for Graph-authority tracking
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format1_worksheet_name TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN format2_worksheet_name TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            # Phase 11B-1: Add Excel authority reconciliation fields
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN excel_row_synced_at TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN excel_row_hash TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN excel_conflict_detected INTEGER DEFAULT 0
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN excel_last_known_values TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN pre_edit_snapshot TEXT
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
+            try:
+                conn.execute("""
+                    ALTER TABLE draft_receipts ADD COLUMN post_send_edit_count INTEGER DEFAULT 0
+                """)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
+            
             # Performance optimization: Create indexes for common query patterns
             # These indexes dramatically improve query performance when the table has many rows
             try:
@@ -330,8 +445,13 @@ class DraftRepository:
                     INSERT OR REPLACE INTO draft_receipts 
                     (draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
-                     send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                     send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id,
+                     format1_file_id, format1_etag, format1_row_index, format1_worksheet_name,
+                     format2_file_id, format2_etag, format2_row_index, format2_worksheet_name,
+                     graph_api_write_confirmed, write_completed_at,
+                     excel_row_synced_at, excel_row_hash, excel_conflict_detected,
+                     excel_last_known_values, pre_edit_snapshot, post_send_edit_count)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """, (
                     str(draft.draft_id),
                     receipt_json,
@@ -352,6 +472,22 @@ class DraftRepository:
                     draft.last_send_error,
                     draft.reviewed_at.isoformat() if draft.reviewed_at else None,
                     reviewed_by_user_id_str,
+                    draft.format1_file_id,
+                    draft.format1_etag,
+                    draft.format1_row_index,
+                    draft.format1_worksheet_name,
+                    draft.format2_file_id,
+                    draft.format2_etag,
+                    draft.format2_row_index,
+                    draft.format2_worksheet_name,
+                    1 if draft.graph_api_write_confirmed else 0,
+                    draft.write_completed_at.isoformat() if draft.write_completed_at else None,
+                    draft.excel_row_synced_at.isoformat() if draft.excel_row_synced_at else None,
+                    draft.excel_row_hash,
+                    1 if draft.excel_conflict_detected else 0,
+                    draft.excel_last_known_values,
+                    draft.pre_edit_snapshot,
+                    draft.post_send_edit_count,
                 ))
                 conn.commit()
                 return draft
@@ -386,9 +522,14 @@ class DraftRepository:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                  SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
-                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                       hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id,
+                       format1_file_id, format1_etag, format1_row_index, format1_worksheet_name,
+                       format2_file_id, format2_etag, format2_row_index, format2_worksheet_name,
+                       graph_api_write_confirmed, write_completed_at,
+                       excel_row_synced_at, excel_row_hash, excel_conflict_detected,
+                       excel_last_known_values, pre_edit_snapshot, post_send_edit_count
                 FROM draft_receipts
                 WHERE draft_id = ?
             """, (str(draft_id),))
@@ -431,17 +572,27 @@ class DraftRepository:
             if include_image_data:
                 # Include image_data for admin views
                 query_parts = ["""
-                          SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
-                              hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
+                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                           hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                           send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id,
+                           format1_file_id, format1_etag, format1_row_index, format1_worksheet_name,
+                           format2_file_id, format2_etag, format2_row_index, format2_worksheet_name,
+                           graph_api_write_confirmed, write_completed_at,
+                           excel_row_synced_at, excel_row_hash, excel_conflict_detected,
+                           excel_last_known_values, pre_edit_snapshot, post_send_edit_count
                     FROM draft_receipts
                 """]
             else:
                 # Exclude image_data for list views to reduce payload
                 query_parts = ["""
-                          SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
-                              hq_status, hq_batch_id, hq_transferred_at, image_ref, creator_user_id,
-                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
+                    SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                           hq_status, hq_batch_id, hq_transferred_at, image_ref, creator_user_id,
+                           send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id,
+                           format1_file_id, format1_etag, format1_row_index, format1_worksheet_name,
+                           format2_file_id, format2_etag, format2_row_index, format2_worksheet_name,
+                           graph_api_write_confirmed, write_completed_at,
+                           excel_row_synced_at, excel_row_hash, excel_conflict_detected,
+                           excel_last_known_values, pre_edit_snapshot, post_send_edit_count
                     FROM draft_receipts
                 """]
             params = []
@@ -547,9 +698,14 @@ class DraftRepository:
         conn.row_factory = sqlite3.Row
         try:
             cursor = conn.execute("""
-                  SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
-                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
-                      send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                       hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id,
+                       format1_file_id, format1_etag, format1_row_index, format1_worksheet_name,
+                       format2_file_id, format2_etag, format2_row_index, format2_worksheet_name,
+                       graph_api_write_confirmed, write_completed_at,
+                       excel_row_synced_at, excel_row_hash, excel_conflict_detected,
+                       excel_last_known_values, pre_edit_snapshot, post_send_edit_count
                 FROM draft_receipts
                 WHERE image_ref = ?
                 ORDER BY created_at DESC
@@ -584,9 +740,14 @@ class DraftRepository:
             # Create placeholders for IN clause
             placeholders = ",".join("?" * len(draft_ids))
             cursor = conn.execute(f"""
-                  SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
-                      hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
-                      send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id
+                SELECT draft_id, receipt_json, status, created_at, updated_at, sent_at, sent_by_user_id, sent_by_role,
+                       hq_status, hq_batch_id, hq_transferred_at, image_ref, image_data, creator_user_id,
+                       send_attempt_count, last_send_attempt_at, last_send_error, reviewed_at, reviewed_by_user_id,
+                       format1_file_id, format1_etag, format1_row_index, format1_worksheet_name,
+                       format2_file_id, format2_etag, format2_row_index, format2_worksheet_name,
+                       graph_api_write_confirmed, write_completed_at,
+                       excel_row_synced_at, excel_row_hash, excel_conflict_detected,
+                       excel_last_known_values, pre_edit_snapshot, post_send_edit_count
                 FROM draft_receipts
                 WHERE draft_id IN ({placeholders})
             """, [str(draft_id) for draft_id in draft_ids])
@@ -652,6 +813,44 @@ class DraftRepository:
         )
         reviewed_by_user_id = row["reviewed_by_user_id"] if "reviewed_by_user_id" in row.keys() else None
         
+        # Phase 9.R.3: Get Graph API write audit fields (may be None for pre-9.R.3 drafts)
+        format1_file_id = row["format1_file_id"] if "format1_file_id" in row.keys() else None
+        format1_etag = row["format1_etag"] if "format1_etag" in row.keys() else None
+        format1_row_index = row["format1_row_index"] if "format1_row_index" in row.keys() else None
+        format2_file_id = row["format2_file_id"] if "format2_file_id" in row.keys() else None
+        format2_etag = row["format2_etag"] if "format2_etag" in row.keys() else None
+        format2_row_index = row["format2_row_index"] if "format2_row_index" in row.keys() else None
+        graph_api_write_confirmed = (
+            bool(row["graph_api_write_confirmed"]) 
+            if "graph_api_write_confirmed" in row.keys() and row["graph_api_write_confirmed"] is not None
+            else False
+        )
+        write_completed_at = (
+            datetime.fromisoformat(row["write_completed_at"]) 
+            if "write_completed_at" in row.keys() and row["write_completed_at"] 
+            else None
+        )
+        
+        # Phase 11B-1: Get worksheet name fields
+        format1_worksheet_name = row["format1_worksheet_name"] if "format1_worksheet_name" in row.keys() else None
+        format2_worksheet_name = row["format2_worksheet_name"] if "format2_worksheet_name" in row.keys() else None
+        
+        # Phase 11B-1: Get Excel authority reconciliation fields
+        excel_row_synced_at = (
+            datetime.fromisoformat(row["excel_row_synced_at"]) 
+            if "excel_row_synced_at" in row.keys() and row["excel_row_synced_at"] 
+            else None
+        )
+        excel_row_hash = row["excel_row_hash"] if "excel_row_hash" in row.keys() else None
+        excel_conflict_detected = (
+            bool(row["excel_conflict_detected"]) 
+            if "excel_conflict_detected" in row.keys() and row["excel_conflict_detected"] is not None
+            else False
+        )
+        excel_last_known_values = row["excel_last_known_values"] if "excel_last_known_values" in row.keys() else None
+        pre_edit_snapshot = row["pre_edit_snapshot"] if "pre_edit_snapshot" in row.keys() else None
+        post_send_edit_count = row["post_send_edit_count"] if "post_send_edit_count" in row.keys() else 0
+        
         # Create DraftReceipt
         return DraftReceipt(
             draft_id=UUID(row["draft_id"]),
@@ -673,6 +872,22 @@ class DraftRepository:
             last_send_error=last_send_error,
             reviewed_at=reviewed_at,
             reviewed_by_user_id=reviewed_by_user_id,
+            format1_file_id=format1_file_id,
+            format1_etag=format1_etag,
+            format1_row_index=format1_row_index,
+            format1_worksheet_name=format1_worksheet_name,
+            format2_file_id=format2_file_id,
+            format2_etag=format2_etag,
+            format2_row_index=format2_row_index,
+            format2_worksheet_name=format2_worksheet_name,
+            graph_api_write_confirmed=graph_api_write_confirmed,
+            write_completed_at=write_completed_at,
+            excel_row_synced_at=excel_row_synced_at,
+            excel_row_hash=excel_row_hash,
+            excel_conflict_detected=excel_conflict_detected,
+            excel_last_known_values=excel_last_known_values,
+            pre_edit_snapshot=pre_edit_snapshot,
+            post_send_edit_count=post_send_edit_count,
         )
 
     def count_by_status(self, status: DraftStatus) -> int:

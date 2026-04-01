@@ -1,0 +1,1335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 10 PoC Readiness Demo — Excel as Authority</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #2563EB;
+            --primary-dark: #1D4ED8;
+            --success: #059669;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --gray-50: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-500: #6B7280;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p { color: var(--gray-500); }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .badge-success { background: #D1FAE5; color: var(--success); }
+        .badge-warning { background: #FEF3C7; color: var(--warning); }
+        .badge-info { background: #DBEAFE; color: var(--primary); }
+        .badge-purple { background: #EDE9FE; color: #7C3AED; }
+        .badge-info { background: #DBEAFE; color: var(--primary); }
+        
+        .demo-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 18px;
+            background: var(--warning-light);
+            border-radius: 10px;
+            border: 2px solid var(--warning);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .demo-toggle.active {
+            background: var(--success-light);
+            border-color: var(--success);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch.active { background: var(--success); }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch.active::after { left: 26px; }
+        
+        .toggle-text strong { display: block; font-size: 14px; color: var(--gray-800); }
+        .toggle-text small { font-size: 11px; color: var(--gray-500); }
+        
+        /* Cards */
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        .card-accent {
+            border-left: 4px solid var(--primary);
+        }
+        
+        .card-highlight {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 1px solid #bae6fd;
+        }
+        
+        .card h2 {
+            color: var(--gray-800);
+            font-size: 18px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card h2 i { color: var(--primary); font-size: 20px; }
+        
+        .card h3 {
+            color: var(--gray-800);
+            font-size: 16px;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card h3 i { color: var(--primary); }
+        
+        .card p { color: var(--gray-600); line-height: 1.6; }
+        
+        /* Section Title */
+        .section-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        
+        /* Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-secondary { background: var(--gray-100); color: var(--gray-700); }
+        .btn-secondary:hover { background: var(--gray-200); }
+        .btn-sm { padding: 8px 16px; font-size: 13px; }
+        
+        /* Status Boxes */
+        .status-box {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .status-box:last-child { margin-bottom: 0; }
+        .status-box.loading { background: var(--warning-light); border: 1px solid #F59E0B; }
+        .status-box.success { background: var(--success-light); border: 1px solid var(--success); }
+        .status-box.error { background: #FEE2E2; border: 1px solid var(--danger); }
+        .status-box.info { background: #DBEAFE; border: 1px solid var(--primary); }
+        .status-box.warning { background: var(--warning-light); border: 1px solid var(--warning); }
+        .status-box.purple { background: var(--purple-light); border: 1px solid var(--purple); }
+        
+        .status-box strong { display: block; margin-bottom: 4px; }
+        .status-box small { color: var(--gray-600); }
+        
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--gray-200); }
+        th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); }
+        tr:hover { background: var(--gray-50); }
+        
+        /* File List */
+        .file-list { max-height: 300px; overflow-y: auto; }
+        
+        .file-item {
+            padding: 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .file-item:hover { border-color: var(--primary); background: var(--gray-50); }
+        .file-item.selected { border-color: var(--primary); background: #EFF6FF; }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--success-light);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--success);
+        }
+        
+        .file-info h4 { font-size: 14px; color: var(--gray-800); }
+        .file-info p { font-size: 12px; color: var(--gray-500); }
+        
+        /* API Log */
+        .api-log {
+            background: #1F2937;
+            color: #10B981;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .api-log .timestamp { color: #6B7280; }
+        .api-log .endpoint { color: #60A5FA; }
+        .api-log .success { color: #10B981; }
+        .api-log .error { color: #EF4444; }
+        .api-log .demo { color: #FBBF24; }
+        
+        .receipt-count {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .receipt-count span { font-size: 16px; color: var(--gray-500); display: block; }
+        
+        /* Checklist */
+        .checklist { list-style: none; padding: 0; }
+        
+        .checklist li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+            transition: all 0.2s;
+        }
+        
+        .checklist li:hover { border-color: var(--gray-300); }
+        
+        .checklist li.prepared { background: var(--success-light); border-color: #A7F3D0; }
+        .checklist li.pending { background: var(--warning-light); border-color: #FDE68A; }
+        
+        .checklist-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .checklist li.prepared .checklist-icon { background: var(--success); color: white; }
+        .checklist li.pending .checklist-icon { background: var(--warning); color: white; }
+        
+        .checklist-content { flex: 1; }
+        .checklist-content strong { display: block; color: var(--gray-800); margin-bottom: 2px; }
+        .checklist-content small { color: var(--gray-600); font-size: 12px; }
+        
+        /* Collapsible */
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 4px 0;
+        }
+        
+        .collapsible-header:hover { opacity: 0.8; }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .collapsible-content.open {
+            max-height: 2000px;
+        }
+        
+        /* Architecture Diagram */
+        .architecture-diagram {
+            background: var(--gray-50);
+            border: 2px dashed var(--gray-300);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .architecture-diagram pre {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: var(--gray-700);
+            text-align: left;
+            display: inline-block;
+        }
+        
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-tile {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .stat-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+        
+        .stat-icon {
+            width: 44px;
+            height: 44px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+            margin: 0 auto 12px;
+        }
+        
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--gray-800);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 11px;
+            color: var(--gray-500);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .location-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .location-chip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .location-chip-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--success);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .location-chip-info h5 {
+            font-size: 14px;
+            color: var(--gray-800);
+            margin: 0;
+        }
+        
+        .location-chip-info p {
+            font-size: 11px;
+            color: var(--gray-500);
+            margin: 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden { display: none !important; }
+        
+        .demo-indicator {
+            display: inline-block;
+            background: var(--warning-light);
+            color: var(--warning);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        /* Key Points */
+        .key-point {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        
+        .key-point:last-child { border-bottom: none; }
+        
+        .key-point-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        
+        .key-point-content h4 { font-size: 14px; color: var(--gray-800); margin-bottom: 2px; }
+        .key-point-content p { font-size: 13px; color: var(--gray-600); margin: 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- HEADER -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="header">
+            <div>
+                <div class="header-title">
+                    <i class="fas fa-file-excel"></i>
+                    <h1>Phase 10 PoC Readiness Demo</h1>
+                </div>
+                <p class="header-subtitle">Option A' — Excel as Authority</p>
+                <div class="status-row">
+                    <span class="badge badge-ready"><i class="fas fa-rocket"></i> Ready for Live Validation</span>
+                    <span class="badge badge-prepared"><i class="fas fa-check"></i> Phase 10 Prepared</span>
+                    <span class="badge badge-info"><i class="fas fa-code-branch"></i> Internal 11A/11B available</span>
+                </div>
+            </div>
+            <div class="demo-toggle" id="demoToggleBox" onclick="toggleDemoMode()">
+                <div class="toggle-switch" id="demoToggle"></div>
+                <div class="toggle-text">
+                    <strong id="demoModeLabel">Demo Mode OFF</strong>
+                    <small>Show sample data for visualization</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- EXECUTIVE SUMMARY -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card card-highlight">
+            <h2><i class="fas fa-bullseye"></i> What This Page Is For</h2>
+            <p style="margin-bottom: 16px;">
+                This demo page helps stakeholders understand the <strong>Phase 10 PoC validation scope</strong> and what has been prepared. 
+                Phase 10 is the live validation gate where the system will be tested against the client's real OneDrive/Excel environment.
+            </p>
+            
+            <div class="grid-3" style="margin-top: 20px;">
+                <div class="status-box success" style="margin: 0;">
+                    <strong><i class="fas fa-check-circle"></i> What Is Prepared</strong>
+                    <small>All Phase 10 read-from-Excel logic is implemented and internally tested. The system is ready for live validation.</small>
+                </div>
+                <div class="status-box warning" style="margin: 0;">
+                    <strong><i class="fas fa-key"></i> What Is Needed</strong>
+                    <small>Client credentials and access to the real OneDrive environment are required to execute the live PoC validation.</small>
+                </div>
+                <div class="status-box purple" style="margin: 0;">
+                    <strong><i class="fas fa-eye"></i> What Will Be Validated</strong>
+                    <small>Authentication, OneDrive access, workbook resolution, data reading, and end-to-end HQ view from live Excel.</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- MODE EXPLANATION -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card" id="statusAlert">
+            <div class="status-box info">
+                <strong><i class="fas fa-info-circle"></i> Demo Mode vs Live Mode</strong><br>
+                <small>
+                    <strong>Demo Mode ON:</strong> Shows sample data to visualize how the system works. This is for demonstration purposes only — it does not prove real environment connectivity.<br>
+                    <strong>Demo Mode OFF:</strong> Calls real API endpoints. When client credentials are configured, this will show actual OneDrive Excel data.
+                </small>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- VALIDATION CHECKLIST -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card card-accent">
+            <h2><i class="fas fa-clipboard-check"></i> Phase 10 Validation Checklist</h2>
+            <p style="margin-bottom: 16px; color: var(--gray-600);">
+                These are the checks to be performed when credentials arrive. Items marked <strong style="color: var(--success);">Prepared</strong> have implementation ready; 
+                items marked <strong style="color: var(--warning);">Pending</strong> require live environment access.
+            </p>
+            
+            <ul class="checklist">
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>MSAL Authentication Flow</strong>
+                        <small>OAuth2 client credentials flow implemented and tested with mock tokens</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>Real Token Acquisition</strong>
+                        <small>Pending: Validate token acquisition with client's Azure AD credentials</small>
+                    </div>
+                </li>
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>OneDrive Path Resolution</strong>
+                        <small>Location/staff folder path logic implemented with configurable base paths</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>Live Folder Access</strong>
+                        <small>Pending: Verify access to client's actual OneDrive folder structure</small>
+                    </div>
+                </li>
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>Excel Workbook Reading</strong>
+                        <small>Graph API workbook/worksheet/range read logic fully implemented</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>Live Data Read</strong>
+                        <small>Pending: Read actual receipt data from client's Excel files</small>
+                    </div>
+                </li>
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>Error Handling & Retry</strong>
+                        <small>Implemented: Rate limiting, token refresh, network retry with exponential backoff</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>End-to-End HQ View</strong>
+                        <small>Pending: Full validation that HQ dashboard shows live Excel data correctly</small>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- LIVE DASHBOARD -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="card" id="dashboardCard">
+            <h3><i class="fas fa-tachometer-alt"></i> Dashboard Preview 
+                <button class="btn btn-secondary btn-sm" style="margin-left: auto;" onclick="loadDashboard()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </h3>
+            <p style="margin-bottom: 16px; color: var(--gray-500); font-size: 13px;">
+                In live mode, this shows real data from OneDrive. In demo mode, it shows sample data.
+            </p>
+            <div id="dashboardStats" class="stats-grid">
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-building"></i></div>
+                    <div class="stat-value" id="statLocations">--</div>
+                    <div class="stat-label">Location Files</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-value" id="statStaff">--</div>
+                    <div class="stat-label">Staff Files</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="stat-value" id="statReceipts">--</div>
+                    <div class="stat-label">Total Rows</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-value" id="statLastMod">--</div>
+                    <div class="stat-label">Last Modified</div>
+                </div>
+            </div>
+            <div id="locationBreakdown" class="location-breakdown">
+                <!-- Location breakdown will be inserted here -->
+            </div>
+        </div>
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- INTERACTIVE API DEMO -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="section-label" style="margin-top: 8px; margin-bottom: 12px;">INTERACTIVE API DEMO</div>
+        
+        <div class="grid">
+            <!-- API Health Check -->
+            <div class="card">
+                <h3><i class="fas fa-heartbeat"></i> Step 1: API Health Check</h3>
+                <p style="margin-bottom: 16px; color: var(--gray-500); font-size: 13px;">
+                    Verify the Phase 10 API endpoints are operational.
+                </p>
+                <button class="btn btn-primary" onclick="checkHealth()">
+                    <i class="fas fa-stethoscope"></i> Check API Health
+                </button>
+                <div id="healthStatus" class="status-box info hidden" style="margin-top: 16px;">
+                    Waiting...
+                </div>
+            </div>
+            
+            <!-- List Excel Files -->
+            <div class="card">
+                <h3><i class="fas fa-folder-open"></i> Step 2: List Excel Files</h3>
+                <p style="margin-bottom: 16px; color: var(--gray-500); font-size: 13px;">
+                    Fetch location ledger files from OneDrive (or demo data).
+                </p>
+                <button class="btn btn-primary" onclick="listLocationFiles()">
+                    <i class="fas fa-cloud-download-alt"></i> Fetch Excel Files
+                </button>
+                <div id="fileList" class="file-list hidden" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Read Receipt Data -->
+            <div class="card">
+                <h3><i class="fas fa-table"></i> Step 3: Read Receipts from Excel</h3>
+                <p style="margin-bottom: 16px; color: var(--gray-500); font-size: 13px;">
+                    Read receipt data directly from Excel files.
+                </p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <input type="text" id="locationInput" placeholder="Location ID (e.g., Aichi)" value="Aichi"
+                           style="padding: 12px; border: 1px solid var(--gray-300); border-radius: 8px; flex: 1;">
+                    <button class="btn btn-primary" onclick="readReceipts()">
+                        <i class="fas fa-download"></i> Read Receipts
+                    </button>
+                </div>
+                <div id="receiptData" class="hidden" style="margin-top: 16px;"></div>
+            </div>
+            
+            <!-- Receipt Count -->
+            <div class="card">
+                <h3><i class="fas fa-chart-bar"></i> Data Summary</h3>
+                <div id="dataSummary">
+                    <div class="receipt-count">
+                        --
+                        <span>receipts from Excel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Call Log -->
+        <div class="card">
+            <h3><i class="fas fa-terminal"></i> API Call Log</h3>
+            <div id="apiLog" class="api-log">
+                <div><span class="timestamp">[Ready]</span> Phase 10 PoC Demo loaded. Ready for validation when credentials are available.</div>
+            </div>
+        </div>
+        
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <!-- TECHNICAL DETAILS (COLLAPSIBLE) -->
+        <!-- ═══════════════════════════════════════════════════════════════════ -->
+        <div class="section-label" style="margin-top: 24px; margin-bottom: 12px;">TECHNICAL DETAILS</div>
+        
+        <!-- Architecture Diagram -->
+        <div class="card">
+            <div class="collapsible-header" onclick="toggleSection('archSection')">
+                <h3 style="margin: 0;"><i class="fas fa-sitemap"></i> Option A' Architecture (Simplified)</h3>
+                <i class="fas fa-chevron-down" id="archSectionIcon"></i>
+            </div>
+            <div class="collapsible-content" id="archSection">
+                <div class="architecture-diagram" style="margin-top: 16px;">
+                    <pre>
+┌─────────────────────────────────────────────────────────────────────────────┐
+│              OPTION A' — EXCEL AS SINGLE SOURCE OF TRUTH                    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    READ FLOW (Phase 10)                             │   │
+│   │                                                                     │   │
+│   │   HQ View ← ExcelSyncService ← ExcelDataProvider ← Graph API        │   │
+│   │                                        ↑                            │   │
+│   │                         OneDrive Excel (Authority)                  │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                    WRITE FLOW (Internal 11A)                        │   │
+│   │                                                                     │   │
+│   │   Mobile/Admin → DraftService → SummaryService → Graph API Writers  │   │
+│   │                                        │                            │   │
+│   │                         OneDrive Excel (Authority)                  │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+│   ┌─────────────────────────────────────────────────────────────────────┐   │
+│   │                 RECONCILIATION (Internal 11B)                       │   │
+│   │                                                                     │   │
+│   │   Draft (local) ←──────── conflict check ────────→ Excel (OneDrive) │   │
+│   │                  ExcelReconciliationService                         │   │
+│   └─────────────────────────────────────────────────────────────────────┘   │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                    </pre>
+                </div>
+                
+                <div style="margin-top: 20px; padding: 16px; background: var(--gray-50); border-radius: 8px;">
+                    <h4 style="margin-bottom: 12px; color: var(--primary);"><i class="fas fa-info-circle"></i> Phase Scope Summary</h4>
+                    <div class="key-point">
+                        <div class="key-point-icon" style="background: var(--primary);"><i class="fas fa-download"></i></div>
+                        <div class="key-point-content">
+                            <h4>Phase 10: Read from Excel (PoC Validation Gate)</h4>
+                            <p>HQ reads receipt data directly from OneDrive Excel files via Graph API. This is the primary validation target.</p>
+                        </div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon" style="background: var(--gray-400);"><i class="fas fa-upload"></i></div>
+                        <div class="key-point-content">
+                            <h4>Internal 11A: Write to Excel (Available but not primary focus)</h4>
+                            <p>Graph API writers implemented for direct OneDrive Excel writes. Internal use only until Phase 10 is validated.</p>
+                        </div>
+                    </div>
+                    <div class="key-point">
+                        <div class="key-point-icon" style="background: var(--gray-400);"><i class="fas fa-sync-alt"></i></div>
+                        <div class="key-point-content">
+                            <h4>Internal 11B: Reconciliation (Available but not primary focus)</h4>
+                            <p>Draft-Excel conflict detection implemented. Becomes relevant after write operations are live.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Test Results (Collapsible) -->
+        <div class="card">
+            <div class="collapsible-header" onclick="toggleSection('testSection')">
+                <h3 style="margin: 0;"><i class="fas fa-vial"></i> Internal Test Suite (Preparation Evidence)</h3>
+                <i class="fas fa-chevron-down" id="testSectionIcon"></i>
+            </div>
+            <div class="collapsible-content" id="testSection">
+                <p style="margin: 16px 0; color: var(--gray-600); font-size: 13px;">
+                    These tests validate implementation correctness using mocked APIs. They demonstrate code readiness, <strong>not</strong> live environment validation.
+                </p>
+                
+                <div class="status-box info">
+                    <strong><i class="fas fa-flask"></i> 103 Unit Tests Passing (Mocked Environment)</strong><br>
+                    <small>Run: <code>pytest tests/unit/test_phase10_excel_source.py tests/unit/test_phase11a_graph_writers.py tests/unit/test_phase11b_policy_rework.py -v</code></small>
+                </div>
+                
+                <h4 style="margin-top: 20px; color: var(--primary);">Phase 10: Excel Read (36 tests)</h4>
+                <table style="margin-top: 8px;">
+                    <thead>
+                        <tr><th>Test Class</th><th>Tests</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>TestExcelDataProvider</td><td>11</td><td style="color: var(--success);">Passed (mocked)</td></tr>
+                        <tr><td>TestExcelSyncService</td><td>13</td><td style="color: var(--success);">Passed (mocked)</td></tr>
+                        <tr><td>TestPhase10Integration</td><td>4</td><td style="color: var(--success);">Passed (mocked)</td></tr>
+                        <tr><td>TestStatusWorkflowIntegration</td><td>3</td><td style="color: var(--success);">Passed (mocked)</td></tr>
+                        <tr><td>TestExcelSourceAPIModels</td><td>2</td><td style="color: var(--success);">Passed (mocked)</td></tr>
+                        <tr><td>TestEdgeCases</td><td>3</td><td style="color: var(--success);">Passed (mocked)</td></tr>
+                    </tbody>
+                </table>
+                
+                <h4 style="margin-top: 20px; color: var(--gray-500);">Internal 11A: Graph API Writers (33 tests)</h4>
+                <table style="margin-top: 8px;">
+                    <thead>
+                        <tr><th>Test Class</th><th>Tests</th><th>Coverage</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>TestFormat1WriterLogic</td><td>7</td><td style="color: var(--gray-500);">Column mapping</td></tr>
+                        <tr><td>TestFormat2WriterLogic</td><td>6</td><td style="color: var(--gray-500);">Row building</td></tr>
+                        <tr><td>TestETagLockingIntegration</td><td>5</td><td style="color: var(--gray-500);">ETag locking</td></tr>
+                        <tr><td>TestSummaryServiceGraphMode</td><td>4</td><td style="color: var(--gray-500);">Mode selection</td></tr>
+                        <tr><td>TestSendBoundaryIntegration</td><td>3</td><td style="color: var(--gray-500);">Send flow</td></tr>
+                        <tr><td>TestWriterExceptions</td><td>4</td><td style="color: var(--gray-500);">Error handling</td></tr>
+                        <tr><td>TestOldFileLockRemoved</td><td>3</td><td style="color: var(--gray-500);">No fcntl</td></tr>
+                    </tbody>
+                </table>
+                
+                <h4 style="margin-top: 20px; color: var(--gray-500);">Internal 11B: Policy Rework (34 tests)</h4>
+                <table style="margin-top: 8px;">
+                    <thead>
+                        <tr><th>Test Class</th><th>Tests</th><th>Coverage</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>TestSentImmutabilityRemoved</td><td>4</td><td style="color: var(--gray-500);">Audit-tracked overwrite</td></tr>
+                        <tr><td>TestDraftModelExtensions</td><td>4</td><td style="color: var(--gray-500);">Reconciliation fields</td></tr>
+                        <tr><td>TestAuditEventTypes</td><td>3</td><td style="color: var(--gray-500);">Event types</td></tr>
+                        <tr><td>TestPostSendAuditService</td><td>7</td><td style="color: var(--gray-500);">Schema + logging</td></tr>
+                        <tr><td>TestExcelReconciliationService</td><td>10</td><td style="color: var(--gray-500);">Conflict detection</td></tr>
+                        <tr><td>TestGraphAPIRegression</td><td>3</td><td style="color: var(--gray-500);">Concurrency</td></tr>
+                        <tr><td>TestPhase11BIntegration</td><td>2</td><td style="color: var(--gray-500);">Full flows</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Phase Comparison (Collapsible) -->
+        <div class="card">
+            <div class="collapsible-header" onclick="toggleSection('comparisonSection')">
+                <h3 style="margin: 0;"><i class="fas fa-exchange-alt"></i> Before/After Comparison (Reference)</h3>
+                <i class="fas fa-chevron-down" id="comparisonSectionIcon"></i>
+            </div>
+            <div class="collapsible-content" id="comparisonSection">
+                <h4 style="margin: 16px 0 8px; color: var(--primary);">Phase 10: Excel as Source of Truth (READ)</h4>
+                <table>
+                    <thead>
+                        <tr><th>Before (Phase 9)</th><th>After (Phase 10 — When Validated)</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>HQ reads from local database</td>
+                            <td><strong>HQ reads directly from OneDrive Excel</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Data could be stale</td>
+                            <td><strong>Always see actual Excel data</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Write-only to Excel</td>
+                            <td><strong>Bidirectional read/write</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api/excel';
+        let demoMode = false;
+        
+        // Sample demo data (for visualization only - not proof of live connectivity)
+        const DEMO_FILES = [
+            { file_id: "demo-file-1", file_name: "Aichi_Accumulated.xlsx", file_path: "locations/Aichi_Accumulated.xlsx", etag: "demo-etag-1", last_modified: "2026-03-01T10:30:00Z", row_count: 45 },
+            { file_id: "demo-file-2", file_name: "Tokyo_Accumulated.xlsx", file_path: "locations/Tokyo_Accumulated.xlsx", etag: "demo-etag-2", last_modified: "2026-03-01T09:15:00Z", row_count: 32 },
+            { file_id: "demo-file-3", file_name: "Osaka_Accumulated.xlsx", file_path: "locations/Osaka_Accumulated.xlsx", etag: "demo-etag-3", last_modified: "2026-02-28T15:45:00Z", row_count: 28 },
+        ];
+        
+        const DEMO_RECEIPTS = [
+            { excel_row: 6, date: "2026-03-01", staff: "田中太郎", description: "コンビニ（セブンイレブン）", expense: 1580, account: "消耗品費", invoice_flag: "有", tax_10: 144, tax_8: 0 },
+            { excel_row: 7, date: "2026-03-01", staff: "山田花子", description: "電車代（名古屋〜東京）", expense: 10450, account: "旅費交通費", invoice_flag: "有", tax_10: 950, tax_8: 0 },
+            { excel_row: 8, date: "2026-02-28", staff: "田中太郎", description: "ランチミーティング", expense: 2500, account: "会議費", invoice_flag: "有", tax_10: 0, tax_8: 185 },
+            { excel_row: 9, date: "2026-02-28", staff: "佐藤次郎", description: "事務用品（ボールペン等）", expense: 980, account: "消耗品費", invoice_flag: "無", tax_10: 89, tax_8: 0 },
+            { excel_row: 10, date: "2026-02-27", staff: "山田花子", description: "タクシー代（駅→客先）", expense: 1850, account: "旅費交通費", invoice_flag: "有", tax_10: 168, tax_8: 0 },
+        ];
+        
+        // Collapsible section toggle
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            const icon = document.getElementById(sectionId + 'Icon');
+            content.classList.toggle('open');
+            if (content.classList.contains('open')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        function toggleDemoMode() {
+            demoMode = !demoMode;
+            const toggle = document.getElementById('demoToggle');
+            const box = document.getElementById('demoToggleBox');
+            const label = document.getElementById('demoModeLabel');
+            const statusAlert = document.getElementById('statusAlert');
+            
+            if (demoMode) {
+                toggle.classList.add('active');
+                box.classList.add('active');
+                label.textContent = 'Demo Mode ON';
+                statusAlert.innerHTML = `
+                    <div class="status-box success">
+                        <strong><i class="fas fa-eye"></i> Demo Mode Active — Sample Data</strong><br>
+                        <small>Showing sample data to demonstrate how the system will work. This is for visual understanding only — it does not represent live OneDrive connectivity. When credentials are configured, real data will appear here.</small>
+                    </div>
+                `;
+                log('Demo Mode enabled — showing sample data for visualization', 'demo');
+            } else {
+                toggle.classList.remove('active');
+                box.classList.remove('active');
+                label.textContent = 'Demo Mode OFF';
+                statusAlert.innerHTML = `
+                    <div class="status-box info">
+                        <strong><i class="fas fa-info-circle"></i> Demo Mode vs Live Mode</strong><br>
+                        <small>
+                            <strong>Demo Mode ON:</strong> Shows sample data to visualize how the system works. This is for demonstration purposes only — it does not prove real environment connectivity.<br>
+                            <strong>Demo Mode OFF:</strong> Calls real API endpoints. When client credentials are configured, this will show actual OneDrive Excel data.
+                        </small>
+                    </div>
+                `;
+                log('Demo Mode disabled — showing real API responses (credentials required for real data)', 'info');
+            }
+        }
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('apiLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'demo' ? 'demo' : 'endpoint';
+            logDiv.innerHTML += `<div><span class="timestamp">[${timestamp}]</span> <span class="${className}">${message}</span></div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        async function checkHealth() {
+            const statusDiv = document.getElementById('healthStatus');
+            statusDiv.classList.remove('hidden', 'success', 'error', 'info');
+            statusDiv.classList.add('loading');
+            statusDiv.innerHTML = '<span class="spinner"></span> Checking API health...';
+            
+            log(`GET ${API_BASE}/health`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    statusDiv.classList.remove('loading');
+                    statusDiv.classList.add('success');
+                    statusDiv.innerHTML = `
+                        <strong><i class="fas fa-check-circle"></i> API Healthy</strong><br>
+                        <small>Service: ${data.service || 'Excel Source API'}</small><br>
+                        <small>Files in OneDrive: ${data.location_files_count || 0}</small><br>
+                        <small>Timestamp: ${data.timestamp}</small>
+                    `;
+                    log('Health check passed', 'success');
+                } else {
+                    throw new Error(data.error || 'Unhealthy response');
+                }
+            } catch (error) {
+                statusDiv.classList.remove('loading');
+                statusDiv.classList.add('error');
+                statusDiv.innerHTML = `
+                    <strong><i class="fas fa-times-circle"></i> API Error</strong><br>
+                    <small>${error.message}</small><br>
+                    <small>Server may not be running: python run_server.py</small>
+                `;
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function listLocationFiles() {
+            const fileListDiv = document.getElementById('fileList');
+            fileListDiv.classList.remove('hidden');
+            fileListDiv.innerHTML = '<div class="status-box loading"><span class="spinner"></span> Fetching files...</div>';
+            
+            if (demoMode) {
+                log(`[DEMO] GET ${API_BASE}/locations`, 'demo');
+                await new Promise(r => setTimeout(r, 500));
+                
+                fileListDiv.innerHTML = DEMO_FILES.map(file => `
+                    <div class="file-item" onclick="selectFile('${file.file_id}', '${file.file_name}')">
+                        <div class="file-icon"><i class="fas fa-file-excel"></i></div>
+                        <div class="file-info">
+                            <h4>${file.file_name} <span class="demo-indicator">SAMPLE</span></h4>
+                            <p>Rows: ${file.row_count} | Modified: ${new Date(file.last_modified).toLocaleString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+                log(`[DEMO] Sample: ${DEMO_FILES.length} Excel files`, 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/locations`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/locations`);
+                const data = await response.json();
+                
+                if (data.files && data.files.length > 0) {
+                    fileListDiv.innerHTML = data.files.map(file => `
+                        <div class="file-item" onclick="selectFile('${file.file_id}', '${file.file_name}')">
+                            <div class="file-icon"><i class="fas fa-file-excel"></i></div>
+                            <div class="file-info">
+                                <h4>${file.file_name}</h4>
+                                <p>Rows: ${file.row_count || 'N/A'} | Modified: ${file.last_modified || 'Unknown'}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                    log(`Found ${data.files.length} Excel files`, 'success');
+                } else {
+                    fileListDiv.innerHTML = `
+                        <div class="status-box warning">
+                            <strong><i class="fas fa-folder-open"></i> No Excel files found</strong><br>
+                            <small>The "locations" folder may be empty or credentials not configured. Enable <strong>Demo Mode</strong> to see sample data.</small>
+                        </div>
+                    `;
+                    log('No files found — check credentials or enable Demo Mode', 'info');
+                }
+            } catch (error) {
+                fileListDiv.innerHTML = `<div class="status-box error"><strong>Error:</strong> ${error.message}<br><small>Server may not be running or credentials not configured.</small></div>`;
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function selectFile(fileId, fileName) {
+            const locationId = fileName.split('_')[0];
+            document.getElementById('locationInput').value = locationId;
+            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+            event.currentTarget.classList.add('selected');
+            log(`Selected: ${fileName} → Location: ${locationId}`);
+        }
+        
+        async function readReceipts() {
+            const locationId = document.getElementById('locationInput').value || 'Aichi';
+            const receiptDiv = document.getElementById('receiptData');
+            const summaryDiv = document.getElementById('dataSummary');
+            
+            receiptDiv.classList.remove('hidden');
+            receiptDiv.innerHTML = '<div class="status-box loading"><span class="spinner"></span> Reading receipts...</div>';
+            
+            const now = new Date();
+            const year = now.getFullYear();
+            const month = now.getMonth() + 1;
+            
+            if (demoMode) {
+                log(`[DEMO] GET ${API_BASE}/locations/${locationId}/receipts?year=${year}&month=${month}`, 'demo');
+                await new Promise(r => setTimeout(r, 700));
+                
+                receiptDiv.innerHTML = `
+                    <div class="status-box success">
+                        <strong><i class="fas fa-check"></i> Sample: ${DEMO_RECEIPTS.length} receipts</strong> <span class="demo-indicator">SAMPLE DATA</span>
+                    </div>
+                    <div style="overflow-x: auto; margin-top: 12px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Row</th>
+                                    <th>Date</th>
+                                    <th>Staff</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Account</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${DEMO_RECEIPTS.map(r => `
+                                    <tr>
+                                        <td>${r.excel_row}</td>
+                                        <td>${r.date}</td>
+                                        <td>${r.staff}</td>
+                                        <td>${r.description.substring(0, 25)}...</td>
+                                        <td>¥${r.expense.toLocaleString()}</td>
+                                        <td>${r.account}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                summaryDiv.innerHTML = `
+                    <div class="receipt-count">
+                        ${DEMO_RECEIPTS.length}
+                        <span>sample receipts <span class="demo-indicator">DEMO</span></span>
+                    </div>
+                `;
+                
+                log(`[DEMO] Sample: ${DEMO_RECEIPTS.length} receipts displayed`, 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/locations/${locationId}/receipts?year=${year}&month=${month}`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/locations/${locationId}/receipts?year=${year}&month=${month}`);
+                const data = await response.json();
+                
+                if (data.receipts && data.receipts.length > 0) {
+                    receiptDiv.innerHTML = `
+                        <div class="status-box success">
+                            <strong><i class="fas fa-check"></i> Read ${data.receipts.length} receipts from Excel</strong>
+                        </div>
+                        <div style="overflow-x: auto; margin-top: 12px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Row</th>
+                                        <th>Date</th>
+                                        <th>Staff</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                        <th>Account</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.receipts.slice(0, 10).map(r => `
+                                        <tr>
+                                            <td>${r.excel_location?.row || r.excel_row || '-'}</td>
+                                            <td>${r.receipt_data?.date || r.date || '-'}</td>
+                                            <td>${r.receipt_data?.staff || r.staff || '-'}</td>
+                                            <td>${(r.receipt_data?.description || r.description || '-').substring(0, 25)}...</td>
+                                            <td>¥${(r.receipt_data?.expense || r.expense || 0).toLocaleString()}</td>
+                                            <td>${r.receipt_data?.account || r.account || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${data.receipts.length > 10 ? `<p style="margin-top: 8px; color: var(--gray-500);">... and ${data.receipts.length - 10} more rows</p>` : ''}
+                        </div>
+                    `;
+                    
+                    summaryDiv.innerHTML = `
+                        <div class="receipt-count">
+                            ${data.receipts.length}
+                            <span>receipts from Excel</span>
+                        </div>
+                    `;
+                    
+                    log(`Read ${data.receipts.length} receipts successfully`, 'success');
+                } else {
+                    receiptDiv.innerHTML = `
+                        <div class="status-box warning">
+                            <strong><i class="fas fa-info-circle"></i> No receipts found</strong><br>
+                            <small>No receipts for ${locationId} in ${year}/${month}. Check if folder exists or try Demo Mode.</small>
+                        </div>
+                    `;
+                    summaryDiv.innerHTML = '<div class="receipt-count">0<span>receipts from Excel</span></div>';
+                    log(`No receipts found for ${locationId} in ${year}/${month}`);
+                }
+            } catch (error) {
+                receiptDiv.innerHTML = `<div class="status-box error"><strong>Error:</strong> ${error.message}</div>`;
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadDashboard() {
+            const statsLocations = document.getElementById('statLocations');
+            const statsStaff = document.getElementById('statStaff');
+            const statsReceipts = document.getElementById('statReceipts');
+            const statsLastMod = document.getElementById('statLastMod');
+            const locationBreakdown = document.getElementById('locationBreakdown');
+            
+            statsLocations.textContent = '...';
+            statsStaff.textContent = '...';
+            statsReceipts.textContent = '...';
+            statsLastMod.textContent = '...';
+            locationBreakdown.innerHTML = '<span class="spinner"></span> Loading...';
+            
+            if (demoMode) {
+                log(`[DEMO] GET ${API_BASE}/dashboard`, 'demo');
+                await new Promise(r => setTimeout(r, 400));
+                
+                statsLocations.textContent = '3';
+                statsStaff.textContent = '5';
+                statsReceipts.textContent = '105';
+                statsLastMod.textContent = 'Today';
+                
+                locationBreakdown.innerHTML = `
+                    <div class="location-chip">
+                        <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="location-chip-info">
+                            <h5>Aichi</h5>
+                            <p>45 rows</p>
+                        </div>
+                    </div>
+                    <div class="location-chip">
+                        <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="location-chip-info">
+                            <h5>Tokyo</h5>
+                            <p>32 rows</p>
+                        </div>
+                    </div>
+                    <div class="location-chip">
+                        <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="location-chip-info">
+                            <h5>Osaka</h5>
+                            <p>28 rows</p>
+                        </div>
+                    </div>
+                    <small style="grid-column: 1 / -1; color: var(--warning); margin-top: 8px;"><i class="fas fa-info-circle"></i> Sample data for visualization</small>
+                `;
+                log('[DEMO] Dashboard sample data loaded', 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/dashboard`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/dashboard`);
+                const data = await response.json();
+                
+                if (data.status === 'connected') {
+                    statsLocations.textContent = data.summary?.location_files || 0;
+                    statsStaff.textContent = data.summary?.staff_files || 0;
+                    statsReceipts.textContent = data.summary?.total_rows || 0;
+                    
+                    if (data.locations && data.locations.length > 0) {
+                        const dates = data.locations.map(l => new Date(l.last_modified)).filter(d => !isNaN(d));
+                        if (dates.length > 0) {
+                            const latest = new Date(Math.max(...dates));
+                            const today = new Date();
+                            const diffDays = Math.floor((today - latest) / (1000 * 60 * 60 * 24));
+                            if (diffDays === 0) {
+                                statsLastMod.textContent = 'Today';
+                            } else if (diffDays === 1) {
+                                statsLastMod.textContent = 'Yesterday';
+                            } else {
+                                statsLastMod.textContent = `${diffDays}d ago`;
+                            }
+                        } else {
+                            statsLastMod.textContent = 'N/A';
+                        }
+                    } else {
+                        statsLastMod.textContent = 'N/A';
+                    }
+                    
+                    if (data.locations && data.locations.length > 0) {
+                        locationBreakdown.innerHTML = data.locations.map(loc => `
+                            <div class="location-chip">
+                                <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                                <div class="location-chip-info">
+                                    <h5>${loc.name}</h5>
+                                    <p>${loc.rows || 0} rows</p>
+                                </div>
+                            </div>
+                        `).join('');
+                    } else {
+                        locationBreakdown.innerHTML = '<span style="color: var(--gray-500);">No locations yet. Enable Demo Mode to see sample data, or configure credentials.</span>';
+                    }
+                    
+                    log('Dashboard loaded', 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to load dashboard');
+                }
+            } catch (error) {
+                statsLocations.textContent = '0';
+                statsStaff.textContent = '0';
+                statsReceipts.textContent = '0';
+                statsLastMod.textContent = 'N/A';
+                locationBreakdown.innerHTML = `<span style="color: var(--danger);">${error.message}</span>`;
+                log(`Dashboard error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-load on page ready
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            log('Phase 10 PoC Demo initialized — ready for validation', 'info');
+        });
+    </script>
+</body>
+</html>

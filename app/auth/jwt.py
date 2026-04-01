@@ -4,12 +4,18 @@ JWT token creation and verification for user authentication.
 
 Design Decisions:
 - Algorithm: HS256 (symmetric key)
-- Secret: From JWT_SECRET environment variable
+- Secret: From JWT_SECRET environment variable (REQUIRED)
 - Expiry: 24 hours default (configurable)
 - Claims: sub (user_id), email, role, exp
+
+Security Notes:
+- JWT_SECRET must be set in production (no default fallback)
+- Secret should be at least 32 characters
+- Use cryptographically random value: python -c "import secrets; print(secrets.token_hex(32))"
 """
 
 import os
+import logging
 from datetime import datetime, timedelta
 from typing import Optional
 from uuid import UUID
@@ -19,9 +25,27 @@ from pydantic import BaseModel, EmailStr
 
 from app.models.user import UserRole
 
+logger = logging.getLogger(__name__)
 
-# JWT configuration
-SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
+# JWT configuration - SECURITY: No default fallback in production
+_jwt_secret = os.getenv("JWT_SECRET")
+_is_dev_mode = os.getenv("ENVIRONMENT", "development").lower() in ("development", "dev", "local", "test")
+
+if not _jwt_secret:
+    if _is_dev_mode:
+        # Only allow dev default in explicit development mode
+        _jwt_secret = "dev-secret-key-DO-NOT-USE-IN-PRODUCTION"
+        logger.warning("⚠️ JWT_SECRET not set - using development default. DO NOT use in production!")
+    else:
+        raise RuntimeError(
+            "CRITICAL: JWT_SECRET environment variable must be set. "
+            "Generate with: python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+
+if len(_jwt_secret) < 32 and not _is_dev_mode:
+    raise RuntimeError(f"CRITICAL: JWT_SECRET must be at least 32 characters (current: {len(_jwt_secret)})")
+
+SECRET_KEY = _jwt_secret
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_HOURS = 24
 

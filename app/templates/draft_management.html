@@ -512,6 +512,9 @@
         <div class="notification-message" id="notificationMessage"></div>
     </div>
     
+    <!-- Security utilities -->
+    <script src="/static/js/security.js?v=20260331"></script>
+    
     <script>
         // State
         let allDrafts = [];
@@ -573,7 +576,7 @@
                         </div>
                         <div class="draft-field">
                             <div class="draft-label">Location</div>
-                            <div class="draft-value">${draft.receipt.business_location_id || 'N/A'}</div>
+                            <div class="draft-value">${escapeHtml(draft.receipt.business_location_id || 'N/A')}</div>
                         </div>
                         <div class="draft-field">
                             <span class="draft-status ${draft.status.toLowerCase()}">${draft.status}</span>
@@ -652,7 +655,7 @@
                         </div>
                         <div class="detail-field">
                             <div class="detail-field-label">Date</div>
-                            <div class="detail-field-value">${r.receipt_date || 'N/A'}</div>
+                            <div class="detail-field-value">${escapeHtml(r.receipt_date || 'N/A')}</div>
                         </div>
                         <div class="detail-field">
                             <div class="detail-field-label">Total Amount</div>
@@ -679,11 +682,11 @@
                     <div class="detail-grid">
                         <div class="detail-field">
                             <div class="detail-field-label">Business Location</div>
-                            <div class="detail-field-value">${r.business_location_id || 'N/A'}</div>
+                            <div class="detail-field-value">${escapeHtml(r.business_location_id || 'N/A')}</div>
                         </div>
                         <div class="detail-field">
                             <div class="detail-field-label">Staff ID</div>
-                            <div class="detail-field-value">${r.staff_id || 'N/A'}</div>
+                            <div class="detail-field-value">${escapeHtml(r.staff_id || 'N/A')}</div>
                         </div>
                     </div>
                 </div>

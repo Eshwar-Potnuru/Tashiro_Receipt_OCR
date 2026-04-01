@@ -201,6 +201,94 @@ class DraftReceipt(BaseModel):
                     "NULL if not yet reviewed. Links to User.user_id.",
     )
 
+    # Phase 9.R.3: Graph API Write Audit Fields
+    format1_file_id: Optional[str] = Field(
+        default=None,
+        description="Phase 9.R.3: OneDrive item ID of the Format① (staff ledger) file written to.",
+    )
+    
+    format1_etag: Optional[str] = Field(
+        default=None,
+        description="Phase 9.R.3: ETag version of Format① file at time of write.",
+    )
+    
+    format1_row_index: Optional[int] = Field(
+        default=None,
+        description="Phase 9.R.3: Row number written in Format① sheet.",
+    )
+    
+    format1_worksheet_name: Optional[str] = Field(
+        default=None,
+        description="Phase 11B-1: Worksheet name in Format① file (e.g., '202603').",
+    )
+    
+    format2_file_id: Optional[str] = Field(
+        default=None,
+        description="Phase 9.R.3: OneDrive item ID of the Format② (location ledger) file written to.",
+    )
+    
+    format2_etag: Optional[str] = Field(
+        default=None,
+        description="Phase 9.R.3: ETag version of Format② file at time of write.",
+    )
+    
+    format2_row_index: Optional[int] = Field(
+        default=None,
+        description="Phase 9.R.3: Row number written in Format② sheet.",
+    )
+    
+    format2_worksheet_name: Optional[str] = Field(
+        default=None,
+        description="Phase 11B-1: Worksheet name in Format② file (e.g., '2026年3月').",
+    )
+    
+    graph_api_write_confirmed: bool = Field(
+        default=False,
+        description="Phase 9.R.3: True if both Format① and Format② writes confirmed by Graph API.",
+    )
+    
+    write_completed_at: Optional[datetime] = Field(
+        default=None,
+        description="Phase 9.R.3: Timestamp when Graph API write was confirmed complete.",
+    )
+
+    # Phase 11.B: Excel Authority Reconciliation Fields
+    excel_row_synced_at: Optional[datetime] = Field(
+        default=None,
+        description="Phase 11.B: Timestamp when draft was last reconciled with Excel row. "
+                    "Used for conflict detection when Excel is edited directly.",
+    )
+    
+    excel_row_hash: Optional[str] = Field(
+        default=None,
+        description="Phase 11.B: SHA-256 hash of Excel row values at last sync. "
+                    "Compared against current Excel state to detect external edits.",
+    )
+    
+    excel_conflict_detected: bool = Field(
+        default=False,
+        description="Phase 11.B: True if Excel row was modified externally since last sync. "
+                    "Triggers conflict resolution workflow when draft is edited.",
+    )
+    
+    excel_last_known_values: Optional[str] = Field(
+        default=None,
+        description="Phase 11.B: JSON snapshot of the Excel row values at last sync. "
+                    "Enables diff display when conflict is detected.",
+    )
+    
+    pre_edit_snapshot: Optional[str] = Field(
+        default=None,
+        description="Phase 11.B: JSON snapshot of receipt values before last edit (SENT only). "
+                    "Used for before/after comparison in audit trail.",
+    )
+    
+    post_send_edit_count: int = Field(
+        default=0,
+        description="Phase 11.B: Count of edits made after SENT status. "
+                    "Incremented on each post-send edit for quick visibility.",
+    )
+
     class Config:
         """Pydantic configuration."""
         use_enum_values = False  # Keep enum instances, not strings
@@ -232,7 +320,11 @@ class DraftReceipt(BaseModel):
         return self
 
     def update_receipt_data(self, updated_receipt: Receipt) -> DraftReceipt:
-        """Update wrapped receipt data (only allowed in DRAFT state).
+        """Update wrapped receipt data.
+        
+        Phase 9.R.3 Update: SENT drafts can now be edited with changes logged
+        via PostSendAuditService. The immutability guard has been moved to
+        the audit layer.
         
         This enables the edit-and-re-save workflow for draft receipts.
         
@@ -242,17 +334,15 @@ class DraftReceipt(BaseModel):
         Returns:
             Updated DraftReceipt with new receipt data and updated timestamp
         
-        Raises:
-            ValueError: If receipt is SENT (immutability violation)
-        
         Note:
             This method does NOT persist changes. Persistence layer (Phase 4B)
             will handle storage of updated DraftReceipt.
+            
+            For SENT drafts, callers should use PostSendAuditService to log
+            changes before calling this method.
         """
-        if self.status == DraftStatus.SENT:
-            raise ValueError(
-                f"Cannot update draft {self.draft_id}: already SENT (immutable)"
-            )
+        # Phase 9.R.3: Removed immutability check - edits are now permitted
+        # with audit logging. Guard is in API layer.
         
         self.receipt = updated_receipt
         self.updated_at = datetime.utcnow()

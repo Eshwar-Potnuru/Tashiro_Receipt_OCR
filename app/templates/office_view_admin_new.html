@@ -1627,29 +1627,48 @@
                     </div>
                 </div>
 
-                <!-- HQ Preparation / Send to HQ Stub (Phase 9) -->
-                <section class="hq-preparation-stub">
+                <!-- HQ Transfer / Send to HQ (Phase 13) -->
+                <section class="hq-preparation-stub" id="hqTransferSection">
                     <div class="hq-stub-header">
                         <div class="hq-stub-icon"><i class="fas fa-building"></i></div>
                         <div class="hq-stub-title">
                             <h3>
                                 <span data-i18n="hq_send_title">本部への月次送信</span>
-                                <span class="badge-coming-soon">Phase 9</span>
-                                <span class="hq-tooltip">
-                                    <span class="hq-tooltip-icon">?</span>
-                                    <span class="hq-tooltip-text" data-i18n="hq_tooltip">Phase 9で「本部へ送信」機能を実装予定です</span>
-                                </span>
+                                <span class="badge-coming-soon" id="hqTransferStatus">読み込み中...</span>
                             </h3>
                             <div class="hq-stub-subtitle" data-i18n="hq_send_subtitle">Send Boundary #3 — 事業所月次データ → 本部統合台帳</div>
                         </div>
                     </div>
                     <div class="hq-stub-content">
-                        <div class="hq-info-box">
+                        <!-- Transfer Preview Info -->
+                        <div class="hq-info-box" id="hqTransferPreview">
                             <p>
-                                <i class="fas fa-info-circle" style="color: var(--primary); margin-right: 6px;"></i>
-                                <span data-i18n="hq_info_text">月末に事業所の送信済みレシートデータを本部統合台帳（Format②ベース）に一括転送する機能です。Office Admin が「本部へ送信」を実行すると、送信順序に基づいてHQ台帳に追記されます。</span>
+                                <i class="fas fa-spinner fa-spin" style="color: var(--primary); margin-right: 6px;"></i>
+                                <span>転送可能なレコードを確認中...</span>
                             </p>
                         </div>
+                        
+                        <!-- Month Selector -->
+                        <div class="hq-month-selector" style="display: flex; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; align-items: center;">
+                            <label style="font-size: 14px; font-weight: 500; color: var(--gray-700);">
+                                <i class="fas fa-calendar" style="margin-right: 6px;"></i>
+                                <span data-i18n="hq_select_month">転送対象月:</span>
+                            </label>
+                            <select id="hqTransferMonth" style="padding: 8px 12px; border: 1px solid var(--gray-300); border-radius: 6px; font-size: 14px; min-width: 180px;">
+                                <!-- Options populated by JS -->
+                            </select>
+                            <button id="hqRefreshPreview" class="btn-secondary" style="padding: 8px 12px; font-size: 13px;">
+                                <i class="fas fa-sync"></i> <span data-i18n="refresh">更新</span>
+                            </button>
+                        </div>
+
+                        <!-- Status Display -->
+                        <div id="hqStatusDisplay" style="display: none; margin-bottom: 16px; padding: 12px 16px; background: var(--success-light); border: 1px solid #10B981; border-radius: 8px;">
+                            <i class="fas fa-check-circle" style="color: var(--success); margin-right: 8px;"></i>
+                            <span id="hqStatusText">この月は既に転送済みです。</span>
+                        </div>
+                        
+                        <!-- Workflow Steps -->
                         <div class="hq-workflow-preview">
                             <div class="hq-workflow-step">
                                 <i class="fas fa-calendar-check"></i>
@@ -1670,15 +1689,54 @@
                         </div>
                     </div>
                     <div class="hq-button-container">
-                        <button class="hq-disabled-btn" disabled title="Phase 9 implementation">
-                            <i class="fas fa-lock"></i> <span data-i18n="hq_send_btn">本部へ送信</span>
+                        <button id="hqSendBtn" class="btn-primary" style="padding: 12px 32px; font-size: 14px; font-weight: 600;" disabled>
+                            <i class="fas fa-paper-plane"></i> <span data-i18n="hq_send_btn">本部へ送信</span> (<span id="hqCandidateCount">0</span>件)
                         </button>
-                        <div class="hq-hint-text">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            <span data-i18n="hq_hint">月次送信機能はPhase 9（追加開発）で実装予定です。</span>
+                        <div class="hq-hint-text" id="hqHintText">
+                            <i class="fas fa-info-circle"></i>
+                            <span data-i18n="hq_hint_loading">読み込み中...</span>
                         </div>
                     </div>
                 </section>
+
+                <!-- HQ Transfer Confirmation Modal -->
+                <div id="hqConfirmModal" class="modal" style="display: none;">
+                    <div class="modal-content" style="max-width: 500px;">
+                        <div class="modal-header">
+                            <h3><i class="fas fa-building" style="margin-right: 8px;"></i>本部への転送確認</h3>
+                            <button class="modal-close" onclick="closeHqConfirmModal()">&times;</button>
+                        </div>
+                        <div class="modal-body" style="padding: 24px;">
+                            <div style="text-align: center; margin-bottom: 20px;">
+                                <div style="width: 64px; height: 64px; background: var(--primary-50); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;">
+                                    <i class="fas fa-file-export" style="font-size: 28px; color: var(--primary);"></i>
+                                </div>
+                                <h4 style="font-size: 18px; font-weight: 600; color: var(--gray-800); margin-bottom: 8px;">
+                                    <span id="hqConfirmMonth"></span> のデータを転送
+                                </h4>
+                                <p style="color: var(--gray-600); font-size: 14px;">
+                                    <strong id="hqConfirmCount">0</strong> 件のレシートを本部台帳に転送します。
+                                </p>
+                            </div>
+                            
+                            <div style="background: var(--warning-light); border: 1px solid #F59E0B; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px;">
+                                <p style="font-size: 13px; color: var(--warning); display: flex; align-items: flex-start; gap: 8px;">
+                                    <i class="fas fa-exclamation-triangle" style="margin-top: 2px;"></i>
+                                    <span>この操作は取り消せません。転送後、同じ月のデータは再度転送できなくなります。</span>
+                                </p>
+                            </div>
+                            
+                            <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                                <button onclick="closeHqConfirmModal()" class="btn-secondary" style="padding: 10px 20px;">
+                                    <i class="fas fa-times"></i> キャンセル
+                                </button>
+                                <button id="hqConfirmSendBtn" onclick="executeHqTransfer()" class="btn-primary" style="padding: 10px 20px;">
+                                    <i class="fas fa-paper-plane"></i> 転送を実行
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
             </div>
         </div>
@@ -4167,6 +4225,307 @@
                 }
             }
         }, 30000);
+
+        // ============= PHASE 13: HQ TRANSFER FUNCTIONS =============
+        
+        let hqTransferState = {
+            year: null,
+            month: null,
+            candidateCount: 0,
+            existingBatch: null,
+            canTransfer: false
+        };
+        
+        // Initialize HQ Transfer section on page load
+        function initHQTransfer() {
+            populateHQMonthSelector();
+            document.getElementById('hqTransferMonth').addEventListener('change', loadHQTransferPreview);
+            document.getElementById('hqRefreshPreview').addEventListener('click', loadHQTransferPreview);
+            document.getElementById('hqSendBtn').addEventListener('click', showHqConfirmModal);
+            
+            // Load preview for current month
+            loadHQTransferPreview();
+        }
+        
+        // Populate month selector with recent months
+        function populateHQMonthSelector() {
+            const select = document.getElementById('hqTransferMonth');
+            const now = new Date();
+            const options = [];
+            
+            // Add current month and past 6 months
+            for (let i = 0; i < 7; i++) {
+                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+                const year = d.getFullYear();
+                const month = d.getMonth() + 1;
+                const label = `${year}年${month}月`;
+                options.push({ value: `${year}-${month}`, label, year, month });
+            }
+            
+            select.innerHTML = options.map(opt => 
+                `<option value="${opt.value}" data-year="${opt.year}" data-month="${opt.month}">${opt.label}</option>`
+            ).join('');
+        }
+        
+        // Load HQ transfer preview for selected month
+        async function loadHQTransferPreview() {
+            const token = localStorage.getItem('auth_token');
+            const select = document.getElementById('hqTransferMonth');
+            const selectedOption = select.options[select.selectedIndex];
+            const year = parseInt(selectedOption.dataset.year);
+            const month = parseInt(selectedOption.dataset.month);
+            
+            const previewDiv = document.getElementById('hqTransferPreview');
+            const statusBadge = document.getElementById('hqTransferStatus');
+            const statusDisplay = document.getElementById('hqStatusDisplay');
+            const hintText = document.getElementById('hqHintText');
+            const sendBtn = document.getElementById('hqSendBtn');
+            const countSpan = document.getElementById('hqCandidateCount');
+            
+            // Show loading state
+            previewDiv.innerHTML = `
+                <p>
+                    <i class="fas fa-spinner fa-spin" style="color: var(--primary); margin-right: 6px;"></i>
+                    <span>転送可能なレコードを確認中...</span>
+                </p>
+            `;
+            statusBadge.textContent = '読み込み中...';
+            statusBadge.style.background = 'var(--gray-200)';
+            statusBadge.style.color = 'var(--gray-600)';
+            statusDisplay.style.display = 'none';
+            sendBtn.disabled = true;
+            
+            try {
+                // Get office ID from the loaded reference data or page context
+                const officeId = await getOfficeId();
+                
+                if (!officeId) {
+                    throw new Error('Office ID not found');
+                }
+                
+                const response = await fetch(
+                    `/api/hq-transfer/month-end/preview?office_id=${encodeURIComponent(officeId)}&year=${year}&month=${month}`,
+                    {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }
+                );
+                
+                if (response.status === 404) {
+                    // HQ Transfer feature not enabled
+                    statusBadge.textContent = '未有効化';
+                    statusBadge.style.background = 'var(--gray-200)';
+                    statusBadge.style.color = 'var(--gray-600)';
+                    previewDiv.innerHTML = `
+                        <p>
+                            <i class="fas fa-info-circle" style="color: var(--info); margin-right: 6px;"></i>
+                            <span>HQ転送機能は現在無効です。管理者に連絡してください。</span>
+                        </p>
+                    `;
+                    hintText.innerHTML = `<i class="fas fa-lock"></i> <span>HQ_TRANSFER_ENABLED=true が必要です</span>`;
+                    return;
+                }
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const preview = await response.json();
+                
+                // Update state
+                hqTransferState = {
+                    year,
+                    month,
+                    officeId,
+                    candidateCount: preview.candidate_count || 0,
+                    existingBatch: preview.existing_batch,
+                    canTransfer: preview.can_transfer
+                };
+                
+                // Update UI based on status
+                countSpan.textContent = hqTransferState.candidateCount;
+                
+                if (preview.existing_batch && preview.existing_batch.status === 'SUCCESS') {
+                    // Already transferred
+                    statusBadge.textContent = '転送済み';
+                    statusBadge.style.background = 'var(--success-light)';
+                    statusBadge.style.color = 'var(--success)';
+                    
+                    const batchDate = formatDateTime(preview.existing_batch.created_at);
+                    statusDisplay.style.display = 'block';
+                    statusDisplay.innerHTML = `
+                        <i class="fas fa-check-circle" style="color: var(--success); margin-right: 8px;"></i>
+                        <span>この月は既に転送済みです (${preview.existing_batch.receipt_count}件、${batchDate})</span>
+                    `;
+                    
+                    previewDiv.innerHTML = `
+                        <p>
+                            <i class="fas fa-check" style="color: var(--success); margin-right: 6px;"></i>
+                            <span>Batch ID: ${preview.existing_batch.batch_id}</span>
+                        </p>
+                    `;
+                    
+                    hintText.innerHTML = `<i class="fas fa-check-circle"></i> <span>転送完了済み</span>`;
+                    sendBtn.disabled = true;
+                    
+                } else if (preview.existing_batch && preview.existing_batch.status === 'WRITING') {
+                    // Transfer in progress
+                    statusBadge.textContent = '転送中...';
+                    statusBadge.style.background = 'var(--warning-light)';
+                    statusBadge.style.color = 'var(--warning)';
+                    
+                    previewDiv.innerHTML = `
+                        <p>
+                            <i class="fas fa-spinner fa-spin" style="color: var(--warning); margin-right: 6px;"></i>
+                            <span>転送処理が進行中です。しばらくお待ちください。</span>
+                        </p>
+                    `;
+                    
+                    hintText.innerHTML = `<i class="fas fa-hourglass-half"></i> <span>処理中</span>`;
+                    sendBtn.disabled = true;
+                    
+                } else if (hqTransferState.candidateCount > 0) {
+                    // Ready to transfer
+                    statusBadge.textContent = '転送可能';
+                    statusBadge.style.background = 'var(--primary-50)';
+                    statusBadge.style.color = 'var(--primary)';
+                    
+                    previewDiv.innerHTML = `
+                        <p>
+                            <i class="fas fa-file-invoice" style="color: var(--primary); margin-right: 6px;"></i>
+                            <span><strong>${hqTransferState.candidateCount}</strong> 件の送信済みレシートが転送可能です。</span>
+                        </p>
+                    `;
+                    
+                    hintText.innerHTML = `<i class="fas fa-info-circle"></i> <span>クリックして本部台帳に転送</span>`;
+                    sendBtn.disabled = false;
+                    
+                } else {
+                    // No candidates
+                    statusBadge.textContent = '転送データなし';
+                    statusBadge.style.background = 'var(--gray-100)';
+                    statusBadge.style.color = 'var(--gray-500)';
+                    
+                    previewDiv.innerHTML = `
+                        <p>
+                            <i class="fas fa-inbox" style="color: var(--gray-400); margin-right: 6px;"></i>
+                            <span>この月には転送可能な送信済みレシートがありません。</span>
+                        </p>
+                    `;
+                    
+                    hintText.innerHTML = `<i class="fas fa-inbox"></i> <span>送信済みレコードがありません</span>`;
+                    sendBtn.disabled = true;
+                }
+                
+            } catch (error) {
+                console.error('Error loading HQ transfer preview:', error);
+                statusBadge.textContent = 'エラー';
+                statusBadge.style.background = 'var(--danger-light)';
+                statusBadge.style.color = 'var(--danger)';
+                
+                previewDiv.innerHTML = `
+                    <p>
+                        <i class="fas fa-exclamation-circle" style="color: var(--danger); margin-right: 6px;"></i>
+                        <span>プレビューの読み込みに失敗しました: ${error.message}</span>
+                    </p>
+                `;
+                
+                hintText.innerHTML = `<i class="fas fa-exclamation-triangle"></i> <span>エラーが発生しました</span>`;
+                sendBtn.disabled = true;
+            }
+        }
+        
+        // Get office ID from reference data
+        async function getOfficeId() {
+            // First try to get from existing locations data
+            if (referenceData && referenceData.locations && referenceData.locations.length > 0) {
+                // In a real multi-office scenario, this would be the user's assigned office
+                // For now, return the first location
+                return referenceData.locations[0].business_location_id;
+            }
+            
+            // Fallback: try to get from current user context
+            return 'Aichi'; // Default fallback
+        }
+        
+        // Show HQ transfer confirmation modal
+        function showHqConfirmModal() {
+            if (!hqTransferState.canTransfer || hqTransferState.candidateCount === 0) {
+                return;
+            }
+            
+            const modal = document.getElementById('hqConfirmModal');
+            const monthText = document.getElementById('hqConfirmMonth');
+            const countText = document.getElementById('hqConfirmCount');
+            
+            monthText.textContent = `${hqTransferState.year}年${hqTransferState.month}月`;
+            countText.textContent = hqTransferState.candidateCount;
+            
+            modal.style.display = 'flex';
+        }
+        
+        // Close HQ confirmation modal
+        function closeHqConfirmModal() {
+            document.getElementById('hqConfirmModal').style.display = 'none';
+        }
+        
+        // Execute HQ transfer
+        async function executeHqTransfer() {
+            const token = localStorage.getItem('auth_token');
+            const confirmBtn = document.getElementById('hqConfirmSendBtn');
+            
+            confirmBtn.disabled = true;
+            confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 転送中...';
+            
+            try {
+                const response = await fetch('/api/hq-transfer/month-end/execute', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        office_id: hqTransferState.officeId,
+                        year: hqTransferState.year,
+                        month: hqTransferState.month
+                    })
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                closeHqConfirmModal();
+                
+                if (result.status === 'success') {
+                    showToast(`✓ ${result.written_count}件のレシートを本部台帳に転送しました`, 'success');
+                } else if (result.status === 'partial_failure') {
+                    showToast(`⚠ ${result.written_count}/${result.receipt_count}件が転送されました。一部エラーがあります。`, 'warning');
+                } else if (result.status === 'idempotent') {
+                    showToast('ℹ この月は既に転送済みです', 'info');
+                } else if (result.status === 'failed') {
+                    showToast('✗ 転送に失敗しました', 'error');
+                }
+                
+                // Refresh preview
+                loadHQTransferPreview();
+                
+            } catch (error) {
+                console.error('HQ transfer error:', error);
+                showToast(`✗ 転送エラー: ${error.message}`, 'error');
+            } finally {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-paper-plane"></i> 転送を実行';
+            }
+        }
+        
+        // Initialize HQ Transfer on page load (only for ADMIN role)
+        if (typeof userRole !== 'undefined' && (userRole === 'ADMIN' || userRole === 'HQ')) {
+            // Wait for reference data to load, then initialize
+            setTimeout(initHQTransfer, 1000);
+        }
     </script>
 </body>
 </html>

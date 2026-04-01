@@ -4,11 +4,17 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 import time
 import logging
 from pathlib import Path
 from datetime import datetime, timedelta
+
+# Rate limiter will be initialized in create_app() to avoid .env encoding issues on Windows
+limiter = None
 
 # Load environment variables from .env file
 try:
@@ -51,6 +57,8 @@ from app.api.drafts import router as drafts_router
 from app.api.audits import router as audits_router  # Phase 5A Step 3
 from app.api.hq_transfer import router as hq_transfer_router  # Phase 7A-3: Internal HQ transfer
 from app.api.hq_view import router as hq_view_router  # Phase 7.2: HQ read-only view
+from app.api.system import router as system_router  # Phase 9A.4: System health endpoints
+from app.api.excel_source import router as excel_source_router  # Phase 10: Excel Source of Truth
 from app.routes.auth import router as auth_router  # Phase 5B.1: Authentication
 
 
@@ -123,21 +131,46 @@ class ApiTimingMiddleware(BaseHTTPMiddleware):
 
 
 def create_app() -> FastAPI:
+    global limiter
     try:
+        # Initialize rate limiter here to avoid .env encoding issues at module load
+        limiter = Limiter(key_func=get_remote_address, default_limits=["100/minute"])
+        
         app = FastAPI(
             title="Receipt OCR Service",
             description="API for extracting structured data from receipt images and PDFs.",
             version="0.1.0",
         )
 
+        # Add rate limiter to app state
+        app.state.limiter = limiter
+        app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
         # Add CORS middleware
         app.add_middleware(
             CORSMiddleware,
             allow_origins=["http://localhost:8001", "http://127.0.0.1:8001", "http://localhost:3000", "http://127.0.0.1:3000"],  # Specific origins
             allow_credentials=True,
-            allow_methods=["*"],
-            allow_headers=["*"],
+            allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],  # Explicit methods (security hardening)
+            allow_headers=["Authorization", "Content-Type", "X-Requested-With", "Accept"],  # Explicit headers
         )
+
+        # Security headers middleware
+        @app.middleware("http")
+        async def add_security_headers(request: Request, call_next):
+            response = await call_next(request)
+            # Prevent MIME type sniffing
+            response.headers["X-Content-Type-Options"] = "nosniff"
+            # Prevent clickjacking
+            response.headers["X-Frame-Options"] = "DENY"
+            # Enable XSS filter
+            response.headers["X-XSS-Protection"] = "1; mode=block"
+            # Control referrer information
+            response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+            # Prevent caching of sensitive data
+            if request.url.path.startswith("/api/"):
+                response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate"
+            return response
 
         app.add_middleware(ApiTimingMiddleware)
 
@@ -237,15 +270,17 @@ def create_app() -> FastAPI:
             - Backend: Blocks unauthenticated/WORKER access when auth header present
             - Frontend: JavaScript checks localStorage token for browser redirects
             """
+            # Import the JWT secret from the auth module to ensure consistency
+            from app.auth.jwt import SECRET_KEY as JWT_SECRET_KEY
+            
             # If Authorization header present, verify it
             if authorization:
                 try:
                     # Extract and verify JWT token
                     token = authorization.replace("Bearer ", "").strip()
                     
-                    # Decode token (using same config as app.auth.jwt)
-                    SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
-                    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                    # Decode token (using same secret as app.auth.jwt)
+                    payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
                     
                     # Check role - only ADMIN allowed
                     role = payload.get("role")
@@ -276,6 +311,11 @@ def create_app() -> FastAPI:
             """Phase 4D: Draft management UI"""
             return templates.TemplateResponse("draft_management.html", {"request": request})
 
+        @app.get("/phase10-demo", response_class=HTMLResponse, tags=["ui"])
+        def phase10_demo(request: Request) -> HTMLResponse:
+            """Phase 10: Excel as Source of Truth - Demo page"""
+            return templates.TemplateResponse("phase10_demo.html", {"request": request})
+
         @app.get("/hq", response_class=HTMLResponse, tags=["ui"])
         def hq_view(
             request: Request,
@@ -290,15 +330,17 @@ def create_app() -> FastAPI:
             - Backend: Blocks unauthenticated/non-HQ access when auth header present
             - Frontend: JavaScript checks localStorage token for browser redirects
             """
+            # Import the JWT secret from the auth module to ensure consistency
+            from app.auth.jwt import SECRET_KEY as JWT_SECRET_KEY
+            
             # If Authorization header present, verify it
             if authorization:
                 try:
                     # Extract and verify JWT token
                     token = authorization.replace("Bearer ", "").strip()
                     
-                    # Decode token (using same config as app.auth.jwt)
-                    SECRET_KEY = os.getenv("JWT_SECRET", "dev-secret-key-change-in-production")
-                    payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+                    # Decode token (using same secret as app.auth.jwt)
+                    payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=["HS256"])
                     
                     # Check role - only HQ allowed
                     role = payload.get("role")
@@ -320,6 +362,8 @@ def create_app() -> FastAPI:
         app.include_router(audits_router)  # Phase 5A Step 3: Audit API endpoints
         app.include_router(hq_transfer_router)  # Phase 7A-3: Internal HQ transfer endpoints
         app.include_router(hq_view_router)  # Phase 7.2: HQ read-only view endpoints
+        app.include_router(system_router)  # Phase 9A.4: System health endpoints
+        app.include_router(excel_source_router)  # Phase 10: Excel Source of Truth API
         app.include_router(auth_router)  # Phase 5B.1: Authentication endpoints
 
         return app

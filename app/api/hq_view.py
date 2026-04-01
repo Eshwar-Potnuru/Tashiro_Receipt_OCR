@@ -18,6 +18,7 @@ from app.auth.dependencies import get_current_user
 from app.models.user import User
 from app.repositories.draft_repository import DraftRepository
 from app.services.config_service import ConfigService
+from app.services.access_control_service import AccessControlService
 
 
 logger = logging.getLogger("uvicorn.error")
@@ -26,9 +27,11 @@ config_service = ConfigService()
 
 
 def _ensure_hq_or_admin(current_user: User) -> None:
-    """Ensure user has HQ or ADMIN role (ADMIN allowed temporarily for Phase 7.2)."""
-    role = str(getattr(current_user, "role", "")).upper()
-    if role not in ("HQ", "ADMIN"):
+    """Ensure user has HQ or ADMIN role.
+    
+    Phase 12A-2: Delegates to AccessControlService for centralized logic.
+    """
+    if not AccessControlService.is_admin_or_hq(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Access denied. HQ or ADMIN role required.",

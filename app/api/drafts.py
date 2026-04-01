@@ -37,8 +37,24 @@ from app.models.user import User
 from app.models.draft import DraftReceipt, DraftStatus
 from app.models.schema import Receipt
 from app.services.draft_service import DraftService, StaffLocationMismatchError
+from app.services.status_workflow_service import (
+    UserFacingStatus,
+    get_user_facing_status,
+    get_user_facing_status_display,
+)
+from app.services.post_send_audit import PostSendAuditService
+from app.services.validation_service import (
+    ValidationService, 
+    ValidationEnforcementError, 
+    ENFORCE_VALIDATION,
+)
+from app.services.access_control_service import AccessControlService
 from app.repositories.user_repository import UserRepository
 import logging
+
+# Security: Maximum file upload size (10 MB)
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_UPLOAD_SIZE_MB = 10
 
 logger = logging.getLogger("uvicorn.error")
 logger.setLevel(logging.INFO)
@@ -74,20 +90,28 @@ def get_draft_service() -> DraftService:
 
 
 def _is_worker(user: User) -> bool:
-    return str(getattr(user, "role", "")).upper() == "WORKER"
+    """Check if user has WORKER role.
+    
+    Phase 12A-2: Delegates to AccessControlService for centralized logic.
+    """
+    return AccessControlService.is_worker(user)
 
 
 def _is_admin_or_hq(user: User) -> bool:
-    return str(getattr(user, "role", "")).upper() in {"ADMIN", "HQ"}
+    """Check if user has ADMIN or HQ role.
+    
+    Phase 12A-2: Delegates to AccessControlService for centralized logic.
+    """
+    return AccessControlService.is_admin_or_hq(user)
 
 
 def _assert_draft_access(current_user: User, draft: DraftReceipt) -> None:
-    if not _is_worker(current_user):
-        return
-
-    owner_user_id = str(draft.creator_user_id) if draft.creator_user_id else None
-    current_user_id = str(current_user.user_id)
-    if owner_user_id != current_user_id:
+    """Assert user can access the draft.
+    
+    Phase 12A-2: Delegates to AccessControlService for centralized logic.
+    Maintains same exception behavior for backward compatibility.
+    """
+    if not AccessControlService.can_access_draft(current_user, draft):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied. You can only access your own drafts.",
@@ -95,28 +119,27 @@ def _assert_draft_access(current_user: User, draft: DraftReceipt) -> None:
 
 
 def _ensure_not_sent(draft: DraftReceipt, current_user: Optional[User] = None) -> None:
-    """Phase 6A-1: Enforce SENT immutability.
+    """Phase 6A-1: Enforce SENT immutability for DELETE operations only.
     
-    Once a draft is SENT, it becomes immutable and cannot be modified,
-    deleted, validated, or re-sent. This is a production-grade data
-    integrity guarantee.
+    Phase 9.R.3 Update: Edits to SENT receipts are now permitted but logged
+    via post_send_audit. Deletes remain blocked for data integrity.
     
     Args:
         draft: DraftReceipt to check
         current_user: Optional User for audit logging
     
     Raises:
-        HTTPException 409 if draft status is SENT
+        HTTPException 409 if trying to DELETE a SENT draft
     
     Design:
-        - Centralized guard for all mutation operations
+        - Applied to DELETE operations only (edits use audit logging)
         - Applied after auth/ownership checks
         - Read operations remain unaffected
     """
     if draft.status == DraftStatus.SENT:
-        # Phase 6A-1: Log immutability block for audit trail
+        # Phase 6A-1: Log immutability block for DELETE operations
         logger.warning(
-            "sent_immutability_block user_id=%s role=%s draft_id=%s status=%s action=mutation_blocked",
+            "sent_immutability_block user_id=%s role=%s draft_id=%s status=%s action=delete_blocked",
             getattr(current_user, "user_id", None),
             getattr(current_user, "role", None),
             draft.draft_id,
@@ -124,8 +147,23 @@ def _ensure_not_sent(draft: DraftReceipt, current_user: Optional[User] = None) -
         )
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail="This receipt has already been sent and is immutable. Sent receipts cannot be modified or deleted.",
+            detail="This receipt has already been sent and cannot be deleted. Sent receipts are preserved for audit compliance.",
         )
+
+
+def _check_is_sent(draft: DraftReceipt) -> bool:
+    """Phase 9.R.3: Check if draft is SENT (for edit audit logging).
+    
+    Returns True if draft is SENT, indicating edits should be logged
+    via PostSendAuditService.
+    
+    Args:
+        draft: DraftReceipt to check
+        
+    Returns:
+        True if draft.status == SENT
+    """
+    return draft.status == DraftStatus.SENT
 
 
 # ============================================================================
@@ -210,6 +248,10 @@ class DraftResponse(BaseModel):
     reviewed_by_user_id: Optional[str] = None  # UUID of reviewer
     reviewed_by_login_id: Optional[str] = None  # Login ID of reviewer
     reviewed_by_name: Optional[str] = None  # Display name of reviewer
+
+    # Phase 12B-1: User-facing status (simple: Draft / Submitted)
+    user_facing_status: str = Field(default="Draft", description="User-facing status (Draft or Submitted)")
+    user_facing_status_display: str = Field(default="Draft", description="Localized display string for user-facing status")
 
     is_valid: bool = Field(default=False, description="Whether draft is ready to send")
     validation_errors: List[str] = Field(default_factory=list, description="Validation error messages")
@@ -369,6 +411,8 @@ class DraftResponse(BaseModel):
             reviewed_by_user_id=reviewed_by_user_id_str,
             reviewed_by_login_id=reviewed_by_login_id,
             reviewed_by_name=reviewed_by_name,
+            user_facing_status=get_user_facing_status(draft.status).value,
+            user_facing_status_display=get_user_facing_status_display(draft.status, language="en"),
             is_valid=is_valid,
             validation_errors=validation_errors or [],
         )
@@ -1024,20 +1068,73 @@ def update_draft(
         )
     _assert_draft_access(current_user, existing)
 
-    _ensure_not_sent(existing, current_user)  # Phase 6A-1: Block SENT modification
+    # Phase 9.R.3: Check if SENT for post-send audit logging
+    is_sent = _check_is_sent(existing)
+    old_values = {}
+    
+    if is_sent:
+        # Capture old values for audit trail before update
+        old_receipt = existing.receipt
+        old_values = {
+            "vendor_name": old_receipt.vendor_name,
+            "receipt_date": old_receipt.receipt_date,
+            "total_amount": old_receipt.total_amount,
+            "tax_10_amount": old_receipt.tax_10_amount,
+            "tax_8_amount": old_receipt.tax_8_amount,
+            "account_title": old_receipt.account_title,
+            "memo": old_receipt.memo,
+            "invoice_number": old_receipt.invoice_number,
+            "business_location_id": old_receipt.business_location_id,
+            "staff_id": old_receipt.staff_id,
+        }
+        logger.info(
+            f"post_send_edit_start draft_id={draft_id} user_id={current_user.user_id} "
+            f"role={current_user.role} status=SENT"
+        )
 
-    # Phase 8.4 guard: ADMIN may edit only manual-entry DRAFTs (image_ref is null)
+    # Phase 8.4 guard: ADMIN may edit only manual-entry receipts (image_ref is null)
+    # Phase 9.R.3 update: ADMIN can edit SENT items (with audit logging)
     if current_user.role == "ADMIN":
         image_ref_value = getattr(existing, "image_ref", None)
         has_image_ref = bool(str(image_ref_value).strip()) if image_ref_value is not None else False
-        if existing.status != DraftStatus.DRAFT or has_image_ref:
+        if has_image_ref:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Only manual-entry drafts can be edited.",
+                detail="Only manual-entry receipts can be edited by admin.",
             )
     
     try:
         draft = service.update_draft(draft_id, request.receipt)
+        
+        # Phase 9.R.3: Log post-send edits to audit service
+        if is_sent:
+            try:
+                new_receipt = draft.receipt
+                audit_service = PostSendAuditService()
+                changes = {}
+                
+                # Compare and collect changed fields
+                for field in old_values.keys():
+                    old_val = old_values.get(field)
+                    new_val = getattr(new_receipt, field, None)
+                    if old_val != new_val:
+                        changes[field] = (old_val, new_val)
+                
+                if changes:
+                    edit_ids = audit_service.log_batch_edits(
+                        draft_id=draft_id,
+                        changes=changes,
+                        user_id=str(current_user.user_id)
+                    )
+                    logger.info(
+                        f"post_send_edit_logged draft_id={draft_id} "
+                        f"user_id={current_user.user_id} fields_changed={list(changes.keys())} "
+                        f"edit_ids={edit_ids}"
+                    )
+            except Exception as audit_exc:
+                # Audit logging must not block the operation
+                logger.error(f"post_send_audit_failed draft_id={draft_id}: {audit_exc}")
+        
         return DraftResponse.from_draft(draft)
     except ValueError as exc:
         # Draft not found or immutability violation
@@ -1130,7 +1227,13 @@ def validate_draft(
         )
 
     _assert_draft_access(current_user, draft)
-    _ensure_not_sent(draft, current_user)  # Phase 6A-1: Block SENT validation
+    
+    # Phase 9.R.3: SENT validation doesn't make sense - block it explicitly
+    if draft.status == DraftStatus.SENT:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Cannot validate a receipt that has already been sent.",
+        )
     
     is_valid, errors = service._validate_ready_to_send(draft)
     
@@ -1182,10 +1285,16 @@ async def batch_upload_receipts(
     except Exception:
         logger.debug("Failed to read request.form() for diagnostics")
 
-    # Read all files
+    # Read all files with size validation
     images = []
     for file in files:
         content = await file.read()
+        # Security: Validate file size (max 10 MB)
+        if len(content) > MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File '{file.filename}' too large. Maximum size is {MAX_UPLOAD_SIZE_MB} MB."
+            )
         images.append((content, file.filename))
 
     logger.info("Uploaded filenames: %s", [file.filename for file in files])
@@ -1301,6 +1410,12 @@ async def debug_batch_upload_receipts(
     images = []
     for file in files:
         content = await file.read()
+        # Security: Validate file size (max 10 MB) - even for debug
+        if len(content) > MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+                detail=f"File '{file.filename}' too large. Maximum size is {MAX_UPLOAD_SIZE_MB} MB."
+            )
         images.append((content, file.filename))
 
     logger.info("Debug: Uploaded filenames: %s", [file.filename for file in files])
@@ -1395,7 +1510,12 @@ def send_drafts(
         if _is_worker(current_user):
             _assert_draft_access(current_user, draft)
 
-        _ensure_not_sent(draft, current_user)  # Phase 6A-1: Block re-sending SENT
+        # Phase 9.R.3: Block re-sending SENT receipts explicitly
+        if draft.status == DraftStatus.SENT:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Receipt {draft_id} has already been sent and cannot be re-sent.",
+            )
 
         # Phase 6A-4: SEND-only hard block for staff/location mismatch
         try:
@@ -1411,6 +1531,23 @@ def send_drafts(
                     "error_code": getattr(exc, "error_code", "STAFF_LOCATION_MISMATCH"),
                 },
             )
+        
+        # Phase 12A-1: Validation enforcement (gated by ENFORCE_VALIDATION flag)
+        # When ENFORCE_VALIDATION=false (default): advisory only, no blocking
+        # When ENFORCE_VALIDATION=true: block sends with validation issues
+        if ENFORCE_VALIDATION:
+            try:
+                validation_service = ValidationService()
+                validation_service.validate_for_send(
+                    draft.receipt,
+                    enforce=True,
+                    receipt_id=str(draft_id),
+                )
+            except ValidationEnforcementError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=exc.to_dict(),
+                )
     
     try:
         role_value = current_user.role.value if hasattr(current_user.role, "value") else str(current_user.role)
@@ -1482,7 +1619,12 @@ def precheck_send_drafts(
         if _is_worker(current_user):
             _assert_draft_access(current_user, draft)
 
-        _ensure_not_sent(draft, current_user)
+        # Phase 9.R.3: Block pre-check for already SENT items
+        if draft.status == DraftStatus.SENT:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Receipt {draft_id} has already been sent.",
+            )
 
     result = service.precheck_send_duplicates(request.draft_ids)
     return SendPrecheckResponse(**result)

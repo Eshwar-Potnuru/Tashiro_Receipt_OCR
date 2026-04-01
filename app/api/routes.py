@@ -12,6 +12,10 @@ import base64
 from PIL import Image
 import io
 
+# Security: Maximum file upload size (10 MB)
+MAX_UPLOAD_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+MAX_UPLOAD_SIZE_MB = 10
+
 from app.utils.image_processing import optimize_image_for_ocr
 from app.utils.logging_utils import log_ocr_event, log_batch_event
 from app.pipeline.multi_receipt_pipeline import MultiReceiptPipeline
@@ -410,6 +414,13 @@ async def analyze_receipt(
         print(f"  - Content type: {file.content_type}")
         print(f"  - File size: {len(file_content)} bytes")
         source_filename = file.filename or 'uploaded_receipt'
+        
+        # Security: Validate file size (max 10 MB)
+        if len(file_content) > MAX_UPLOAD_SIZE_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"File too large. Maximum size is {MAX_UPLOAD_SIZE_MB} MB. Your file: {len(file_content) / (1024*1024):.1f} MB"
+            )
         
         # Validate file size
         if len(file_content) < 100:  # Less than 100 bytes is likely corrupted

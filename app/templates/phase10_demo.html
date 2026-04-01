@@ -1,0 +1,1186 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phase 10 PoC Readiness Demo — Excel as Authority</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --primary: #2563EB;
+            --primary-dark: #1D4ED8;
+            --success: #059669;
+            --warning: #D97706;
+            --danger: #DC2626;
+            --gray-50: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-500: #6B7280;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container { max-width: 1200px; margin: 0 auto; }
+        
+        .header {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        
+        .header h1 {
+            color: var(--primary);
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+        
+        .header p { color: var(--gray-500); }
+        
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .badge-success { background: #D1FAE5; color: var(--success); }
+        .badge-warning { background: #FEF3C7; color: var(--warning); }
+        .badge-info { background: #DBEAFE; color: var(--primary); }
+        
+        .demo-toggle {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: #FEF3C7;
+            border-radius: 8px;
+            border: 2px solid var(--warning);
+            cursor: pointer;
+        }
+        
+        .demo-toggle.active {
+            background: #D1FAE5;
+            border-color: var(--success);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 48px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 24px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch.active { background: var(--success); }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: white;
+            top: 2px;
+            left: 2px;
+            transition: 0.3s;
+        }
+        
+        .toggle-switch.active::after { left: 26px; }
+        
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        
+        .card h3 {
+            color: var(--gray-800);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .card h3 i { color: var(--primary); }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-secondary { background: var(--gray-100); color: var(--gray-700); }
+        .btn-secondary:hover { background: var(--gray-200); }
+        
+        .status-box {
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .status-box.loading { background: #FEF3C7; border: 1px solid #F59E0B; }
+        .status-box.success { background: #D1FAE5; border: 1px solid var(--success); }
+        .status-box.error { background: #FEE2E2; border: 1px solid var(--danger); }
+        .status-box.info { background: #DBEAFE; border: 1px solid var(--primary); }
+        .status-box.warning { background: #FEF3C7; border: 1px solid var(--warning); }
+        .status-box.purple { background: #EDE9FE; border: 1px solid #7C3AED; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 14px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid var(--gray-200); }
+        th { background: var(--gray-50); font-weight: 600; color: var(--gray-700); }
+        tr:hover { background: var(--gray-50); }
+        
+        .file-list { max-height: 300px; overflow-y: auto; }
+        
+        .file-item {
+            padding: 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .file-item:hover { border-color: var(--primary); background: var(--gray-50); }
+        .file-item.selected { border-color: var(--primary); background: #EFF6FF; }
+        
+        .file-icon {
+            width: 40px;
+            height: 40px;
+            background: #D1FAE5;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--success);
+        }
+        
+        .file-info h4 { font-size: 14px; color: var(--gray-800); }
+        .file-info p { font-size: 12px; color: var(--gray-500); }
+        
+        .api-log {
+            background: #1F2937;
+            color: #10B981;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Consolas', monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .api-log .timestamp { color: #6B7280; }
+        .api-log .endpoint { color: #60A5FA; }
+        .api-log .success { color: #10B981; }
+        .api-log .error { color: #EF4444; }
+        .api-log .demo { color: #FBBF24; }
+        
+        .receipt-count {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--primary);
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .receipt-count span { font-size: 16px; color: var(--gray-500); display: block; }
+        
+        .architecture-diagram {
+            background: var(--gray-50);
+            border: 2px dashed var(--gray-200);
+            border-radius: 12px;
+            padding: 24px;
+            text-align: center;
+        }
+        
+        .architecture-diagram pre {
+            font-family: 'Consolas', monospace;
+            font-size: 12px;
+            color: var(--gray-700);
+            text-align: left;
+            display: inline-block;
+        }
+        
+        .highlight-box {
+            background: linear-gradient(135deg, #667eea22 0%, #764ba222 100%);
+            border: 2px solid var(--primary);
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        
+        .highlight-box h4 { color: var(--primary); margin-bottom: 8px; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .stat-tile {
+            background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+            border: 1px solid var(--gray-200);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        .stat-tile:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+        
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+            margin: 0 auto 12px;
+        }
+        
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--gray-800);
+            line-height: 1;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .location-breakdown {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--gray-200);
+        }
+        
+        .location-chip {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+        }
+        
+        .location-chip-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--success);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 14px;
+        }
+        
+        .location-chip-info h5 { font-size: 14px; color: var(--gray-800); margin: 0; }
+        .location-chip-info p { font-size: 11px; color: var(--gray-500); margin: 0; }
+        
+        .checklist { list-style: none; padding: 0; margin: 0; }
+        
+        .checklist li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
+        }
+        
+        .checklist li.prepared { background: #D1FAE5; border-color: #A7F3D0; }
+        .checklist li.pending { background: #FEF3C7; border-color: #FDE68A; }
+        
+        .checklist-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+        
+        .checklist li.prepared .checklist-icon { background: var(--success); color: white; }
+        .checklist li.pending .checklist-icon { background: var(--warning); color: white; }
+        
+        .checklist-content { flex: 1; }
+        .checklist-content strong { display: block; color: var(--gray-800); margin-bottom: 2px; font-size: 14px; }
+        .checklist-content small { color: var(--gray-600); font-size: 12px; }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .hidden { display: none !important; }
+        
+        .demo-indicator {
+            display: inline-block;
+            background: #FEF3C7;
+            color: var(--warning);
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            padding: 8px 0;
+        }
+        
+        .collapsible-header:hover { opacity: 0.8; }
+        
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .collapsible-content.open { max-height: 3000px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header with Demo Toggle -->
+        <div class="header">
+            <div>
+                <h1>
+                    <i class="fas fa-file-excel"></i> Phase 10 PoC Readiness
+                    <span class="badge badge-info">Ready for Validation</span>
+                </h1>
+                <p>Option A' — Excel as Single Source of Truth</p>
+            </div>
+            <div class="demo-toggle" id="demoToggleBox" onclick="toggleDemoMode()">
+                <div class="toggle-switch" id="demoToggle"></div>
+                <div>
+                    <strong id="demoModeLabel">Demo Mode OFF</strong>
+                    <p style="font-size: 11px; margin: 0;">Show sample data</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Executive Summary -->
+        <div class="card">
+            <h3><i class="fas fa-bullseye"></i> What This Demo Page Is For</h3>
+            <p style="margin-bottom: 16px; color: var(--gray-500);">
+                This page demonstrates Phase 10 PoC readiness. Phase 10 is the <strong>live validation gate</strong> where the system 
+                will be tested against the client's real OneDrive/Excel environment.
+            </p>
+            <div class="grid-3">
+                <div class="status-box success" style="margin: 0;">
+                    <strong>✅ What Is Prepared</strong>
+                    <small>All Phase 10 read-from-Excel logic is implemented and internally tested.</small>
+                </div>
+                <div class="status-box warning" style="margin: 0;">
+                    <strong>🔑 What Is Needed</strong>
+                    <small>Client credentials and real OneDrive access required for live validation.</small>
+                </div>
+                <div class="status-box purple" style="margin: 0;">
+                    <strong>👁️ What Will Be Validated</strong>
+                    <small>Auth, OneDrive access, workbook resolution, data reading, HQ view.</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mode Explanation -->
+        <div class="card" id="statusAlert">
+            <div class="status-box info">
+                <strong>ℹ️ Demo Mode vs Live Mode</strong><br>
+                <small>
+                    <strong>Demo Mode ON:</strong> Shows sample data for visualization — does not prove real connectivity.<br>
+                    <strong>Demo Mode OFF:</strong> Calls real API endpoints. Shows actual OneDrive data when credentials configured.
+                </small>
+            </div>
+        </div>
+        
+        <!-- Validation Checklist -->
+        <div class="card">
+            <h3><i class="fas fa-clipboard-check"></i> Phase 10 Validation Checklist</h3>
+            <p style="margin-bottom: 16px; color: var(--gray-500); font-size: 14px;">
+                Checks to perform when credentials arrive. <span style="color: var(--success);">■ Prepared</span> = implementation ready. 
+                <span style="color: var(--warning);">■ Pending</span> = needs live environment.
+            </p>
+            <ul class="checklist">
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>MSAL Authentication Flow</strong>
+                        <small>OAuth2 client credentials flow implemented and tested with mock tokens</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>Real Token Acquisition</strong>
+                        <small>Pending: Validate token acquisition with client's Azure AD credentials</small>
+                    </div>
+                </li>
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>OneDrive Path Resolution</strong>
+                        <small>Location/staff folder path logic implemented with configurable base paths</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>Live Folder Access</strong>
+                        <small>Pending: Verify access to client's actual OneDrive folder structure</small>
+                    </div>
+                </li>
+                <li class="prepared">
+                    <div class="checklist-icon"><i class="fas fa-check"></i></div>
+                    <div class="checklist-content">
+                        <strong>Excel Workbook Reading</strong>
+                        <small>Graph API workbook/worksheet/range read logic fully implemented</small>
+                    </div>
+                </li>
+                <li class="pending">
+                    <div class="checklist-icon"><i class="fas fa-clock"></i></div>
+                    <div class="checklist-content">
+                        <strong>End-to-End HQ View</strong>
+                        <small>Pending: Full validation that HQ dashboard shows live Excel data correctly</small>
+                    </div>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Dashboard Stats -->
+        <div class="card" id="dashboardCard">
+            <h3><i class="fas fa-tachometer-alt"></i> Dashboard Preview 
+                <button class="btn btn-secondary" style="margin-left: auto; padding: 8px 16px;" onclick="loadDashboard()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </h3>
+            <div id="dashboardStats" class="stats-grid">
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-building"></i></div>
+                    <div class="stat-value" id="statLocations">--</div>
+                    <div class="stat-label">Location Files</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-value" id="statStaff">--</div>
+                    <div class="stat-label">Staff Files</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+                    <div class="stat-value" id="statReceipts">--</div>
+                    <div class="stat-label">Total Rows</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-clock"></i></div>
+                    <div class="stat-value" id="statLastMod">--</div>
+                    <div class="stat-label">Last Modified</div>
+                </div>
+            </div>
+            <div id="locationBreakdown" class="location-breakdown">
+                <!-- Location breakdown will be inserted here -->
+            </div>
+        </div>
+        
+        <!-- Architecture Overview -->
+        <div class="card">
+            <h3><i class="fas fa-sitemap"></i> Option A' Architecture</h3>
+            <div class="architecture-diagram">
+                <pre>
+┌─────────────────────────────────────────────────────────────────┐
+│                   EXCEL AS SOURCE OF TRUTH                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Mobile Worker → Draft → SEND → Excel (OneDrive)               │
+│                                                                 │
+│   HQ View ←── reads FROM ←── Excel files via Graph API          │
+│              ↑                                                  │
+│              └── THIS IS WHAT PHASE 10 VALIDATES                │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+                </pre>
+            </div>
+            <div class="highlight-box">
+                <h4>🎯 Phase 10 Scope</h4>
+                <p><strong>Phase 10:</strong> HQ reads directly from OneDrive Excel via Graph API — <em>pending live validation</em></p>
+                <p style="color: var(--gray-500); font-size: 13px; margin-top: 8px;">
+                    <strong>Internal 11A/11B:</strong> Graph writers and reconciliation available internally, not in scope for this demo.
+                </p>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- API Health Check -->
+            <div class="card">
+                <h3><i class="fas fa-heartbeat"></i> Step 1: API Health Check</h3>
+                <p style="margin-bottom: 16px; color: var(--gray-500);">
+                    Verify the Phase 10 API endpoints are running.
+                </p>
+                <button class="btn btn-primary" onclick="checkHealth()">
+                    <i class="fas fa-stethoscope"></i> Check API Health
+                </button>
+                <div id="healthStatus" class="status-box info hidden" style="margin-top: 16px;">
+                    Waiting...
+                </div>
+            </div>
+            
+            <!-- List Excel Files -->
+            <div class="card">
+                <h3><i class="fas fa-folder-open"></i> Step 2: List Excel Files</h3>
+                <p style="margin-bottom: 16px; color: var(--gray-500);">
+                    Fetch location ledger files from OneDrive (or demo data).
+                </p>
+                <button class="btn btn-primary" onclick="listLocationFiles()">
+                    <i class="fas fa-cloud-download-alt"></i> Fetch Excel Files
+                </button>
+                <div id="fileList" class="file-list hidden" style="margin-top: 16px;"></div>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Read Receipt Data -->
+            <div class="card">
+                <h3><i class="fas fa-table"></i> Step 3: Read Receipts from Excel</h3>
+                <p style="margin-bottom: 16px; color: var(--gray-500);">
+                    Read receipt data directly from Excel files.
+                </p>
+                <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                    <select id="locationSelect"
+                            style="padding: 12px; border: 1px solid var(--gray-200); border-radius: 8px; flex: 1; background: white;">
+                        <option value="">Choose available location...</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="readReceipts()">
+                        <i class="fas fa-download"></i> Read Receipts
+                    </button>
+                </div>
+                <p style="margin-top: 8px; color: var(--gray-500); font-size: 12px;">
+                    Locations are loaded from available Excel files in Step 2 / Dashboard.
+                </p>
+                <div id="receiptData" class="hidden" style="margin-top: 16px;"></div>
+            </div>
+            
+            <!-- Receipt Count -->
+            <div class="card">
+                <h3><i class="fas fa-chart-bar"></i> Data Summary</h3>
+                <div id="dataSummary">
+                    <div class="receipt-count">
+                        --
+                        <span>receipts from Excel</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- API Call Log -->
+        <div class="card">
+            <h3><i class="fas fa-terminal"></i> API Call Log</h3>
+            <div id="apiLog" class="api-log">
+                <div><span class="timestamp">[Ready]</span> Phase 10 PoC Demo loaded. Ready for validation when credentials available.</div>
+            </div>
+        </div>
+        
+        <!-- Technical Details (Collapsible) -->
+        <div class="card">
+            <div class="collapsible-header" onclick="toggleSection('testSection')">
+                <h3 style="margin: 0;"><i class="fas fa-vial"></i> Internal Test Suite (103 tests)</h3>
+                <i class="fas fa-chevron-down" id="testSectionIcon"></i>
+            </div>
+            <div class="collapsible-content" id="testSection">
+                <p style="margin: 16px 0; color: var(--gray-500); font-size: 13px;">
+                    These tests validate implementation using mocked APIs — they demonstrate code readiness, not live environment validation.
+                </p>
+                <div class="status-box info">
+                    <strong>🧪 103 Unit Tests Passing (Mocked Environment)</strong><br>
+                    <code style="font-size: 12px;">pytest tests/unit/test_phase10_excel_source.py tests/unit/test_phase11a_graph_writers.py tests/unit/test_phase11b_policy_rework.py -v</code>
+                </div>
+                
+                <h4 style="margin-top: 20px; color: var(--primary);">Phase 10: Excel Read (36 tests)</h4>
+                <table style="margin-top: 8px;">
+                    <thead>
+                        <tr><th>Test Class</th><th>Tests</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>TestExcelDataProvider</td><td>11</td><td style="color: var(--success);">✓ Passed (mocked)</td></tr>
+                        <tr><td>TestExcelSyncService</td><td>13</td><td style="color: var(--success);">✓ Passed (mocked)</td></tr>
+                        <tr><td>TestPhase10Integration</td><td>4</td><td style="color: var(--success);">✓ Passed (mocked)</td></tr>
+                        <tr><td>TestStatusWorkflowIntegration</td><td>3</td><td style="color: var(--success);">✓ Passed (mocked)</td></tr>
+                        <tr><td>TestExcelSourceAPIModels</td><td>2</td><td style="color: var(--success);">✓ Passed (mocked)</td></tr>
+                        <tr><td>TestEdgeCases</td><td>3</td><td style="color: var(--success);">✓ Passed (mocked)</td></tr>
+                    </tbody>
+                </table>
+                
+                <h4 style="margin-top: 20px; color: var(--gray-500);">Internal 11A/11B (67 tests)</h4>
+                <p style="color: var(--gray-500); font-size: 13px;">Graph API writers and reconciliation tests available internally — not in scope for Phase 10 demo.</p>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const API_BASE = '/api/excel';
+        let demoMode = false;
+        let availableLocations = [];
+        
+        // Sample demo data (for visualization only)
+        const DEMO_FILES = [
+            { file_id: "demo-file-1", file_name: "Aichi_Accumulated.xlsx", file_path: "locations/Aichi_Accumulated.xlsx", etag: "demo-etag-1", last_modified: "2026-03-01T10:30:00Z", row_count: 45 },
+            { file_id: "demo-file-2", file_name: "Tokyo_Accumulated.xlsx", file_path: "locations/Tokyo_Accumulated.xlsx", etag: "demo-etag-2", last_modified: "2026-03-01T09:15:00Z", row_count: 32 },
+            { file_id: "demo-file-3", file_name: "Osaka_Accumulated.xlsx", file_path: "locations/Osaka_Accumulated.xlsx", etag: "demo-etag-3", last_modified: "2026-02-28T15:45:00Z", row_count: 28 },
+        ];
+        
+        const DEMO_RECEIPTS = [
+            { excel_row: 6, date: "2026-03-01", staff: "田中太郎", description: "コンビニ（セブンイレブン）", expense: 1580, account: "消耗品費", invoice_flag: "有", tax_10: 144, tax_8: 0 },
+            { excel_row: 7, date: "2026-03-01", staff: "山田花子", description: "電車代（名古屋〜東京）", expense: 10450, account: "旅費交通費", invoice_flag: "有", tax_10: 950, tax_8: 0 },
+            { excel_row: 8, date: "2026-02-28", staff: "田中太郎", description: "ランチミーティング", expense: 2500, account: "会議費", invoice_flag: "有", tax_10: 0, tax_8: 185 },
+            { excel_row: 9, date: "2026-02-28", staff: "佐藤次郎", description: "事務用品（ボールペン等）", expense: 980, account: "消耗品費", invoice_flag: "無", tax_10: 89, tax_8: 0 },
+            { excel_row: 10, date: "2026-02-27", staff: "山田花子", description: "タクシー代（駅→客先）", expense: 1850, account: "旅費交通費", invoice_flag: "有", tax_10: 168, tax_8: 0 },
+        ];
+        
+        function toggleSection(sectionId) {
+            const content = document.getElementById(sectionId);
+            const icon = document.getElementById(sectionId + 'Icon');
+            content.classList.toggle('open');
+            if (content.classList.contains('open')) {
+                icon.style.transform = 'rotate(180deg)';
+            } else {
+                icon.style.transform = 'rotate(0deg)';
+            }
+        }
+        
+        function toggleDemoMode() {
+            demoMode = !demoMode;
+            const toggle = document.getElementById('demoToggle');
+            const box = document.getElementById('demoToggleBox');
+            const label = document.getElementById('demoModeLabel');
+            const statusAlert = document.getElementById('statusAlert');
+            
+            if (demoMode) {
+                toggle.classList.add('active');
+                box.classList.add('active');
+                label.textContent = 'Demo Mode ON';
+                setLocationOptions(DEMO_FILES.map(f => extractLocationId(f.file_name)));
+                statusAlert.innerHTML = `
+                    <div class="status-box success">
+                        <strong>🎭 Demo Mode Active — Sample Data</strong><br>
+                        <small>Showing sample data for visualization. This does not represent live OneDrive connectivity.</small>
+                    </div>
+                `;
+                log('Demo Mode enabled — showing sample data', 'demo');
+            } else {
+                toggle.classList.remove('active');
+                box.classList.remove('active');
+                label.textContent = 'Demo Mode OFF';
+                statusAlert.innerHTML = `
+                    <div class="status-box info">
+                        <strong>ℹ️ Demo Mode vs Live Mode</strong><br>
+                        <small>
+                            <strong>Demo Mode ON:</strong> Shows sample data for visualization — does not prove real connectivity.<br>
+                            <strong>Demo Mode OFF:</strong> Calls real API endpoints. Shows actual OneDrive data when credentials configured.
+                        </small>
+                    </div>
+                `;
+                log('Demo Mode disabled — using real API', 'info');
+            }
+        }
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('apiLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'demo' ? 'demo' : 'endpoint';
+            logDiv.innerHTML += `<div><span class="timestamp">[${timestamp}]</span> <span class="${className}">${message}</span></div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function extractLocationId(fileName) {
+            if (!fileName) {
+                return '';
+            }
+            return fileName
+                .replace(/_Accumulated\.xlsx$/i, '')
+                .replace(/\.xlsx$/i, '')
+                .trim();
+        }
+
+        function setLocationOptions(locationIds, preferred) {
+            const select = document.getElementById('locationSelect');
+            const unique = [...new Set((locationIds || []).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+            availableLocations = unique;
+
+            const previous = select.value;
+            select.innerHTML = '<option value="">Choose available location...</option>';
+
+            unique.forEach(locationId => {
+                const option = document.createElement('option');
+                option.value = locationId;
+                option.textContent = locationId;
+                select.appendChild(option);
+            });
+
+            const target = preferred || previous || unique[0] || '';
+            if (target) {
+                select.value = target;
+            }
+        }
+        
+        async function checkHealth() {
+            const statusDiv = document.getElementById('healthStatus');
+            statusDiv.classList.remove('hidden', 'success', 'error', 'info', 'warning');
+            statusDiv.classList.add('loading');
+            statusDiv.innerHTML = '<span class="spinner"></span> Checking API health...';
+
+            if (demoMode) {
+                log('[DEMO] GET /api/excel/health', 'demo');
+                await new Promise(r => setTimeout(r, 350));
+                statusDiv.classList.remove('loading');
+                statusDiv.classList.add('success');
+                statusDiv.innerHTML = `
+                    <strong>✅ Demo Health OK</strong><br>
+                    <small>Mode: Demo (sample data)</small><br>
+                    <small>Service: Excel Source API (simulated)</small><br>
+                    <small>Timestamp: ${new Date().toISOString()}</small>
+                `;
+                log('[DEMO] Health check passed ✓', 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/health`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json().catch(() => ({}));
+
+                if (!response.ok) {
+                    throw new Error(data.error || `HTTP ${response.status}`);
+                }
+                
+                if (data.status === 'healthy') {
+                    statusDiv.classList.remove('loading');
+                    statusDiv.classList.add('success');
+                    statusDiv.innerHTML = `
+                        <strong>✅ API Healthy</strong><br>
+                        <small>Service: ${data.service || 'Excel Source API'}</small><br>
+                        <small>Files in OneDrive: ${data.location_files_count || 0}</small><br>
+                        <small>Timestamp: ${data.timestamp}</small>
+                    `;
+                    log('Health check passed ✓', 'success');
+                } else if (data.status === 'unhealthy') {
+                    statusDiv.classList.remove('loading');
+                    statusDiv.classList.add('warning');
+                    statusDiv.innerHTML = `
+                        <strong>⚠️ API Reachable, Upstream Not Ready</strong><br>
+                        <small>Endpoint is running, but OneDrive/Graph is not ready yet.</small><br>
+                        <small>Detail: ${data.error || data.message || 'Unhealthy response'}</small>
+                    `;
+                    log(`Health warning: ${data.error || data.message || 'unhealthy'}`, 'info');
+                } else {
+                    throw new Error(data.error || 'Unhealthy response');
+                }
+            } catch (error) {
+                statusDiv.classList.remove('loading');
+                statusDiv.classList.add('error');
+                statusDiv.innerHTML = `
+                    <strong>❌ API Error</strong><br>
+                    <small>${error.message}</small><br>
+                    <small>If backend is stopped, run: python run_server.py</small>
+                `;
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function listLocationFiles() {
+            const fileListDiv = document.getElementById('fileList');
+            fileListDiv.classList.remove('hidden');
+            fileListDiv.innerHTML = '<div class="status-box loading"><span class="spinner"></span> Fetching files...</div>';
+            
+            if (demoMode) {
+                log(`[DEMO] GET ${API_BASE}/locations`, 'demo');
+                await new Promise(r => setTimeout(r, 500));
+                
+                fileListDiv.innerHTML = DEMO_FILES.map(file => `
+                    <div class="file-item" onclick="selectFile('${file.file_id}', '${file.file_name}', event)">
+                        <div class="file-icon"><i class="fas fa-file-excel"></i></div>
+                        <div class="file-info">
+                            <h4>${file.file_name} <span class="demo-indicator">SAMPLE</span></h4>
+                            <p>Rows: ${file.row_count} | Modified: ${new Date(file.last_modified).toLocaleString()}</p>
+                        </div>
+                    </div>
+                `).join('');
+                setLocationOptions(DEMO_FILES.map(f => extractLocationId(f.file_name)));
+                log(`[DEMO] Found ${DEMO_FILES.length} sample files ✓`, 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/locations`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/locations`);
+                const data = await response.json();
+                const files = Array.isArray(data) ? data : (data.files || []);
+                
+                if (files.length > 0) {
+                    fileListDiv.innerHTML = files.map(file => `
+                        <div class="file-item" onclick="selectFile('${file.file_id}', '${file.file_name}', event)">
+                            <div class="file-icon"><i class="fas fa-file-excel"></i></div>
+                            <div class="file-info">
+                                <h4>${file.file_name}</h4>
+                                <p>Rows: ${file.row_count || 'N/A'} | Modified: ${file.last_modified || 'Unknown'}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                    setLocationOptions(files.map(f => extractLocationId(f.file_name)));
+                    log(`Found ${files.length} Excel files ✓`, 'success');
+                } else {
+                    fileListDiv.innerHTML = `
+                        <div class="status-box warning">
+                            <strong>No Excel files found</strong><br>
+                            <small>The "locations" folder may be empty or credentials not configured. Enable <strong>Demo Mode</strong> to see sample data.</small>
+                        </div>
+                    `;
+                    log('No files found', 'info');
+                }
+            } catch (error) {
+                fileListDiv.innerHTML = `<div class="status-box error"><strong>Error:</strong> ${error.message}</div>`;
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        function selectFile(fileId, fileName, evt) {
+            const locationId = extractLocationId(fileName);
+            const nextOptions = availableLocations.includes(locationId)
+                ? availableLocations
+                : [...availableLocations, locationId];
+            setLocationOptions(nextOptions, locationId);
+            document.querySelectorAll('.file-item').forEach(el => el.classList.remove('selected'));
+            if (evt && evt.currentTarget) {
+                evt.currentTarget.classList.add('selected');
+            }
+            log(`Selected: ${fileName} → Location: ${locationId}`);
+        }
+        
+        async function readReceipts() {
+            const locationId = document.getElementById('locationSelect').value;
+            const receiptDiv = document.getElementById('receiptData');
+            const summaryDiv = document.getElementById('dataSummary');
+
+            if (!locationId) {
+                receiptDiv.classList.remove('hidden');
+                receiptDiv.innerHTML = `
+                    <div class="status-box warning">
+                        <strong>Select a location first</strong><br>
+                        <small>Click <strong>Fetch Excel Files</strong> and choose one available location.</small>
+                    </div>
+                `;
+                return;
+            }
+            
+            receiptDiv.classList.remove('hidden');
+            receiptDiv.innerHTML = '<div class="status-box loading"><span class="spinner"></span> Reading receipts...</div>';
+            
+            if (demoMode) {
+                log(`[DEMO] GET ${API_BASE}/locations/${locationId}/receipts`, 'demo');
+                await new Promise(r => setTimeout(r, 700));
+                
+                receiptDiv.innerHTML = `
+                    <div class="status-box success">
+                        <strong>✓ Read ${DEMO_RECEIPTS.length} receipts</strong> <span class="demo-indicator">SAMPLE DATA</span>
+                    </div>
+                    <div style="overflow-x: auto; margin-top: 12px;">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Row</th>
+                                    <th>Date</th>
+                                    <th>Staff</th>
+                                    <th>Description</th>
+                                    <th>Amount</th>
+                                    <th>Account</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${DEMO_RECEIPTS.map(r => `
+                                    <tr>
+                                        <td>${r.excel_row}</td>
+                                        <td>${r.date}</td>
+                                        <td>${r.staff}</td>
+                                        <td>${r.description.substring(0, 25)}...</td>
+                                        <td>¥${r.expense.toLocaleString()}</td>
+                                        <td>${r.account}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                
+                summaryDiv.innerHTML = `
+                    <div class="receipt-count">
+                        ${DEMO_RECEIPTS.length}
+                        <span>sample receipts <span class="demo-indicator">DEMO</span></span>
+                    </div>
+                `;
+                
+                log(`[DEMO] Read ${DEMO_RECEIPTS.length} sample receipts ✓`, 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/locations/${locationId}/receipts`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/locations/${locationId}/receipts`);
+                const data = await response.json();
+                
+                if (data.receipts && data.receipts.length > 0) {
+                    receiptDiv.innerHTML = `
+                        <div class="status-box success">
+                            <strong>✓ Read ${data.receipts.length} receipts from Excel</strong>
+                        </div>
+                        <div style="overflow-x: auto; margin-top: 12px;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Row</th>
+                                        <th>Date</th>
+                                        <th>Staff</th>
+                                        <th>Description</th>
+                                        <th>Amount</th>
+                                        <th>Account</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${data.receipts.slice(0, 10).map(r => `
+                                        <tr>
+                                            <td>${r.excel_location?.row || r.excel_row || '-'}</td>
+                                            <td>${r.receipt_data?.date || r.date || '-'}</td>
+                                            <td>${r.receipt_data?.staff || r.staff || '-'}</td>
+                                            <td>${(r.receipt_data?.description || r.description || '-').substring(0, 25)}...</td>
+                                            <td>¥${(r.receipt_data?.expense || r.expense || 0).toLocaleString()}</td>
+                                            <td>${r.receipt_data?.account || r.account || '-'}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                            ${data.receipts.length > 10 ? `<p style="margin-top: 8px; color: var(--gray-500);">... and ${data.receipts.length - 10} more rows</p>` : ''}
+                        </div>
+                    `;
+                    
+                    summaryDiv.innerHTML = `
+                        <div class="receipt-count">
+                            ${data.receipts.length}
+                            <span>receipts from Excel</span>
+                        </div>
+                    `;
+                    
+                    log(`Read ${data.receipts.length} receipts ✓`, 'success');
+                } else {
+                    receiptDiv.innerHTML = `
+                        <div class="status-box warning">
+                            <strong>No receipts found</strong><br>
+                            <small>No receipts for ${locationId}. Enable <strong>Demo Mode</strong> to see sample data.</small>
+                        </div>
+                    `;
+                    summaryDiv.innerHTML = '<div class="receipt-count">0<span>receipts from Excel</span></div>';
+                    log(`No receipts found for ${locationId}`);
+                }
+            } catch (error) {
+                receiptDiv.innerHTML = `<div class="status-box error"><strong>Error:</strong> ${error.message}</div>`;
+                log(`Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function loadDashboard() {
+            const statsLocations = document.getElementById('statLocations');
+            const statsStaff = document.getElementById('statStaff');
+            const statsReceipts = document.getElementById('statReceipts');
+            const statsLastMod = document.getElementById('statLastMod');
+            const locationBreakdown = document.getElementById('locationBreakdown');
+            
+            statsLocations.textContent = '...';
+            statsStaff.textContent = '...';
+            statsReceipts.textContent = '...';
+            statsLastMod.textContent = '...';
+            locationBreakdown.innerHTML = '<span class="spinner"></span> Loading...';
+            
+            if (demoMode) {
+                log(`[DEMO] GET ${API_BASE}/dashboard`, 'demo');
+                await new Promise(r => setTimeout(r, 400));
+                
+                statsLocations.textContent = '3';
+                statsStaff.textContent = '5';
+                statsReceipts.textContent = '105';
+                statsLastMod.textContent = 'Today';
+                
+                locationBreakdown.innerHTML = `
+                    <div class="location-chip">
+                        <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="location-chip-info">
+                            <h5>Aichi</h5>
+                            <p>45 rows</p>
+                        </div>
+                    </div>
+                    <div class="location-chip">
+                        <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="location-chip-info">
+                            <h5>Tokyo</h5>
+                            <p>32 rows</p>
+                        </div>
+                    </div>
+                    <div class="location-chip">
+                        <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                        <div class="location-chip-info">
+                            <h5>Osaka</h5>
+                            <p>28 rows</p>
+                        </div>
+                    </div>
+                `;
+                log('[DEMO] Dashboard loaded ✓', 'demo');
+                return;
+            }
+            
+            log(`GET ${API_BASE}/dashboard`);
+            
+            try {
+                const response = await fetch(`${API_BASE}/dashboard`);
+                const data = await response.json();
+                
+                if (data.status === 'connected') {
+                    statsLocations.textContent = data.summary?.location_files || 0;
+                    statsStaff.textContent = data.summary?.staff_files || 0;
+                    statsReceipts.textContent = data.summary?.total_rows || 0;
+                    
+                    if (data.locations && data.locations.length > 0) {
+                        const dates = data.locations.map(l => new Date(l.last_modified)).filter(d => !isNaN(d));
+                        if (dates.length > 0) {
+                            const latest = new Date(Math.max(...dates));
+                            const today = new Date();
+                            const diffDays = Math.floor((today - latest) / (1000 * 60 * 60 * 24));
+                            if (diffDays === 0) {
+                                statsLastMod.textContent = 'Today';
+                            } else if (diffDays === 1) {
+                                statsLastMod.textContent = 'Yesterday';
+                            } else {
+                                statsLastMod.textContent = `${diffDays}d ago`;
+                            }
+                        } else {
+                            statsLastMod.textContent = 'N/A';
+                        }
+                    } else {
+                        statsLastMod.textContent = 'N/A';
+                    }
+                    
+                    if (data.locations && data.locations.length > 0) {
+                        locationBreakdown.innerHTML = data.locations.map(loc => `
+                            <div class="location-chip">
+                                <div class="location-chip-icon"><i class="fas fa-map-marker-alt"></i></div>
+                                <div class="location-chip-info">
+                                    <h5>${loc.name}</h5>
+                                    <p>${loc.rows || 0} rows</p>
+                                </div>
+                            </div>
+                        `).join('');
+                        setLocationOptions(data.locations.map(loc => loc.name));
+                    } else {
+                        locationBreakdown.innerHTML = '<span style="color: var(--gray-500);">No locations. Enable Demo Mode to see sample data.</span>';
+                    }
+                    
+                    log('Dashboard loaded ✓', 'success');
+                } else {
+                    throw new Error(data.error || 'Failed to load dashboard');
+                }
+            } catch (error) {
+                statsLocations.textContent = '0';
+                statsStaff.textContent = '0';
+                statsReceipts.textContent = '0';
+                statsLastMod.textContent = 'N/A';
+                locationBreakdown.innerHTML = `<span style="color: var(--danger);">${error.message}</span>`;
+                log(`Dashboard error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto-load on page ready
+        document.addEventListener('DOMContentLoaded', function() {
+            loadDashboard();
+            log('Phase 10 PoC Demo initialized', 'info');
+        });
+    </script>
+</body>
+</html>

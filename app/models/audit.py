@@ -47,6 +47,41 @@ class AuditEventType(str, Enum):
     DRAFT_DELETED = "DRAFT_DELETED"
     """Draft deleted from system (note: Excel data remains if already sent)."""
 
+    # Phase 11.B: Post-Send Audit Events
+    POST_SEND_EDIT = "POST_SEND_EDIT"
+    """SENT receipt was edited after submission. Includes before/after values."""
+    
+    EXCEL_CELL_UPDATED = "EXCEL_CELL_UPDATED"
+    """Excel cell was updated via Graph API following a post-send edit."""
+    
+    EXCEL_CONFLICT_DETECTED = "EXCEL_CONFLICT_DETECTED"
+    """Excel row was modified externally - conflict with draft state detected."""
+    
+    EXCEL_CONFLICT_RESOLVED = "EXCEL_CONFLICT_RESOLVED"
+    """Excel conflict was resolved (user chose which values to keep)."""
+    
+    EXCEL_SYNC_COMPLETED = "EXCEL_SYNC_COMPLETED"
+    """Draft successfully reconciled with Excel authority row."""
+
+    # Phase 13: HQ Transfer Events
+    HQ_TRANSFER_STARTED = "HQ_TRANSFER_STARTED"
+    """HQ transfer batch initiated for office-month."""
+    
+    HQ_ROW_WRITTEN = "HQ_ROW_WRITTEN"
+    """Single receipt row successfully written to HQ Master Ledger."""
+    
+    HQ_ROW_WRITE_FAILED = "HQ_ROW_WRITE_FAILED"
+    """Failed to write receipt row to HQ Master Ledger."""
+    
+    HQ_TRANSFER_COMPLETED = "HQ_TRANSFER_COMPLETED"
+    """HQ transfer batch completed successfully."""
+    
+    HQ_TRANSFER_FAILED = "HQ_TRANSFER_FAILED"
+    """HQ transfer batch failed (one or more writes failed)."""
+    
+    HQ_TRANSFER_CONFLICT = "HQ_TRANSFER_CONFLICT"
+    """ETag/concurrency conflict during HQ write - retry attempted."""
+
 
 class AuditEvent(BaseModel):
     """Immutable audit event record.
