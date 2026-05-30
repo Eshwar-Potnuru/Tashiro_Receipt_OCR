@@ -57,6 +57,7 @@
             align-items: center;
             z-index: 1000;
             padding: 20px;
+            overflow-y: auto;
         }
 
         .modal-content {
@@ -70,6 +71,13 @@
             animation: modalSlideIn 0.5s ease-out;
             position: relative;
             overflow: hidden;
+        }
+
+        .welcome-modal .modal-content {
+            max-height: calc(100vh - 40px);
+            max-height: calc(100dvh - 40px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
         }
 
         .modal-content::before {
@@ -166,6 +174,199 @@
             width: 100%;
             margin-top: 10px;
             box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        }
+
+        .generate-login-tile {
+            margin: 16px 0 8px;
+            padding: 14px;
+            border: 1px solid var(--medium-gray);
+            border-radius: 10px;
+            background: #f8fbff;
+        }
+
+        .generator-toggle-button {
+            margin-bottom: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .generator-details {
+            margin-top: 12px;
+        }
+
+        .login-id-generator h3 {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f3d73;
+            margin-bottom: 6px;
+        }
+
+        .login-id-generator .hint {
+            font-size: 12px;
+            color: #516375;
+            margin-bottom: 10px;
+        }
+
+        .generator-button {
+            width: 100%;
+            border: 1px solid #c9def8;
+            background: #eaf3ff;
+            color: #0f4c8a;
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 10px;
+        }
+
+        .generator-button:hover {
+            background: #dfeeff;
+        }
+
+        .role-login-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .role-login-item {
+            display: grid;
+            grid-template-columns: 72px 1fr auto;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .role-chip {
+            font-size: 11px;
+            font-weight: 700;
+            text-align: center;
+            padding: 5px 8px;
+            border-radius: 999px;
+            letter-spacing: 0.4px;
+        }
+
+        .role-chip.worker {
+            background: #e6f8ec;
+            color: #17663a;
+        }
+
+        .role-chip.admin {
+            background: #fff4de;
+            color: #7d4a00;
+        }
+
+        .role-chip.hq {
+            background: #f2ecff;
+            color: #4d2d8b;
+        }
+
+        .role-login-id {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            font-weight: 700;
+            color: #1f2937;
+            letter-spacing: 0.4px;
+            padding: 7px 10px;
+            border: 1px dashed #c7d2e0;
+            border-radius: 8px;
+            background: white;
+            min-height: 34px;
+            display: flex;
+            align-items: center;
+        }
+
+        .use-login-button {
+            border: 1px solid #c7d2e0;
+            background: white;
+            color: #334155;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .shared-password {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #475569;
+        }
+
+        .shared-password strong {
+            font-family: 'Courier New', monospace;
+            color: #0f172a;
+            letter-spacing: 0.3px;
+        }
+
+        @media (max-width: 768px) {
+            .welcome-modal {
+                align-items: flex-start;
+                padding: 12px;
+            }
+
+            .welcome-modal .modal-content {
+                margin-top: 0;
+                padding: 28px 16px 16px;
+                max-height: calc(100vh - 24px);
+                max-height: calc(100dvh - 24px);
+            }
+
+            .company-logo {
+                margin-bottom: 16px;
+            }
+
+            .logo-circle {
+                width: 64px;
+                height: 64px;
+                font-size: 26px;
+            }
+
+            .modal-content h1 {
+                font-size: 20px;
+            }
+
+            .modal-subtitle {
+                font-size: 14px;
+                margin-bottom: 20px;
+            }
+
+            .form-group {
+                margin-bottom: 14px;
+            }
+
+            .role-login-item {
+                grid-template-columns: 1fr;
+                gap: 6px;
+                justify-items: stretch;
+            }
+
+            .role-chip {
+                width: max-content;
+            }
+
+            .use-login-button {
+                width: 100%;
+            }
+        }
+
+        @media (max-height: 760px) {
+            .welcome-modal {
+                align-items: flex-start;
+                padding: 10px;
+            }
+
+            .welcome-modal .modal-content {
+                max-height: calc(100vh - 20px);
+                max-height: calc(100dvh - 20px);
+                padding-top: 20px;
+            }
+
+            .modal-subtitle {
+                margin-bottom: 16px;
+            }
         }
 
         .primary-button:hover {
@@ -1222,11 +1423,49 @@
                     <label for="password" data-i18n="loginPasswordLabel">パスワード <span class="required">*</span></label>
                     <input type="password" id="password" name="password" data-i18n-ph="loginPasswordPlaceholder" placeholder="パスワードを入力してください" required autocomplete="current-password">
                 </div>
-                
+
                 <button type="submit" id="launchSystemBtn" name="launchSystemBtn" class="primary-button">
                     <i class="fas fa-sign-in-alt"></i> <span data-i18n="loginButton">ログイン</span>
                 </button>
             </form>
+
+            <div class="generate-login-tile">
+                <button type="button" id="toggleGenerateTileBtn" class="generator-button generator-toggle-button" aria-expanded="false" aria-controls="generatorDetails">
+                    <i class="fas fa-dice"></i>
+                    <span data-i18n="generateLoginButton">Generate Login ID</span>
+                </button>
+
+                <div id="generatorDetails" class="generator-details" hidden>
+                    <div class="login-id-generator">
+                        <h3 data-i18n="generateLoginTitle">Generate Login ID</h3>
+                        <p class="hint" data-i18n="generateLoginHint">Generate one existing Login ID for each role (WORKER, ADMIN, HQ).</p>
+
+                        <button type="button" id="generateRoleIdsBtn" class="generator-button">
+                            <i class="fas fa-sync-alt"></i> <span data-i18n="generateLoginButton">Generate Login ID</span>
+                        </button>
+
+                        <div class="role-login-list">
+                            <div class="role-login-item">
+                                <span class="role-chip worker" data-i18n="roleWorker">WORKER</span>
+                                <span class="role-login-id" id="workerRoleLoginId">-</span>
+                                <button type="button" class="use-login-button" data-role-login="WORKER" data-i18n="useThisLogin">Use</button>
+                            </div>
+                            <div class="role-login-item">
+                                <span class="role-chip admin" data-i18n="roleAdmin">ADMIN</span>
+                                <span class="role-login-id" id="adminRoleLoginId">-</span>
+                                <button type="button" class="use-login-button" data-role-login="ADMIN" data-i18n="useThisLogin">Use</button>
+                            </div>
+                            <div class="role-login-item">
+                                <span class="role-chip hq" data-i18n="roleHq">HQ</span>
+                                <span class="role-login-id" id="hqRoleLoginId">-</span>
+                                <button type="button" class="use-login-button" data-role-login="HQ" data-i18n="useThisLogin">Use</button>
+                            </div>
+                        </div>
+
+                        <p class="shared-password"><span data-i18n="sharedPasswordForRoles">Password for all 3 roles:</span> <strong id="sharedRolePassword">password123</strong></p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -1919,6 +2158,15 @@
                 loginIdHint: "Enter your Login ID (e.g., TIW-#####) or email address",
                 loginPasswordLabel: "Password",
                 loginPasswordPlaceholder: "Enter your password",
+                generateLoginTitle: "Generate Login ID",
+                generateLoginHint: "Generate one existing Login ID for each role (WORKER, ADMIN, HQ).",
+                generateLoginButton: "Generate Login ID",
+                roleWorker: "WORKER",
+                roleAdmin: "ADMIN",
+                roleHq: "HQ",
+                useThisLogin: "Use",
+                sharedPasswordForRoles: "Password for all 3 roles:",
+                demoCredentialsFilled: "Filled login for {role}.",
                 loginButton: "Login",
                 loginFailed: "Invalid Login ID/Email or Password",
                 loginSuccess: "Login successful! Welcome, {name}."
@@ -1988,6 +2236,15 @@
                 loginIdHint: "ログインID（例: TIW-#####）またはメールアドレスを入力してください",
                 loginPasswordLabel: "パスワード",
                 loginPasswordPlaceholder: "パスワードを入力してください",
+                generateLoginTitle: "ログインIDを生成",
+                generateLoginHint: "WORKER・ADMIN・HQの各ロールで使える既存ログインIDを生成します。",
+                generateLoginButton: "ログインIDを生成",
+                roleWorker: "WORKER",
+                roleAdmin: "ADMIN",
+                roleHq: "HQ",
+                useThisLogin: "使う",
+                sharedPasswordForRoles: "3ロール共通パスワード:",
+                demoCredentialsFilled: "{role}のログイン情報を入力しました。",
                 loginButton: "ログイン",
                 loginFailed: "ログインID/メールアドレスまたはパスワードが無効です",
                 loginSuccess: "ログイン成功！{name}さん、ようこそ。",
@@ -2647,7 +2904,33 @@ function updateFieldLabels() {
         const userNameInput = document.getElementById('userName');
         const loginIdentifierInput = document.getElementById('loginIdentifier');
         const passwordInput = document.getElementById('password');
+        const toggleGenerateTileBtn = document.getElementById('toggleGenerateTileBtn');
+        const generatorDetails = document.getElementById('generatorDetails');
+        const generateRoleIdsBtn = document.getElementById('generateRoleIdsBtn');
+        const workerRoleLoginId = document.getElementById('workerRoleLoginId');
+        const adminRoleLoginId = document.getElementById('adminRoleLoginId');
+        const hqRoleLoginId = document.getElementById('hqRoleLoginId');
+        const sharedRolePassword = document.getElementById('sharedRolePassword');
         const updateUserNameInput = document.getElementById('updateUserName');
+
+        const DEMO_ROLE_LOGIN_IDS = {
+            WORKER: [
+                'TIW-V48XE', 'TIW-XX6E4', 'TIW-FZ3CL', 'TIW-2OIPF', 'TIW-U4AT9',
+                'TIW-Q7EOO', 'TIW-RKM8P', 'TIW-7P199', 'TIW-FM4YZ', 'TIW-M6MR1'
+            ],
+            ADMIN: [
+                'TIW-3E08W', 'TIW-BNZRL', 'TIW-61NQ2', 'TIW-5G5BT', 'TIW-WJJ5N'
+            ],
+            HQ: [
+                'TIW-O5FXV', 'TIW-OQFOW', 'TIW-57OTC', 'TIW-ADLNS', 'TIW-KYDLD'
+            ]
+        };
+        const DEMO_SHARED_PASSWORD = 'password123';
+        let currentRoleLoginIds = {
+            WORKER: '',
+            ADMIN: '',
+            HQ: ''
+        };
 
         // Parse URL parameters for auto-fill
         const urlParams = new URLSearchParams(window.location.search);
@@ -2817,6 +3100,97 @@ function updateFieldLabels() {
             }
             return false;
         }
+
+        // Logout: clear session, hide app, show login screen
+        function logout() {
+            // Clear auth data
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('token');
+            localStorage.removeItem('tashiro_user');
+
+            // Hide app container and any open overlays
+            if (appContainer) appContainer.style.display = 'none';
+
+            // Close draft modal if open
+            const draftModal = document.getElementById('draftModal');
+            if (draftModal) draftModal.style.display = 'none';
+
+            // Close settings modal if open
+            if (settingsModal) settingsModal.style.display = 'none';
+
+            // Reset login form fields
+            if (userNameInput) userNameInput.value = '';
+            if (loginIdentifierInput) loginIdentifierInput.value = '';
+            if (passwordInput) passwordInput.value = '';
+
+            // Refresh generated role IDs so new credentials appear
+            renderGeneratedRoleLoginIds();
+
+            // Show login screen
+            if (welcomeModal) welcomeModal.style.display = 'flex';
+        }
+
+        function getRandomRoleLoginId(role) {
+            const pool = DEMO_ROLE_LOGIN_IDS[role] || [];
+            if (!pool.length) return '-';
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        function renderGeneratedRoleLoginIds() {
+            currentRoleLoginIds.WORKER = getRandomRoleLoginId('WORKER');
+            currentRoleLoginIds.ADMIN = getRandomRoleLoginId('ADMIN');
+            currentRoleLoginIds.HQ = getRandomRoleLoginId('HQ');
+
+            if (workerRoleLoginId) workerRoleLoginId.textContent = currentRoleLoginIds.WORKER;
+            if (adminRoleLoginId) adminRoleLoginId.textContent = currentRoleLoginIds.ADMIN;
+            if (hqRoleLoginId) hqRoleLoginId.textContent = currentRoleLoginIds.HQ;
+        }
+
+        function setGeneratorTileExpanded(expanded) {
+            if (!toggleGenerateTileBtn || !generatorDetails) return;
+            toggleGenerateTileBtn.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+            generatorDetails.hidden = !expanded;
+        }
+
+        function useRoleLogin(role) {
+            const generatedId = currentRoleLoginIds[role];
+            if (!generatedId || generatedId === '-') {
+                return;
+            }
+
+            if (loginIdentifierInput) loginIdentifierInput.value = generatedId;
+            if (passwordInput) passwordInput.value = DEMO_SHARED_PASSWORD;
+            if (userNameInput && !userNameInput.value.trim()) userNameInput.value = `Demo ${role}`;
+            showToast(t('demoCredentialsFilled', { role }), 'info');
+        }
+
+        if (sharedRolePassword) {
+            sharedRolePassword.textContent = DEMO_SHARED_PASSWORD;
+        }
+
+        if (toggleGenerateTileBtn) {
+            toggleGenerateTileBtn.addEventListener('click', () => {
+                const currentlyExpanded = toggleGenerateTileBtn.getAttribute('aria-expanded') === 'true';
+                const nextExpanded = !currentlyExpanded;
+                setGeneratorTileExpanded(nextExpanded);
+                if (nextExpanded) {
+                    renderGeneratedRoleLoginIds();
+                }
+            });
+        }
+
+        if (generateRoleIdsBtn) {
+            generateRoleIdsBtn.addEventListener('click', renderGeneratedRoleLoginIds);
+        }
+
+        document.querySelectorAll('.use-login-button').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const role = btn.getAttribute('data-role-login');
+                if (role) useRoleLogin(role);
+            });
+        });
+
+        setGeneratorTileExpanded(false);
 
         // Display user information in the header
         function displayUserInfo(user) {
