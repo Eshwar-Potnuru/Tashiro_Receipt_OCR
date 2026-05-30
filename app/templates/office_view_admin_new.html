@@ -4436,14 +4436,52 @@
         
         // Get office ID from reference data
         async function getOfficeId() {
-            // First try to get from existing locations data
-            if (referenceData && referenceData.locations && referenceData.locations.length > 0) {
-                // In a real multi-office scenario, this would be the user's assigned office
-                // For now, return the first location
-                return referenceData.locations[0].business_location_id;
+            // First try to get from loaded reference data
+            try {
+                await ensureReferenceDataLoaded();
+            } catch (error) {
+                console.warn('Failed to load reference data while resolving office ID:', error);
+            }
+
+            const locations = Array.isArray(manualReferenceData.business_locations)
+                ? manualReferenceData.business_locations
+                : [];
+
+            if (locations.length > 0) {
+                // In a real multi-office scenario, this should use the user's assigned office.
+                const firstLocation = locations[0] || {};
+                const resolvedId = String(
+                    firstLocation.id ||
+                    firstLocation.business_location_id ||
+                    firstLocation.name ||
+                    ''
+                ).trim();
+
+                if (resolvedId) {
+                    return resolvedId;
+                }
+            }
+
+            // Fallback: try to get office id from JWT payload if present
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const tokenOfficeId = String(
+                        payload.office_id ||
+                        payload.business_location_id ||
+                        payload.location_id ||
+                        ''
+                    ).trim();
+                    if (tokenOfficeId) {
+                        return tokenOfficeId;
+                    }
+                } catch (error) {
+                    console.warn('Unable to parse token while resolving office ID:', error);
+                }
             }
             
-            // Fallback: try to get from current user context
+            // Final fallback used in existing dev data
             return 'Aichi'; // Default fallback
         }
         
